@@ -11,6 +11,14 @@ urlpatterns = patterns('',
     ('^subscribe/?$', 'main.views.subscribe'),
     ('^test_populate/?$', 'main.views.test_populate'),
     
+    #####
+    # API
+    (r'^api/', include('status_api.urls')),
+    
+    #######
+    # Cron
+    (r'^cron/', include('status_cron.urls')),
+    
     #######
     # ADMIN
     (r'^admin/', include(admin.site.urls)),

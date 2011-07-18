@@ -40,7 +40,7 @@ ROOT_MEDIA_FILTERS = {
     'css': 'mediagenerator.filters.yuicompressor.YUICompressor',
 }
 
-YUICOMPRESSOR_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)),
+YUICOMPRESSOR_PATH = os.path.join(os.path.dirname(__file__),
                                   'yuicompressor-2.4.6.jar')
 
 #########################

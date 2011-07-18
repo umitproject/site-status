@@ -21,6 +21,11 @@ indexes:
 # automatically uploaded to the admin console when you next deploy
 # your application using appcfg.py.
 
+- kind: main_dailymodulestatus
+  properties:
+  - name: module_id
+  - name: created_at
+
 - kind: main_module
   properties:
   - name: __key__

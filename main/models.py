@@ -78,9 +78,11 @@ class Module(models.Model):
     host = models.CharField(max_length=500)
     url = models.CharField(max_length=1000)
     current_status = models.CharField(max_length=30, choices=STATUS)
+    api_key = models.CharField(max_length=100)
+    api_secret = models.CharField(max_length=100)
     
     def last_7_days(self):
-        return DailyModuleStatus.objects.filter(module=self).order('created_at')[:7]
+        return DailyModuleStatus.objects.filter(module=self).order_by('created_at')[:7]
 
     def __unicode__(self):
         return "%s - %s - %s" % (self.name, self.module_type, self.host)
