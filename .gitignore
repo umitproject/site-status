@@ -1,4 +1,5 @@
 *.pyc*
 _generated_media
 .gaedata
+.gaedata/datastore
 .DS_Store
