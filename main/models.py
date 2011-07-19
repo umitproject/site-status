@@ -4,7 +4,7 @@ import datetime
 import logging
 
 from django.db import models
-from django.db.models.signals import pre_save
+from django.db.models.signals import post_save
 
 STATUS = (
           ('on-line', 'On-line'),
@@ -110,13 +110,13 @@ class ModuleEvent(models.Model):
 
 #####################
 # ModuleEvent signals
-def module_event_pre_save(sender, instance, created, *args, **kwargs):
+def module_event_post_save(sender, instance, created, **kwargs):
     if created:
-        self.module.status = instance.status
+        instance.module.status = instance.status
     elif instance.back_at:
-        self.module.status = 'on-line'
+        instance.module.status = 'on-line'
 
-pre_save.connect(module_event_pre_save, sender=ModuleEvent)
+post_save.connect(module_event_post_save, sender=ModuleEvent)
 
 
 class Module(models.Model):
