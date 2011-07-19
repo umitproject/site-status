@@ -6,3 +6,7 @@ cron:
 - description: Check passive hosts
   url: /cron/check_passive_hosts
   schedule: every 1 minutes
+
+- description: Aggregate daily status
+  url: /cron/aggregate_daily_status
+  schedule: every 30 minutes

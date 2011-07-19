@@ -23,10 +23,20 @@ indexes:
 
 - kind: main_dailymodulestatus
   properties:
+  - name: __key__
+    direction: desc
+
+- kind: main_dailymodulestatus
+  properties:
   - name: module_id
   - name: created_at
 
 - kind: main_module
+  properties:
+  - name: __key__
+    direction: desc
+
+- kind: main_moduleevent
   properties:
   - name: __key__
     direction: desc
