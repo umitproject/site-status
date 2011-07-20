@@ -4,15 +4,30 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
-	<title>{{ settings.SITE_NAME }} Status</title>
+	<title>{{ SITE_NAME }} Status</title>
 	{% include_media 'main.css' %}
 	{% include_media 'main.js' %}
 </head>
 <body id="body">
+	{% if GOOGLE_ANALYTICS_ID %}
+		<script type="text/javascript">
+		  {% comment %} Google Analytics {% endcomment %}
+		  var _gaq = _gaq || [];
+		  _gaq.push(['_setAccount', '{{ GOOGLE_ANALYTICS_ID }}']);
+		  _gaq.push(['_trackPageview']);
+		
+		  (function() {
+		    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+		    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+		    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+		  })();
+		</script>
+	{% endif %}
+
 	<div id="top_div">
 		<div id="top_content">
 			<div id="logo">
-				<h1>{{ settings.SITE_NAME }}</h1>
+				<h1>{{ SITE_NAME }}</h1>
 				<h4>Site Status</h4>
 			</div>
 		</div>
@@ -21,7 +36,7 @@
 	<div class="menu">
 		<div class="menu_content">
 			<ul>
-				<li><a href="{{ settings.MAIN_SITE_URL }}">{{ settings.SITE_NAME }}</a></li>
+				<li><a href="{{ MAIN_SITE_URL }}">{{ SITE_NAME }}</a></li>
 				<li><a href="/subscribe">Be notified about our status</a></li>
 			</ul>
 		</div>
@@ -61,18 +76,50 @@
 				</div>
 			</div>
 			<img src="{% media_url "img/hr.png" %}" alt="" />
+			{% if twitter_account %}
 			<div class="box">
 				<div class="text_box">
 					<p class="title">Twitter</p>
-					<p class="description">This is where we're going to place the twitter status widget</p>
+						<script src="http://widgets.twimg.com/j/2/widget.js"></script>
+						<script>
+						new TWTR.Widget({
+						  version: 2,
+						  type: 'profile',
+						  rpp: 4,
+						  interval: 6000,
+						  width: 880,
+						  height: 300,
+						  theme: {
+						    shell: {
+						      background: '#333333',
+						      color: '#ffffff'
+						    },
+						    tweets: {
+						      background: '#000000',
+						      color: '#ffffff',
+						      links: '#4aed05'
+						    }
+						  },
+						  features: {
+						    scrollbar: false,
+						    loop: false,
+						    live: false,
+						    hashtags: true,
+						    timestamp: true,
+						    avatars: false,
+						    behavior: 'all'
+						  }
+						}).render().setUser('{{ twitter_account.login }}').start();
+						</script>
 					<div class="more"><a href="" ></a></div>
 				</div>
 			</div>
 			<img src="{% media_url "img/hr.png" %}" alt="" />
+			{% endif %}
 			<br />
 			<br />
 			<div class="big_round_box">
-				<p class="title">Site Status</p>
+				<p class="title">Scheduled Maintenances</p>
 				<p class="description">Powered by Umit Project.</p>
 			</div>
 			<div style="clear:both"></div>	
@@ -83,11 +130,11 @@
 		<div id="bottom_content">
 			<div class="callcenter">
 				<p class="call_us" style="color:#e44038;padding-left:30px;">Suport 24/7: </p>
-				<p class="call_us"><img src="{% media_url "img/phone.png" %}" alt="phone" />{{ settings.CONTACT_PHONE }}</p>
-				<p class="call_us"><img src="{% media_url "img/email.png" %}" alt="email" />{{ settings.CONTACT_EMAIL }}</p>
+				<p class="call_us"><img src="{% media_url "img/phone.png" %}" alt="phone" />{{ CONTACT_PHONE }}</p>
+				<p class="call_us"><img src="{% media_url "img/email.png" %}" alt="email" />{{ CONTACT_EMAIL }}</p>
 			</div>
 			<div id="menu_bottom_list">
-				<div class="menu_bottom" ><a href="{{ settings.MAIN_SITE_URL }}">{{ settings.SITE_NAME }}</a></div>
+				<div class="menu_bottom" ><a href="{{ MAIN_SITE_URL }}">{{ SITE_NAME }}</a></div>
 				<div class="menu_bottom" ><a href="/subscribe">Be notified about our status</a></div>
 			</div>
 		</div>

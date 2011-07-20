@@ -130,6 +130,7 @@ class DailyModuleStatus(models.Model):
 class ModuleEvent(models.Model):
     down_at = models.DateTimeField(auto_now_add=True)
     back_at = models.DateTimeField()
+    details = models.TextField()
     status = models.CharField(max_length=30, choices=STATUS)
     module = models.ForeignKey('main.Module')
     
@@ -157,7 +158,8 @@ class ModuleEvent(models.Model):
 def module_event_post_save(sender, instance, created, **kwargs):
     if created:
         instance.module.status = instance.status
-    elif instance.back_at:
+    
+    if instance.back_at:
         instance.module.status = 'on-line'
         
         day_status = instance.module.today_status
@@ -273,3 +275,15 @@ class TwitterAccount(models.Model):
     
     def __unicode__(self):
         return '@%s' % self.login
+
+
+singleton_twitter_account = TwitterAccount.objects.all()[:1]
+
+def twitter_account():
+    global singleton_twitter_account
+    
+    if singleton_twitter_account:
+        return singleton_twitter_account
+    
+    singleton_twitter_account = TwitterAccount.objects.all()[:1]
+    return singleton_twitter_account

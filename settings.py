@@ -16,6 +16,8 @@ MAIN_SITE_URL = "http://www.umitproject.org"
 CONTACT_PHONE = "+55 62 6262626262"
 CONTACT_EMAIL = "contact@umitproject.org"
 
+GOOGLE_ANALYTICS_ID = ''
+
 ENVIRONMENT = os.environ.get('SERVER_SOFTWARE', '')
 GAE = True
 PRODUCTION = True
@@ -31,8 +33,9 @@ elif ENVIRONMENT.startswith('Development'):
 
 NOTIFICATION_SYSTEM = 'courrier' # One of courrier or e-mail
 
-COURRIER_API_KEY = ''
+COURRIER_CUSTOMER_KEY = ''
 COURRIER_API_SECRET = ''
+COURRIER_STATUS_CAMPAIGN_KEY = ""
 
 #EMAIL_HOST = ''
 #EMAIL_HOST_USER = ''
@@ -111,8 +114,8 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     'django.contrib.auth.context_processors.auth',
     'django.core.context_processors.request',
     'django.core.context_processors.media',
-    'main.context_processors.get_settings',
     'django.contrib.messages.context_processors.messages',
+    'main.context_processors.get_settings',
 )
 
 # This test runner captures stdout and associates tracebacks with their

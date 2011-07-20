@@ -10,6 +10,8 @@ from django.conf import settings
 # Appengine TASKS
 from google.appengine.api import taskqueue
 
+from google.appengine.api import urlfetch
+
 from main.models import *
 from main.memcache import memcache
 
@@ -27,13 +29,16 @@ def check_passive_hosts(request):
             # TODO: Check if the amount of retries is too high, and if it is
             #       then create an event to sinalize that there is an issue
             #       with this host.
+            logging.critical('Task %s is still processing...' % (CHECK_HOST_KEY % module.id))
             continue
         
         try:
+            task_name = 'check_passive_host_%s_%s' % ("-".join(module.name.split(" ")).lower(), uuid.uuid4())
             task = taskqueue.add(url='/cron/check_passive_hosts_task/%s' % module.id,
-                          name='check_passive_host_%s_%s' % ("-".join(module.name.split(" ")).lower(), uuid.uuid4()),
-                          queue_name='cron')
-            memcache.set(CHECK_HOST_KEY % module.id, task)
+                          name= task_name, queue_name='cron')
+            memcache.set(CHECK_HOST_KEY % module.id, task, 60)
+            
+            logging.info('Scheduled task %s' % task_name)
             
         except taskqueue.TaskAlreadyExistsError, e:
             logging.info('Task is still running for module %s: %s' % \
@@ -41,15 +46,21 @@ def check_passive_hosts(request):
     
     return HttpResponse("OK")
 
+def _get_status_code(module):
+    if settings.GAE:
+        result = urlfetch.fetch(module.url)
+        return result.status_code
+    result = urllib2.urlopen(module.url)
+    return result.getcode()
+        
 
 def check_passive_hosts_task(request, module_key):
     module = Module.objects.get(id=module_key)
     events = ModuleEvent.objects.filter(module=module).filter(back_at=None)
-    aggregate = False
     
     try:
         start = datetime.datetime.now()
-        result = urllib2.urlopen(module.url)
+        status_code = _get_status_code(module)
         end = datetime.datetime.now()
         
         total_time = end - start
@@ -57,45 +68,81 @@ def check_passive_hosts_task(request, module_key):
             # TODO: Turn this into a notification
             logging.warning('Spent %s seconds checking %s' % (total_time.seconds, module.name))
         
-        status_code = 0
-        
-        result_dir = dir(result)
-        
-        if settings.GAE and settings.PRODUCTION:
-            status_code = result.status_code
-        else:
-            status_code = result.getcode()
-        
         if status_code == 200:
             now = datetime.datetime.now() 
             for event in events:
                 event.back_at = now
                 event.save()
-            aggregate = boolean(len(events))
+                logging.critical("Site is back online %s" % module.name)
             
     except urllib2.HTTPError, e:
+        logging.critical("urlfetch.HTTPError %s" % module.name)
+        logging.critical(e)
+        
         if not events:
             event = ModuleEvent()
             event.status = "unknown"
             event.module = module
+            event.details = str(e)
             event.save()
-            aggregate = True
             
     except urllib2.URLError, e:
         if not events:
             event = ModuleEvent()
             event.status = "off-line"
             event.module = module
+            event.details = str(e)
             event.save()
-            aggregate = True
+    
+    except urlfetch.InvalidURLError, e:
+        logging.critical("urlfetch.InvalidURLError %s" % module.name)
+        logging.critical(e)
+        
+        if not events:
+            event = ModuleEvent()
+            event.status = "unknown"
+            event.module = module
+            event.details = str(e)
+            event.save()
+    
+    except urlfetch.DownloadError, e:
+        logging.critical("urlfetch.DownloadError %s" % module.name)
+        logging.critical(e)
+        
+        if not events:
+            event = ModuleEvent()
+            event.status = "unknown"
+            event.module = module
+            event.details = str(e)
+            event.save()
+    
+    except urlfetch.ResponseTooLargeError, e:
+        logging.critical("urlfetch.ResponseTooLargeError %s" % module.name)
+        logging.critical(e)
+        
+        if not events:
+            event = ModuleEvent()
+            event.status = "unknown"
+            event.module = module
+            event.details = str(e)
+            event.save()
+    
+    except urlfetch.Error, e:
+        logging.critical("urlfetch.Error %s" % module.name)
+        logging.critical(e)
+        
+        if not events:
+            event = ModuleEvent()
+            event.status = "unknown"
+            event.module = module
+            event.details = str(e)
+            event.save()
     
     except Exception, e:
         logging.critical("Error while executing check for %s" % module.name)
         logging.critical(e)
-        
-    if aggregate:
-        module.aggregate_daily_status()
     
+    memcache.delete(CHECK_HOST_KEY % module.id)
     return HttpResponse("OK")
 
 def aggregate_daily_status(request):

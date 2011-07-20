@@ -40,3 +40,8 @@ indexes:
   properties:
   - name: __key__
     direction: desc
+
+- kind: main_twitteraccount
+  properties:
+  - name: __key__
+    direction: desc

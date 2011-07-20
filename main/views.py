@@ -4,7 +4,7 @@ import random
 import datetime
 import urllib2
 
-from django.shortcuts import render_to_response
+from django.shortcuts import render, render_to_response
 from django.http import HttpResponse, Http404
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -16,11 +16,11 @@ def home(request):
     modules = Module.objects.all()
     
     context = locals()
-    return render_to_response('home.html', context)
+    return render(request, 'home.html', context)
 
 def subscribe(request):
     context = locals()
-    return render_to_response('subscribe.html', context)
+    return render(request, 'subscribe.html', context)
 
 
 def _create_fake_events(module, range_days):
@@ -38,12 +38,10 @@ def _create_fake_events(module, range_days):
             
             events.append(event)
         
-        module.aggregate_daily_status(time, events)
-        
         time = time + datetime.timedelta(days=1)
 
 def _create_fake_module(name, description, module_type, host, url):
-    range_days = 30
+    range_days = 10
     
     mod = Module()
     mod.name = name
@@ -95,14 +93,25 @@ def test_populate(request):
                                 "http://blog.umitproject.org")
         
         # Create test user
-        user = User.objects.create_user('admin', 'adriano@umitproject.org', 'test')
-        user.is_staff = True
-        user.is_superuser = True
-        user.is_active = True
-        user.save()
+        if not User.objects.filter(username='admin'):
+            user = User.objects.create_user('admin', 'adriano@umitproject.org', 'test')
+            user.is_staff = True
+            user.is_superuser = True
+            user.is_active = True
+            user.save()
+        
+        # Create Twitter Account
+        if not TwitterAccount.objects.filter(login='umit_project'):
+            twitter_account = TwitterAccount()
+            twitter_account.login = 'umit_project'
+            twitter_account.api_key = ''
+            twitter_account.api_secret = ''
+            twitter_account.post_tweet_automatically = True
+            twitter_account.monitor_stream = True
+            twitter_account.monitor_stream_terms = ''
         
         context = locals()
         context['msg'] = 'Test Populate OK'
-        return render_to_response('home.html', context)
+        return render(request, 'home.html', context)
     
     raise Http404
