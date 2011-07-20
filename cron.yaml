@@ -1,12 +1,8 @@
 cron:
-- description: keep alive
-  url: /
-  schedule: every 2 minutes
-
 - description: Check passive hosts
   url: /cron/check_passive_hosts
-  schedule: every 1 minutes
+  schedule: every 2 minutes
 
 - description: Aggregate daily status
   url: /cron/aggregate_daily_status
-  schedule: every 30 minutes
+  schedule: every 1 hour

@@ -16,6 +16,31 @@ MAIN_SITE_URL = "http://www.umitproject.org"
 CONTACT_PHONE = "+55 62 6262626262"
 CONTACT_EMAIL = "contact@umitproject.org"
 
+ENVIRONMENT = os.environ.get('SERVER_SOFTWARE', '')
+GAE = True
+PRODUCTION = True
+
+if ENVIRONMENT == '':
+    # TODO: Figure how to check if running on prod in other environments
+    GAE = False
+elif ENVIRONMENT.startswith('Development'):
+    PRODUCTION = False
+
+######################
+# NOTIFICATION SYSTEM
+
+NOTIFICATION_SYSTEM = 'courrier' # One of courrier or e-mail
+
+COURRIER_API_KEY = ''
+COURRIER_API_SECRET = ''
+
+#EMAIL_HOST = ''
+#EMAIL_HOST_USER = ''
+#EMAIL_HOST_PASSWORD = ''
+#EMAIL_PORT = 25
+#EMAIL_USE_TLS = False
+
+
 ########################
 # MEDIA HANDLING SECTION
 
@@ -60,6 +85,9 @@ INSTALLED_APPS = (
     'dbindexer',
     'mediagenerator',
     'main',
+    'status_cron',
+    'status_api',
+    'status_notification',
     'permission_backend_nonrel',
 
     # djangoappengine should come last, so it can override a few manage.py commands

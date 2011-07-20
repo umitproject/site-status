@@ -11,7 +11,7 @@ urlpatterns = patterns('',
     ('^subscribe/?$', 'main.views.subscribe'),
     ('^test_populate/?$', 'main.views.test_populate'),
     
-    #####
+    ######
     # API
     (r'^api/', include('status_api.urls')),
     
@@ -19,7 +19,11 @@ urlpatterns = patterns('',
     # Cron
     (r'^cron/', include('status_cron.urls')),
     
-    #######
+    ######################
+    # Notification System
+    (r'^notification/', include('status_notification.urls')),
+    
+    ########
     # ADMIN
     (r'^admin/', include(admin.site.urls)),
 )
