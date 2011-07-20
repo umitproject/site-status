@@ -5,4 +5,4 @@ cron:
 
 - description: Aggregate daily status
   url: /cron/aggregate_daily_status
-  schedule: every 1 hour
+  schedule: every day 00:00

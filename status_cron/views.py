@@ -16,7 +16,6 @@ from main.memcache import memcache
 ################
 # Memcache Keys
 CHECK_HOST_KEY = 'check_passive_host_%s'
-AGGREGATE_STATUS_KEY = 'aggregate_daily_status_%s'
 
 
 def check_passive_hosts(request):
@@ -99,37 +98,7 @@ def check_passive_hosts_task(request, module_key):
     
     return HttpResponse("OK")
 
-
 def aggregate_daily_status(request):
-    modules = Module.objects.all()
-    
-    for module in modules:
-        if memcache.get(AGGREGATE_STATUS_KEY % module.id, False):
-            # This means that we still have a processing task for this module
-            # TODO: Check if the amount of retries is too high, and if it is
-            #       then create an event to sinalize that there is an issue
-            #       with this module.
-            continue
-        
-        try:
-            task = taskqueue.add(url='/cron/aggregate_daily_status_task/%s' % module.id,
-                          name='aggregate_daily_status_%s_%s' % ("-".join(module.name.split(" ")).lower(), uuid.uuid4()),
-                          queue_name='cron')
-            memcache.set(CHECK_HOST_KEY % module.id, task)
-            
-        except taskqueue.TaskAlreadyExistsError, e:
-            logging.info('Task is still running for module %s: %s' % \
-                 (module.name,'/cron/check_passive_hosts_task/%s' % module.id))
-    
+    for module in Module.objects.all():
+        module.today_status
     return HttpResponse("OK")
-
-
-def aggregate_daily_status_task(request, module_key):
-    module = Module.objects.get(id=module_key)
-    
-    if module:
-        module.aggregate_daily_status()
-    
-    return HttpResponse("OK")    
-        
-
