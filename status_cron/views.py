@@ -59,8 +59,9 @@ def check_passive_hosts_task(request, module_key):
     module = Module.objects.get(id=module_key)
     events = ModuleEvent.objects.filter(module=module).filter(back_at=None)
     
+    start = datetime.datetime.now()
+    
     try:
-        start = datetime.datetime.now()
         status_code = _get_status_code(module)
         end = datetime.datetime.now()
         
@@ -70,6 +71,12 @@ def check_passive_hosts_task(request, module_key):
             logging.warning('Spent %s seconds checking %s' % (total_time.seconds, module.name))
         
         if status_code == 200:
+            
+            # This case is for when a module's status is set by hand and no event is created.
+            if module.status != 'on-line' and not events:
+                module.status = 'on-line'
+                module.save()
+            
             now = datetime.datetime.now() 
             for event in events:
                 event.back_at = now
@@ -80,17 +87,21 @@ def check_passive_hosts_task(request, module_key):
         logging.critical("urlfetch.HTTPError %s" % module.name)
         logging.critical(e)
         logging.critical(traceback.extract_stack())
+        logging.critical("Events: %s" % events)
         
         if not events:
             event = ModuleEvent()
+            event.down_at = start
             event.status = "unknown"
             event.module = module
             event.details = str(e)
             event.save()
             
     except urllib2.URLError, e:
+        logging.critical("Events: %s" % events)
         if not events:
             event = ModuleEvent()
+            event.down_at = start
             event.status = "off-line"
             event.module = module
             event.details = str(e)
@@ -100,9 +111,11 @@ def check_passive_hosts_task(request, module_key):
         logging.critical("urlfetch.InvalidURLError %s" % module.name)
         logging.critical(e)
         logging.critical(traceback.extract_stack())
+        logging.critical("Events: %s" % events)
         
         if not events:
             event = ModuleEvent()
+            event.down_at = start
             event.status = "unknown"
             event.module = module
             event.details = str(e)
@@ -112,9 +125,11 @@ def check_passive_hosts_task(request, module_key):
         logging.critical("urlfetch.DownloadError %s" % module.name)
         logging.critical(e)
         logging.critical(traceback.extract_stack())
+        logging.critical("Events: %s" % events)
         
         if not events:
             event = ModuleEvent()
+            event.down_at = start
             event.status = "unknown"
             event.module = module
             event.details = str(e)
@@ -124,9 +139,11 @@ def check_passive_hosts_task(request, module_key):
         logging.critical("urlfetch.ResponseTooLargeError %s" % module.name)
         logging.critical(e)
         logging.critical(traceback.extract_stack())
+        logging.critical("Events: %s" % events)
         
         if not events:
             event = ModuleEvent()
+            event.down_at = start
             event.status = "unknown"
             event.module = module
             event.details = str(e)
@@ -136,9 +153,11 @@ def check_passive_hosts_task(request, module_key):
         logging.critical("urlfetch.Error %s" % module.name)
         logging.critical(e)
         logging.critical(traceback.extract_stack())
+        logging.critical("Events: %s" % events)
         
         if not events:
             event = ModuleEvent()
+            event.down_at = start
             event.status = "unknown"
             event.module = module
             event.details = str(e)
@@ -148,6 +167,15 @@ def check_passive_hosts_task(request, module_key):
         logging.critical("Error while executing check for %s" % module.name)
         logging.critical(e)
         logging.critical(traceback.extract_stack())
+        logging.critical("Events: %s" % events)
+        
+        if not events:
+            event = ModuleEvent()
+            event.down_at = start
+            event.status = "unknown"
+            event.module = module
+            event.details = str(e)
+            event.save()
     
     memcache.delete(CHECK_HOST_KEY % module.id)
     return HttpResponse("OK")

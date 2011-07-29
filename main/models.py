@@ -8,6 +8,10 @@ from django.db.models.signals import post_save
 
 from main.memcache import memcache
 
+############
+# CONSTANTS
+SHOW_DAYS = 7 # amount of days to show in main page
+
 ##########
 # CHOICES
 STATUS = (
@@ -83,8 +87,8 @@ class AggregatedStatus(models.Model):
     
     @property
     def total_uptime(self):
-        return ((datetime.datetime.now() - \
-                self.created_at).seconds / 60) - self.total_downtime
+        now = datetime.datetime.now()
+        return ((now - self.created_at).seconds / 60) - self.total_downtime
     
     @property
     def percentage_uptime(self):
@@ -172,7 +176,7 @@ class AggregatedStatus(models.Model):
 
 class DailyModuleStatus(models.Model):
     created_at = models.DateTimeField()
-    updated_at = models.DateTimeField()
+    updated_at = models.DateTimeField(blank=True, null=True)
     total_downtime = models.FloatField(default=0.0) # minutes
     statuses = models.TextField()
     events = models.TextField()
@@ -197,8 +201,8 @@ class DailyModuleStatus(models.Model):
     @property
     def list_statuses(self):
         statuses = []
-        set([statuses.append([s, "img/%s.gif" % s]) for s in self.statuses.split(',')])
-        return list(statuses)
+        [statuses.append([s, "img/%s.gif" % s]) for s in self.statuses.split(',') if [s, "img/%s.gif" % s] not in statuses]
+        return statuses
     
     def __unicode__(self):
         return '%s (%s) had a total downtime %.2d on %s' % (self.module.name,
@@ -208,7 +212,7 @@ class DailyModuleStatus(models.Model):
 
 class ModuleEvent(models.Model):
     down_at = models.DateTimeField()
-    back_at = models.DateTimeField()
+    back_at = models.DateTimeField(blank=True, null=True)
     details = models.TextField()
     status = models.CharField(max_length=30, choices=STATUS)
     module = models.ForeignKey('main.Module')
@@ -228,9 +232,10 @@ class ModuleEvent(models.Model):
                                                  self.status,
                                                  self.total_downtime)
         else:
-            return '%s (%s) since %.2d' % (self.module.name,
+            return '%s (%s) since %s:%s' % (self.module.name,
                                            self.status,
-                                           self.down_at)
+                                           self.down_at.hour,
+                                           self.down_at.minute)
 
 #####################
 # ModuleEvent signals
@@ -277,6 +282,20 @@ class Module(models.Model):
     status = models.CharField(max_length=30, choices=STATUS) # current_status
     api_key = models.CharField(max_length=100)
     api_secret = models.CharField(max_length=100)
+    
+    @staticmethod
+    def show_days(days=None):
+        modules = Module.objects.all()
+        show_days = SHOW_DAYS
+        
+        if days is not None:
+            show_days = days
+
+        for module in modules:
+            mod_len = len(module.last_7_days)
+            if mod_len < show_days:
+                show_days = mod_len
+        return show_days
     
     @property
     def status_img(self):

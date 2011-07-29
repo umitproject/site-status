@@ -15,6 +15,7 @@ from main.models import *
 
 def home(request, msg=None):
     modules = Module.objects.all()
+    show_days = Module.show_days()
     aggregation = AggregatedStatus.objects.all()[0]
     
     current_availability = aggregation.availability
@@ -118,6 +119,7 @@ def test_populate(request):
             twitter_account.post_tweet_automatically = True
             twitter_account.monitor_stream = True
             twitter_account.monitor_stream_terms = ''
+            twitter_account.save()
         
         return home(request, 'Test Populate OK')
     

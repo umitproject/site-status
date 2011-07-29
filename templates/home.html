@@ -84,7 +84,7 @@
 						  rpp: 4,
 						  interval: 6000,
 						  width: 880,
-						  height: 300,
+						  height: 500,
 						  theme: {
 						    shell: {
 						      background: '#333333',
@@ -110,14 +110,19 @@
 					<div class="more"><a href="" ></a></div>
 				</div>
 			</div>
-			<img src="{% media_url "img/hr.png" %}" alt="" />
+				{% if scheduled_maintenances %}
+					<img src="{% media_url "img/hr.png" %}" alt="" />
+				{% endif %}
 			{% endif %}
-			<br />
-			<br />
-			<div class="big_round_box">
-				<p class="title">Scheduled Maintenances</p>
-				<p class="description">Powered by Umit Project.</p>
-			</div>
+			
+			{% if scheduled_maintenances %}
+				<br />
+				<br />
+				<div class="big_round_box">
+					<p class="title">Scheduled Maintenances</p>
+					<p class="description">{{ scheduled_maintenances }}</p>
+				</div>
+			{% endif %}
 			<div style="clear:both"></div>	
 		</div>
 	</div>
