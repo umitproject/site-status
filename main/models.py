@@ -30,6 +30,8 @@ MODULE_TYPES = (
 ################
 # MEMCACHE KEYS
 MODULE_TODAY_STATUS_KEY = 'module_today_status_%s'
+MODULE_DAY_STATUS_KEY = 'module_day_status_%s_%s__%s'
+
 
 class Subscribers(models.Model):
     '''Full list of all users who ever registered asking to be notified.
@@ -44,6 +46,7 @@ class Subscribers(models.Model):
     def __unicode__(self):
         return self.email
 
+
 class AlwaysNotifyOnEvent(models.Model):
     '''Aggregation for all users who asked to *ALWAYS* be notified when
     an event occours for a given site or module.
@@ -54,6 +57,7 @@ class AlwaysNotifyOnEvent(models.Model):
     
     def __unicode__(self):
         return self.email
+
 
 class NotifyOnEvent(models.Model):
     '''Aggregation for all users who asked to be notified about an specific
@@ -69,21 +73,22 @@ class NotifyOnEvent(models.Model):
         return '%s %s' % (self.email,
                           'notified' if self.notified else 'not notified')
 
+
 class AggregatedStatus(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     total_downtime = models.FloatField(default=0.0)
     time_estimate_all_modules = models.FloatField(default=0.0)
-    status = models.CharField(max_length=30, choices=STATUS)
+    status = models.CharField(max_length=30, choices=STATUS, default=STATUS[0][0])
     
     @property
     def total_uptime(self):
-        return (datetime.datetime.now() - \
-                self.created_at).minutes - self.total_downtime
+        return ((datetime.datetime.now() - \
+                self.created_at).seconds / 60) - self.total_downtime
     
     @property
     def percentage_uptime(self):
-        return (self.total_uptime()/100) * self.total_downtime
+        return (self.total_uptime / 100) * self.total_downtime
     
     @property
     def percentage_downtime(self):
@@ -91,16 +96,83 @@ class AggregatedStatus(models.Model):
     
     @property
     def availability(self):
-        return self.percentage_uptime()
+        return self.percentage_uptime
+
+    @property
+    def incidents_data(self):
+        today = datetime.datetime.now()
+        
+        incidents = []
+        for d in xrange(6, -1, -1):
+            logging.critical('>>> %s' % d)
+            incident = []
+            day = today - datetime.timedelta(days=d)
+            
+            data = ModuleEvent.objects.\
+                        filter(down_at__gte=datetime.datetime(\
+                                 day.year, day.month, day.day, 0, 0, 0)).\
+                        filter(down_at__lte=datetime.datetime(\
+                                 day.year, day.month, day.day, 23, 59, 59, 999999))
+        
+            key = '%s/%s' % (day.month, day.day)
+            if data:
+                for d in data:
+                    if key in incident:
+                        incident[1] += d.total_downtime
+                    else:
+                        incident = [key, d.total_downtime]
+            else:
+                incident = [key, 0]
+            
+            incidents.append(incident)
+            
+        from pprint import pformat
+        logging.critical(">>> INCIDENTS - %s" % pformat(incidents))
+        
+        return incidents
+
+    @property
+    def uptime_data(self):
+        today = datetime.datetime.now()
+        num_modules = Module.objects.count()
+        
+        uptimes = []
+        for d in xrange(6, -1, -1):
+            uptime = []
+            day = today - datetime.timedelta(days=d)
+            
+            data = DailyModuleStatus.objects.\
+                        filter(created_at__gte=datetime.datetime(\
+                                 day.year, day.month, day.day, 0, 0, 0)).\
+                        filter(created_at__lte=datetime.datetime(\
+                                 day.year, day.month, day.day, 23, 59, 59, 999999))
+        
+            key = '%s/%s' % (day.month, day.day)
+            if data:
+                for d in data:
+                    if key in uptime:
+                        uptime[1] += d.total_uptime
+                    else:
+                        uptime = [key, d.total_uptime]
+            else:
+                uptime = [key, 24*60*num_modules]
+            
+            uptimes.append(uptime)
+            
+        from pprint import pformat
+        logging.critical(">>> UPTIMES - %s" % pformat(uptimes))
+        
+        return uptimes
     
     def __unicode__(self):
         return 'Uptime: %s - Downtime: %s - Availability: %s%% - Status %s' % \
                         (self.total_uptime, self.total_downtime,
                          self.availability, self.status)
 
+
 class DailyModuleStatus(models.Model):
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField()
+    updated_at = models.DateTimeField()
     total_downtime = models.FloatField(default=0.0) # minutes
     statuses = models.TextField()
     events = models.TextField()
@@ -111,6 +183,7 @@ class DailyModuleStatus(models.Model):
     
     @property
     def total_uptime(self):
+        logging.critical(">>> Total uptime: 24*60 - %s = %s" % (self.total_downtime, (24*60) - self.total_downtime))
         return (24*60) - self.total_downtime
     
     @property
@@ -121,6 +194,12 @@ class DailyModuleStatus(models.Model):
     def percentage_downtime(self):
         return 100.0 - self.percentage_uptime
     
+    @property
+    def list_statuses(self):
+        statuses = []
+        set([statuses.append([s, "img/%s.gif" % s]) for s in self.statuses.split(',')])
+        return list(statuses)
+    
     def __unicode__(self):
         return '%s (%s) had a total downtime %.2d on %s' % (self.module.name,
                                                           self.status,
@@ -128,7 +207,7 @@ class DailyModuleStatus(models.Model):
                                                           self.created_at)
 
 class ModuleEvent(models.Model):
-    down_at = models.DateTimeField(auto_now_add=True)
+    down_at = models.DateTimeField()
     back_at = models.DateTimeField()
     details = models.TextField()
     status = models.CharField(max_length=30, choices=STATUS)
@@ -162,7 +241,8 @@ def module_event_post_save(sender, instance, created, **kwargs):
     if instance.back_at:
         instance.module.status = 'on-line'
         
-        day_status = instance.module.today_status
+        day_status = instance.module.get_day_status(instance.down_at)
+        logging.critical('Day status after saving event: %s' % day_status)
         day_status.statuses = "%s,%s" % (day_status.statuses,
                                          instance.module.status)
         
@@ -176,7 +256,7 @@ def module_event_post_save(sender, instance, created, **kwargs):
         day_status.statuses = "%s,%s" % (day_status.statuses,
                                          instance.status)
         
-        day_status.total_downtime += event.total_downtime
+        day_status.total_downtime += instance.total_downtime
         
         day_status.save()
     
@@ -199,6 +279,10 @@ class Module(models.Model):
     api_secret = models.CharField(max_length=100)
     
     @property
+    def status_img(self):
+        return 'img/%s.gif' % self.status
+    
+    @property
     def total_uptime(self):
         return ((datetime.datetime.now() - \
                  self.monitoring_since).seconds / 60) - self.total_downtime
@@ -218,35 +302,35 @@ class Module(models.Model):
     
     @property
     def today_status(self):
-        today_status = memcache.get(MODULE_TODAY_STATUS_KEY % self.id, False)
+        return self.get_day_status(datetime.datetime.now())
+    
+    def get_day_status(self, day):
+        day_status = memcache.get(MODULE_DAY_STATUS_KEY % (day.month, day.day, self.id), False)
         
-        today = datetime.datetime.now()
-        if today_status and \
-                (today_status.created_at.day == now.day and \
-                 today_status.created_at.month == now.month and \
-                 today_status.created_at.year == now.year):
-            # Return an actual today status
-            return today_status
+        if day_status:
+            return day_status
         
-        today_status = DailyModuleStatus.objects.\
+        day_status = DailyModuleStatus.objects.\
                         filter(module=self).\
                         filter(created_at__gte=datetime.datetime(\
                                  day.year, day.month, day.day, 0, 0, 0)).\
                         filter(created_at__lte=datetime.datetime(\
                                  day.year, day.month, day.day, 23, 59, 59, 999999))
 
-        if today_status:
-            memcache.set(MODULE_TODAY_STATUS_KEY * self.id, today_status)
-            return today_status
+        if day_status:
+            memcache.set(MODULE_DAY_STATUS_KEY % (day.month, day.day, self.id), day_status[0])
+            return day_status[0]
         
-        today_status = DailyModuleStatus()
-        today_status.module = self
-        today_status.statuses = self.status
-        today_status.status = self.status
-        today_status.save()
+        day_status = DailyModuleStatus()
+        day_status.created_at = day
+        day_status.updated_at = day
+        day_status.module = self
+        day_status.statuses = self.status
+        day_status.status = self.status
+        day_status.save()
         
-        memcache.set(MODULE_TODAY_STATUS_KEY * self.id, today_status)
-        return today_status
+        memcache.set(MODULE_DAY_STATUS_KEY % (day.month, day.day, self.id), day_status)
+        return day_status
 
     def __unicode__(self):
         return "%s - %s - %s" % (self.name, self.module_type, self.host)
@@ -278,6 +362,14 @@ class TwitterAccount(models.Model):
 
 
 singleton_twitter_account = TwitterAccount.objects.all()[:1]
+if not singleton_twitter_account:
+    singleton_twitter_account = None
+
+singleton_aggregated_status = AggregatedStatus.objects.all()[:1]
+if not singleton_aggregated_status:
+    singleton_aggregated_status = AggregatedStatus()
+    singleton_aggregated_status.save()
+
 
 def twitter_account():
     global singleton_twitter_account

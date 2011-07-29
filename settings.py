@@ -28,6 +28,12 @@ if ENVIRONMENT == '':
 elif ENVIRONMENT.startswith('Development'):
     PRODUCTION = False
 
+#####################
+# CURRENT STATUS BAR
+SHOW_INCIDENTS = True
+SHOW_UPTIME = True
+SHOW_LAST_INCIDENT = True
+
 ######################
 # NOTIFICATION SYSTEM
 

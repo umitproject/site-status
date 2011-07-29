@@ -11,4 +11,7 @@ def get_settings(request):
             'MAIN_SITE_URL': settings.MAIN_SITE_URL,
             'CONTACT_PHONE': settings.CONTACT_PHONE,
             'CONTACT_EMAIL': settings.CONTACT_EMAIL,
+            'SHOW_INCIDENTS': settings.SHOW_INCIDENTS,
+            'SHOW_UPTIME': settings.SHOW_UPTIME,
+            'SHOW_LAST_INCIDENT': settings.SHOW_LAST_INCIDENT,
             'twitter_account': twitter_account()}

@@ -9,7 +9,11 @@ urlpatterns = patterns('',
     ('^_ah/warmup$', 'djangoappengine.views.warmup'),
     ('^$', 'main.views.home'),
     ('^subscribe/?$', 'main.views.subscribe'),
+    
+    ########
+    # TESTS
     ('^test_populate/?$', 'main.views.test_populate'),
+    ('^test_events_and_aggregations/?$', 'main.views.test_events_and_aggregations'),
     
     ######
     # API
@@ -25,5 +29,7 @@ urlpatterns = patterns('',
     
     ########
     # ADMIN
+    (r'^clean_cache/', 'main.views.clean_cache'),
+    (r'^hard_reset/', 'main.views.hard_reset'),
     (r'^admin/', include(admin.site.urls)),
 )

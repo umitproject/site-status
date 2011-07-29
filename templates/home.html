@@ -42,15 +42,7 @@
 		</div>
 	</div>
 	
-	<div id="video">
-		<div id="video_content">
-				<h2>Our current Status:</h2>
-				<h3>{{ current_status }}</h3>
-				{% if msg %}
-					<p class="msg">{{ msg }}</p>
-				{% endif %}
-		</div>
-	</div>
+	{% include "parts/header_status.html" %}
 	
 	<div id="content">
 		<div id="first_content">
@@ -66,9 +58,13 @@
 						<tr>
 							<td>{{ module.name }}</td>
 							{% for day in module.last_7_days %}
-							<td>{{ day.status }}</td>
+							<td>
+								{% for status in day.list_statuses %}
+									<img src='{% media_url status.1 %}' alt='{% verbose_status status.0 %}'/>
+								{% endfor %}
+							</td>
 							{% endfor %}
-							<td>{{ module.status }}</td>
+							<td><img src='{% media_url module.status_img %}' alt='{% verbose_status module.status %}'/></td>
 						</tr>
 						{% endfor %}
 					</table>

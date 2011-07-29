@@ -3,6 +3,7 @@ import urllib2
 import datetime
 import logging
 import uuid
+import traceback
 
 from django.http import HttpResponse, Http404
 from django.conf import settings
@@ -78,6 +79,7 @@ def check_passive_hosts_task(request, module_key):
     except urllib2.HTTPError, e:
         logging.critical("urlfetch.HTTPError %s" % module.name)
         logging.critical(e)
+        logging.critical(traceback.extract_stack())
         
         if not events:
             event = ModuleEvent()
@@ -97,6 +99,7 @@ def check_passive_hosts_task(request, module_key):
     except urlfetch.InvalidURLError, e:
         logging.critical("urlfetch.InvalidURLError %s" % module.name)
         logging.critical(e)
+        logging.critical(traceback.extract_stack())
         
         if not events:
             event = ModuleEvent()
@@ -108,6 +111,7 @@ def check_passive_hosts_task(request, module_key):
     except urlfetch.DownloadError, e:
         logging.critical("urlfetch.DownloadError %s" % module.name)
         logging.critical(e)
+        logging.critical(traceback.extract_stack())
         
         if not events:
             event = ModuleEvent()
@@ -119,6 +123,7 @@ def check_passive_hosts_task(request, module_key):
     except urlfetch.ResponseTooLargeError, e:
         logging.critical("urlfetch.ResponseTooLargeError %s" % module.name)
         logging.critical(e)
+        logging.critical(traceback.extract_stack())
         
         if not events:
             event = ModuleEvent()
@@ -130,6 +135,7 @@ def check_passive_hosts_task(request, module_key):
     except urlfetch.Error, e:
         logging.critical("urlfetch.Error %s" % module.name)
         logging.critical(e)
+        logging.critical(traceback.extract_stack())
         
         if not events:
             event = ModuleEvent()
@@ -141,6 +147,7 @@ def check_passive_hosts_task(request, module_key):
     except Exception, e:
         logging.critical("Error while executing check for %s" % module.name)
         logging.critical(e)
+        logging.critical(traceback.extract_stack())
     
     memcache.delete(CHECK_HOST_KEY % module.id)
     return HttpResponse("OK")

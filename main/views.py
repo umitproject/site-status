@@ -8,14 +8,23 @@ from django.shortcuts import render, render_to_response
 from django.http import HttpResponse, Http404
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.utils import simplejson as json
 
 from main.models import *
 
 
-def home(request):
+def home(request, msg=None):
     modules = Module.objects.all()
+    aggregation = AggregatedStatus.objects.all()[0]
+    
+    current_availability = aggregation.availability
+    
+    incidents_data = json.dumps(aggregation.incidents_data)
+    uptime_data = json.dumps(aggregation.uptime_data)
     
     context = locals()
+    if msg is not None:
+        context['msg'] = msg
     return render(request, 'home.html', context)
 
 def subscribe(request):
@@ -28,12 +37,12 @@ def _create_fake_events(module, range_days):
     time = today - datetime.timedelta(days=range_days)
     events = []
     for i in xrange(range_days):
-        for j in xrange(random.randrange(1, 10, 1)):
+        for j in xrange(random.randrange(1, 24, 1)):
             event = ModuleEvent()
             event.status = random.choice(STATUS)[0]
             event.module = module
             event.down_at = time
-            event.back_at = time + datetime.timedelta(minutes=random.randrange(1, 120, 2))
+            event.back_at = time + datetime.timedelta(minutes=random.randrange(1, 60, 2))
             event.save()
             
             events.append(event)
@@ -41,7 +50,7 @@ def _create_fake_events(module, range_days):
         time = time + datetime.timedelta(days=1)
 
 def _create_fake_module(name, description, module_type, host, url):
-    range_days = 10
+    range_days = 7
     
     mod = Module()
     mod.name = name
@@ -110,8 +119,33 @@ def test_populate(request):
             twitter_account.monitor_stream = True
             twitter_account.monitor_stream_terms = ''
         
-        context = locals()
-        context['msg'] = 'Test Populate OK'
-        return render(request, 'home.html', context)
+        return home(request, 'Test Populate OK')
     
     raise Http404
+
+def test_events_and_aggregations(request):
+    modules = Module.objects.all()
+    logging.critical('Creating fake events... %s' % modules)
+    for module in modules:
+        logging.critical('Creating fake events for %s' % module)
+        _create_fake_events(module, 7)
+    
+    return home(request, 'Test Events and Aggregations OK')
+
+def clean_cache(request):
+    msg = ''
+    if memcache.flush_all():
+        msg = 'Flush cache OK'
+    else:
+        msg = 'Flush cache FAILED'
+    return home(request, msg)
+
+def hard_reset(request):
+    [m.delete() for m in Module.objects.all()]
+    [e.delete() for e in ModuleEvent.objects.all()]
+    [d.delete() for d in DailyModuleStatus.objects.all()]
+    
+    memcache.flush_all()
+    
+    return home(request, 'Flush cache FAILED') 
+    

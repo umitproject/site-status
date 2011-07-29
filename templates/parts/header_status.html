@@ -1,0 +1,84 @@
+{% if SHOW_INCIDENTS or SHOW_UPTIME %}
+	<script type="text/javascript" src="https://www.google.com/jsapi"></script>
+	<script type="text/javascript">
+	  google.load("visualization", "1", {packages:["corechart"]});
+	  
+	  {% if SHOW_INCIDENTS %}
+		  function drawIncidentsChart() {
+		    var data = new google.visualization.DataTable();
+		    data.addColumn('string', 'Day');
+		    data.addColumn('number', 'Incidents');
+		    data.addRows({{ incidents_data|safe }});
+		
+		    var chart = new google.visualization.AreaChart(document.getElementById('incidents_chart'));
+		    chart.draw(data, {width: 175, height: 70,
+		                      hAxis: {textPosition: 'none'},
+		                      vAxis: {textPosition: 'none',
+		                      		  gridlineColor:'none'},
+		                      chartArea: {width: '90%',
+		                      			  height: '70%'},
+		                      colors: ['red'],
+		                      legend: 'none',
+		                      axisTitlesPosition: 'none',
+		                     });
+		  }
+		  google.setOnLoadCallback(drawIncidentsChart);
+	  {% endif %}
+	  
+	  {% if SHOW_UPTIME %}
+		  function drawUptimeChart() {
+		    var data = new google.visualization.DataTable();
+		    data.addColumn('string', 'Day');
+		    data.addColumn('number', 'Uptime');
+		    data.addRows({{ uptime_data|safe }});
+		
+		    var chart = new google.visualization.AreaChart(document.getElementById('uptime_chart'));
+		    chart.draw(data, {width: 175, height: 70,
+		                      hAxis: {textPosition: 'none'},
+		                      vAxis: {textPosition: 'none',
+		                      		  gridlineColor:'none'},
+		                      chartArea: {width: '90%',
+		                      			  height: '70%'},
+		                      colors: ['blue'],
+		                      legend: 'none',
+		                      axisTitlesPosition: 'none',
+		                     });
+		  }
+		  google.setOnLoadCallback(drawUptimeChart);
+	  {% endif %}
+	</script>
+{% endif %}
+
+<div id="video">
+	<div id="video_content">
+			<div id='current_availability'>
+				<span id='current_availability_title'>Availability</span>
+				<span id='current_availability_value'>{{ current_availability }}</span>
+			</div>
+			
+			{% if SHOW_INCIDENTS %}
+				<div id='incidents'>
+					<span id='incidents_title'>Incidents</span>
+					<div id='incidents_chart'></div>
+				</div>
+			{% endif %}
+			
+			{% if SHOW_UPTIME %}
+				<div id='uptime'>
+					<span id='uptime_title'>Uptime</span>
+					<div id='uptime_chart'></div>
+				</div>
+			{% endif %}
+			
+			{% if SHOW_LAST_INCIDENT %}
+				<div id='last_incident'>
+					<span id='last_incident_title'>Last Incident</span>
+					<span id='last_incident_value'>{{ last_incident }}</span>
+				</div>
+			{% endif %}
+			
+			{% if msg %}
+				<p class="msg">{{ msg }}</p>
+			{% endif %}
+	</div>
+</div>
