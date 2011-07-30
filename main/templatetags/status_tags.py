@@ -20,6 +20,8 @@ def last_days_header(days):
     
     if len(header) > 0:
         header[-1] = "<td>Today</td>"
+    else:
+        header.append("<td>Today</td>")
     header.append("<td>Now</td>")
     return "\n".join(header)
 last_days_header.is_safe = True

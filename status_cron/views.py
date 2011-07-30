@@ -71,18 +71,21 @@ def check_passive_hosts_task(request, module_key):
             logging.warning('Spent %s seconds checking %s' % (total_time.seconds, module.name))
         
         if status_code == 200:
-            
             # This case is for when a module's status is set by hand and no event is created.
             if module.status != 'on-line' and not events:
-                module.status = 'on-line'
-                module.save()
+                event = ModuleEvent()
+                event.down_at = start
+                event.back_at = start
+                event.status = "unknown"
+                event.module = module
+                event.save()
             
             now = datetime.datetime.now() 
             for event in events:
                 event.back_at = now
                 event.save()
                 logging.critical("Site is back online %s" % module.name)
-            
+    
     except urllib2.HTTPError, e:
         logging.critical("urlfetch.HTTPError %s" % module.name)
         logging.critical(e)
@@ -96,7 +99,7 @@ def check_passive_hosts_task(request, module_key):
             event.module = module
             event.details = str(e)
             event.save()
-            
+    
     except urllib2.URLError, e:
         logging.critical("Events: %s" % events)
         if not events:

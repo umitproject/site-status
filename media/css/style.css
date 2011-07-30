@@ -22,6 +22,14 @@ h1, h2, h3, h4 {
 	font-weight: 100;
 }
 
+div#logo h1 {
+	color: white;
+}
+
+div#logo h4 {
+	color: white;
+}
+
 #body {
 	margin: 0;
 	padding: 0;
@@ -131,7 +139,7 @@ h4 {
 	border-bottom: 1px solid white;
 }
 
-#video_content {
+#status_header {
 	width: 900px;
 	margin: 0 auto;
 }
@@ -400,4 +408,46 @@ a.bottom_link:active {
 	-moz-box-shadow: 0 0 6px #888888;
 	-webkit-box-shadow: 0 0 6px #888888;
 	background-color:white;
+}
+
+div.status_header_block {
+	padding: 10px;
+	max-width: 180px;
+	max-height: 85px;
+	min-width: 180px;
+	min-height: 85px;
+	margin-right: 12px;
+	display: block;
+	float: left;
+}
+p.msg {
+	clear:both;
+	float:left;
+	font-family: Arial, sans-serif;
+	font-size: 16px;
+	font-weight: 400;
+	color: red;
+	margin-top: 6px;
+	width: 100%;
+	padding: 2px;
+	padding-left: 10px;
+}
+
+.status_header_title {
+	font-family: Arial, sans-serif;
+	font-size: 18px;
+	font-weight: 200;
+	color: black;
+	clear: both;
+	float: left;
+	margin-bottom: 6px;
+}
+
+.current_availability_value {
+	font-family: Arial, sans-serif;
+	font-size: 18px;
+	font-weight: 200;
+	color: rgb(0, 50, 115);
+	clear: both;
+	float: left;
 }

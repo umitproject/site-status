@@ -50,30 +50,30 @@
 {% endif %}
 
 <div id="video">
-	<div id="video_content">
-			<div id='current_availability'>
-				<span id='current_availability_title'>Availability</span>
-				<span id='current_availability_value'>{{ current_availability }}</span>
+	<div id="status_header">
+			<div class='status_header_block'>
+				<p class='status_header_title'>Availability</p>
+				<p class='current_availability_value'>{{ current_availability }}</p>
 			</div>
 			
+			{% if SHOW_LAST_INCIDENT %}
+				<div class='status_header_block'>
+					<p class='status_header_title'>Last Incident</span>
+					<span id='last_incident_value'>{{ last_incident }}</span>
+				</div>
+			{% endif %}
+			
 			{% if SHOW_INCIDENTS %}
-				<div id='incidents'>
-					<span id='incidents_title'>Incidents</span>
+				<div class='status_header_block'>
+					<p class='status_header_title'>Incidents</span>
 					<div id='incidents_chart'></div>
 				</div>
 			{% endif %}
 			
 			{% if SHOW_UPTIME %}
-				<div id='uptime'>
-					<span id='uptime_title'>Uptime</span>
+				<div class='status_header_block'>
+					<p class='status_header_title'>Uptime</span>
 					<div id='uptime_chart'></div>
-				</div>
-			{% endif %}
-			
-			{% if SHOW_LAST_INCIDENT %}
-				<div id='last_incident'>
-					<span id='last_incident_title'>Last Incident</span>
-					<span id='last_incident_value'>{{ last_incident }}</span>
 				</div>
 			{% endif %}
 			

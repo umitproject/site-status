@@ -4,7 +4,7 @@ import datetime
 import logging
 
 from django.db import models
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, pre_save
 
 from main.memcache import memcache
 
@@ -198,18 +198,55 @@ class DailyModuleStatus(models.Model):
     def percentage_downtime(self):
         return 100.0 - self.percentage_uptime
     
+    def add_status(self, status):
+        logging.critical('>>> Add Status: %s to module %s' % (status, self.module.name))
+        if status is None:
+            status ='unknown'
+        
+        self.status = status
+        statuses = self.statuses.split(',')
+        statuses.append(status)
+        self.statuses = ','.join(statuses)
+        
+        return self.statuses
+    
+    def add_event(self, event):
+        event = str(event)
+        if event is None:
+            return
+        
+        events = self.events.strip()
+        events = events.split(',')
+        if '' in events:
+            events.remove('')
+        
+        if event not in events:
+            events.append(event)
+        self.events = ','.join(events)
+        
+        return self.events
+    
+    @property
+    def unique_statuses(self):
+        statuses = []
+        [statuses.append(s) for s in self.statuses.split(',') if s not in statuses]
+        return statuses
+        
     @property
     def list_statuses(self):
-        statuses = []
-        [statuses.append([s, "img/%s.gif" % s]) for s in self.statuses.split(',') if [s, "img/%s.gif" % s] not in statuses]
-        return statuses
+        return [[s, "img/%s.gif" % s] for s in self.unique_statuses]
+    
+    def save(self, *args, **kwargs):
+        super(DailyModuleStatus, self).save(*args, **kwargs)
+        
+        # Revoke cached instances
+        memcache.delete(MODULE_DAY_STATUS_KEY % (self.created_at.month, self.created_at.day, self.module.id))
     
     def __unicode__(self):
         return '%s (%s) had a total downtime %.2d on %s' % (self.module.name,
-                                                          self.status,
-                                                          self.total_downtime,
-                                                          self.created_at)
-
+                                                            self.status,
+                                                            self.total_downtime,
+                                                            self.created_at)
 class ModuleEvent(models.Model):
     down_at = models.DateTimeField()
     back_at = models.DateTimeField(blank=True, null=True)
@@ -237,34 +274,25 @@ class ModuleEvent(models.Model):
                                            self.down_at.hour,
                                            self.down_at.minute)
 
-#####################
+######################
 # ModuleEvent signals
 def module_event_post_save(sender, instance, created, **kwargs):
+    day_status = instance.module.get_day_status(instance.down_at)
+    day_status.add_event(instance.id)
+    
     if created:
         instance.module.status = instance.status
+        day_status.add_status(instance.status)
     
     if instance.back_at:
         instance.module.status = 'on-line'
-        
-        day_status = instance.module.get_day_status(instance.down_at)
-        logging.critical('Day status after saving event: %s' % day_status)
-        day_status.statuses = "%s,%s" % (day_status.statuses,
-                                         instance.module.status)
-        
-        if instance.module.status:
-            day_status.status = instance.module.status
-        else:
-            day_status.status = 'unknown'
-        
-        day_status.events = "%s,%s" % (day_status.events,
-                                       instance.id)
-        day_status.statuses = "%s,%s" % (day_status.statuses,
-                                         instance.status)
+        day_status.add_status(instance.module.status)
         
         day_status.total_downtime += instance.total_downtime
-        
-        day_status.save()
     
+    logging.critical('>>> Save daily status for module %s' % instance.module.name)
+    logging.critical('>>> Statuses for %s - %s' % (instance.module.name, day_status.statuses))
+    day_status.save()
     instance.module.save()
 
 post_save.connect(module_event_post_save, sender=ModuleEvent)
@@ -316,8 +344,8 @@ class Module(models.Model):
     
     @property
     def last_7_days(self):
-        return DailyModuleStatus.objects.filter(module=self).\
-                                        order_by('created_at')[:7]
+        day = datetime.datetime.now()
+        return [self.get_day_status(day - datetime.timedelta(days=d)) for d in xrange(6, -1, -1)]
     
     @property
     def today_status(self):

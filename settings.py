@@ -21,12 +21,16 @@ GOOGLE_ANALYTICS_ID = ''
 ENVIRONMENT = os.environ.get('SERVER_SOFTWARE', '')
 GAE = True
 PRODUCTION = True
+TEST = False
 
 if ENVIRONMENT == '':
     # TODO: Figure how to check if running on prod in other environments
     GAE = False
 elif ENVIRONMENT.startswith('Development'):
     PRODUCTION = False
+elif ENVIRONMENT.startswith('GAETest'):
+    TEST = True
+
 
 #####################
 # CURRENT STATUS BAR
