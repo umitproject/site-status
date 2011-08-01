@@ -443,7 +443,7 @@ p.msg {
 	margin-bottom: 6px;
 }
 
-.current_availability_value {
+.status_header_value {
 	font-family: Arial, sans-serif;
 	font-size: 18px;
 	font-weight: 200;

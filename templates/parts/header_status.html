@@ -53,13 +53,13 @@
 	<div id="status_header">
 			<div class='status_header_block'>
 				<p class='status_header_title'>Availability</p>
-				<p class='current_availability_value'>{{ current_availability }}</p>
+				<p class='status_header_value'>{{ current_availability }} %</p>
 			</div>
 			
 			{% if SHOW_LAST_INCIDENT %}
 				<div class='status_header_block'>
-					<p class='status_header_title'>Last Incident</span>
-					<span id='last_incident_value'>{{ last_incident }}</span>
+					<p class='status_header_title'>Last Incident</p>
+					<p class='status_header_value'>{{ last_incident.verbose_html|safe }}</p>
 				</div>
 			{% endif %}
 			

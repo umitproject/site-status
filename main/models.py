@@ -5,8 +5,10 @@ import logging
 
 from django.db import models
 from django.db.models.signals import post_save, pre_save
+from django.template.loader import render_to_string
 
 from main.memcache import memcache
+from main.utils import pretty_date
 
 ############
 # CONSTANTS
@@ -36,6 +38,18 @@ MODULE_TYPES = (
 MODULE_TODAY_STATUS_KEY = 'module_today_status_%s'
 MODULE_DAY_STATUS_KEY = 'module_day_status_%s_%s__%s'
 
+
+###################
+# Helper Functions
+
+def status_img(status):
+    return 'img/%s.gif' % status
+
+def verbose_status(status):
+    return dict(STATUS)[status]
+
+def timedelta_seconds(delta):
+    return (delta.days * 24 * 60 * 60) + delta.seconds + (delta.microseconds/1000000)
 
 class Subscribers(models.Model):
     '''Full list of all users who ever registered asking to be notified.
@@ -88,19 +102,16 @@ class AggregatedStatus(models.Model):
     @property
     def total_uptime(self):
         now = datetime.datetime.now()
-        return ((now - self.created_at).seconds / 60) - self.total_downtime
+        uptime = (timedelta_seconds(now - self.created_at) / 60.0) - self.total_downtime
+        return uptime if uptime > self.total_downtime else 0.0
     
     @property
     def percentage_uptime(self):
-        return (self.total_uptime / 100) * self.total_downtime
+        return 100.0 - self.percentage_downtime
     
     @property
     def percentage_downtime(self):
-        return 100.0 - self.percentage_uptime
-    
-    @property
-    def availability(self):
-        return self.percentage_uptime
+        return ((self.total_downtime * 100.0) / self.total_uptime) if self.total_uptime > 0 else 100.0
 
     @property
     def incidents_data(self):
@@ -108,7 +119,6 @@ class AggregatedStatus(models.Model):
         
         incidents = []
         for d in xrange(6, -1, -1):
-            logging.critical('>>> %s' % d)
             incident = []
             day = today - datetime.timedelta(days=d)
             
@@ -129,10 +139,7 @@ class AggregatedStatus(models.Model):
                 incident = [key, 0]
             
             incidents.append(incident)
-            
-        from pprint import pformat
-        logging.critical(">>> INCIDENTS - %s" % pformat(incidents))
-        
+                    
         return incidents
 
     @property
@@ -162,11 +169,16 @@ class AggregatedStatus(models.Model):
                 uptime = [key, 24*60*num_modules]
             
             uptimes.append(uptime)
-            
-        from pprint import pformat
-        logging.critical(">>> UPTIMES - %s" % pformat(uptimes))
         
         return uptimes
+    
+    @property
+    def last_incident(self):
+        last_incident = ModuleEvent.objects.all().order_by('-down_at')[:1]
+        if last_incident:
+            last_incident = last_incident[0]
+        
+        return last_incident
     
     def __unicode__(self):
         return 'Uptime: %s - Downtime: %s - Availability: %s%% - Status %s' % \
@@ -187,7 +199,6 @@ class DailyModuleStatus(models.Model):
     
     @property
     def total_uptime(self):
-        logging.critical(">>> Total uptime: 24*60 - %s = %s" % (self.total_downtime, (24*60) - self.total_downtime))
         return (24*60) - self.total_downtime
     
     @property
@@ -199,7 +210,6 @@ class DailyModuleStatus(models.Model):
         return 100.0 - self.percentage_uptime
     
     def add_status(self, status):
-        logging.critical('>>> Add Status: %s to module %s' % (status, self.module.name))
         if status is None:
             status ='unknown'
         
@@ -234,7 +244,7 @@ class DailyModuleStatus(models.Model):
         
     @property
     def list_statuses(self):
-        return [[s, "img/%s.gif" % s] for s in self.unique_statuses]
+        return [[s, status_img(s)] for s in self.unique_statuses]
     
     def save(self, *args, **kwargs):
         super(DailyModuleStatus, self).save(*args, **kwargs)
@@ -259,9 +269,27 @@ class ModuleEvent(models.Model):
         '''Returns total downtime in seconds
         '''
         if self.back_at:
-            return float((self.back_at - self.down_at).seconds / 60.0)
+            return float(timedelta_seconds(self.back_at - self.down_at) / 60.0)
         else:
-            return float((datetime.datetime.now() - self.down_at).seconds / 60.0)
+            return float(timedelta_seconds(datetime.datetime.now() - self.down_at) / 60.0)
+    
+    @property
+    def status_img(self):
+        return status_img(self.status)
+    
+    @property
+    def verbose_html(self):
+        context = dict(status=self.status,
+                       event=self,
+                       module=self.module,
+                       verbose_status=verbose_status(self.status),
+                       verbose_time=pretty_date(self.down_at))
+        logging.critical('>>> Verbose HTML: %s' % str(context))
+        return render_to_string('parts/last_incident.html', context) 
+    
+    @property
+    def verbose(self):
+        return ''
     
     def __unicode__(self):
         if self.back_at:
@@ -289,9 +317,11 @@ def module_event_post_save(sender, instance, created, **kwargs):
         day_status.add_status(instance.module.status)
         
         day_status.total_downtime += instance.total_downtime
+        
+        aggregation = AggregatedStatus.objects.all()[0]
+        aggregation.total_downtime += instance.total_downtime
+        aggregation.save()
     
-    logging.critical('>>> Save daily status for module %s' % instance.module.name)
-    logging.critical('>>> Statuses for %s - %s' % (instance.module.name, day_status.statuses))
     day_status.save()
     instance.module.save()
 
@@ -331,8 +361,8 @@ class Module(models.Model):
     
     @property
     def total_uptime(self):
-        return ((datetime.datetime.now() - \
-                 self.monitoring_since).seconds / 60) - self.total_downtime
+        return (timedelta_seconds(datetime.datetime.now() - \
+                 self.monitoring_since) / 60) - self.total_downtime
     
     @property
     def percentage_uptime(self):

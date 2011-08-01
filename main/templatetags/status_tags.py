@@ -5,6 +5,7 @@ import datetime
 from django import template
 
 from main.models import STATUS, Module
+from main.utils import pretty_date
 
 register = template.Library()
 
@@ -30,3 +31,8 @@ last_days_header.is_safe = True
 def verbose_status(status):
     return dict(STATUS)[status]
 verbose_status.is_safe = True
+
+@register.simple_tag
+def pretty_date(date):
+    return pretty_date(date)
+    

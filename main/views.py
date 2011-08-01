@@ -3,6 +3,7 @@
 import random
 import datetime
 import urllib2
+import logging
 
 from django.shortcuts import render, render_to_response
 from django.http import HttpResponse, Http404
@@ -17,8 +18,8 @@ def home(request, msg=None):
     modules = Module.objects.all()
     show_days = Module.show_days()
     aggregation = AggregatedStatus.objects.all()[0]
-    
-    current_availability = aggregation.availability
+    last_incident = aggregation.last_incident
+    current_availability = aggregation.percentage_uptime
     
     incidents_data = json.dumps(aggregation.incidents_data)
     uptime_data = json.dumps(aggregation.uptime_data)
