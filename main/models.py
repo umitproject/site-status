@@ -338,8 +338,13 @@ class Module(models.Model):
     host = models.CharField(max_length=500)
     url = models.CharField(max_length=1000)
     status = models.CharField(max_length=30, choices=STATUS) # current_status
+    tags = models.TextField(default="", blank=True, null=True)
     api_key = models.CharField(max_length=100)
     api_secret = models.CharField(max_length=100)
+    
+    @property
+    def list_tags(self):
+        return [tag.strip() for tag in self.tags.split(',')]
     
     @staticmethod
     def show_days(days=None):

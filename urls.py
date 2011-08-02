@@ -1,6 +1,8 @@
 from django.conf.urls.defaults import *
 from django.contrib import admin
 
+from main.feeds import LastModuleStatuses
+
 admin.autodiscover()
 
 handler500 = 'djangotoolbox.errorviews.server_error'
@@ -9,6 +11,10 @@ urlpatterns = patterns('',
     ('^_ah/warmup$', 'djangoappengine.views.warmup'),
     ('^$', 'main.views.home'),
     ('^subscribe/?$', 'main.views.subscribe'),
+    
+    ########
+    # FEEDS
+    (r'^feeds/(?P<module_id>\d+)/?$', LastModuleStatuses()),
     
     ########
     # TESTS
