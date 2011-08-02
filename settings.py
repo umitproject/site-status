@@ -16,6 +16,7 @@ MAIN_SITE_URL = "http://www.umitproject.org"
 CONTACT_PHONE = "+55 62 6262626262"
 CONTACT_EMAIL = "contact@umitproject.org"
 FEED_SIZE = 5
+SITE_STATUS_URL = "http://localhost:9000"
 
 GOOGLE_ANALYTICS_ID = ''
 

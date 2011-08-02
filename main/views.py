@@ -29,6 +29,13 @@ def home(request, msg=None):
         context['msg'] = msg
     return render(request, 'home.html', context)
 
+def event(request, event_id):
+    # TODO: Must show event details
+    context = locals()
+    context['msg'] = event_id
+    return render(request, 'home.html', context)
+    
+
 def subscribe(request):
     context = locals()
     return render(request, 'subscribe.html', context)

@@ -53,7 +53,7 @@ class LastModuleStatuses(Feed):
                                                                                            down_at=event.down_at.strftime("%c"))
     
     def item_link(self, event):
-        return event.module.url
+        return "%s/event/%s" % (settings.SITE_STATUS_URL, event.id)
     
     def item_author_name(self, event):
         return settings.SITE_NAME
@@ -62,7 +62,7 @@ class LastModuleStatuses(Feed):
         return settings.CONTACT_EMAIL
     
     def item_author_link(self, event):
-        return settings.MAIN_SITE_URL
+        return "%s/event/%s" % (settings.SITE_STATUS_URL, event.id)
     
     def item_pubdate(self, event):
         if event.back_at:

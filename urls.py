@@ -11,6 +11,7 @@ urlpatterns = patterns('',
     ('^_ah/warmup$', 'djangoappengine.views.warmup'),
     ('^$', 'main.views.home'),
     ('^subscribe/?$', 'main.views.subscribe'),
+    ('^event/(?P<event_id>\d+)/?$', 'main.views.event'),
     
     ########
     # FEEDS
