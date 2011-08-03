@@ -7,14 +7,16 @@
 		  function drawIncidentsChart() {
 		    var data = new google.visualization.DataTable();
 		    data.addColumn('string', 'Day');
-		    data.addColumn('number', 'Incidents');
+		    data.addColumn('number', 'Downtime');
 		    data.addRows({{ incidents_data|safe }});
 		
 		    var chart = new google.visualization.AreaChart(document.getElementById('incidents_chart'));
 		    chart.draw(data, {width: 175, height: 70,
 		                      hAxis: {textPosition: 'none'},
 		                      vAxis: {textPosition: 'none',
-		                      		  gridlineColor:'none'},
+		                      		  gridlineColor:'none',
+		                      		  maxValue:101,
+		                      		  minValue:0},
 		                      chartArea: {width: '90%',
 		                      			  height: '70%'},
 		                      colors: ['red'],
@@ -36,7 +38,9 @@
 		    chart.draw(data, {width: 175, height: 70,
 		                      hAxis: {textPosition: 'none'},
 		                      vAxis: {textPosition: 'none',
-		                      		  gridlineColor:'none'},
+		                      		  gridlineColor:'none',
+		                      		  maxValue:101,
+		                      		  minValue:0},
 		                      chartArea: {width: '90%',
 		                      			  height: '70%'},
 		                      colors: ['blue'],

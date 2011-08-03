@@ -83,7 +83,33 @@ class TestSiteStatus(TestCase):
         pass
     
     def test_event_creation_signal(self):
-        pass
+        event = self._create_open_event()
+        
+        # Event is open, so only the first part of it should be completed by now. Let's check:
+        module = event.module
+        day_status = module.get_day_status(event.down_at)
+        aggregation = AggregatedStatus.objects.all()[0]
+        
+        self.assertEqual(module.status, event.status)
+        self.assertEqual(day_status.status, event.status)
+        self.assertEqual(aggregation.status, event.status)
+        
+        event.back_at = datetime.datetime.now()
+        event.save()
+        
+        # Event is now over, so only the last part of the signal should be completed by now. Checking...
+        # PS: Gotta reload data from datastore
+        module = Module.objects.get(pk=module.pk)
+        day_status = DailyModuleStatus.objects.get(pk=day_status.pk)
+        aggregation = AggregatedStatus.objects.all()[0]
+        
+        self.assertEqual(module.status, 'on-line')
+        self.assertEqual(day_status.status, 'on-line')
+        self.assertEqual(aggregation.status, 'on-line')
+        
+        self.assertEqual(aggregation.total_downtime, 60)
+        self.assertEqual(day_status.total_downtime, 60)
+        self.assertEqual(module.total_downtime, 60)
     
     def test_module_methods(self):
         pass
@@ -151,9 +177,9 @@ class TestSiteStatus(TestCase):
         
         for up in aggregation.uptime_data:
             if up[0] == today:
-                self.assertEqual(up[1], (24*60*num_modules) - event.total_downtime)
+                self.assertEqual(up[1], 100.0 - percentage(event.total_downtime, 24*60*num_modules))
             else:
-                self.assertEqual(up[1], 24*60*num_modules)
+                self.assertEqual(up[1], 100)
     
     def test_incidents_graph_accuracy(self):
         event = self._create_60_min_event()
@@ -164,7 +190,7 @@ class TestSiteStatus(TestCase):
         
         for inc in aggregation.incidents_data:
             if inc[0] == today:
-                self.assertEqual(inc[1], event.total_downtime)
+                self.assertEqual(inc[1], percentage(event.total_downtime, 24*60*num_modules))
             else:
                 self.assertEqual(inc[1], 0)
     

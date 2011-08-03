@@ -2,6 +2,7 @@
 
 import datetime
 import logging
+from decimal import *
 
 from django.db import models
 from django.db.models.signals import post_save, pre_save
@@ -50,6 +51,10 @@ def verbose_status(status):
 
 def timedelta_seconds(delta):
     return (delta.days * 24 * 60 * 60) + delta.seconds + (delta.microseconds/1000000)
+
+def percentage(value, total):
+    return round((Decimal(value) * Decimal(100)) / Decimal(total), 2)
+
 
 class Subscribers(models.Model):
     '''Full list of all users who ever registered asking to be notified.
@@ -107,15 +112,16 @@ class AggregatedStatus(models.Model):
     
     @property
     def percentage_uptime(self):
-        return 100.0 - self.percentage_downtime
+        return percentage(100, self.percentage_downtime)
     
     @property
     def percentage_downtime(self):
-        return ((self.total_downtime * 100.0) / self.total_uptime) if self.total_uptime > 0 else 100.0
+        return percentage(self.total_downtime * 100.0, self.total_uptime) if self.total_uptime > 0 else 100.0
 
     @property
     def incidents_data(self):
         today = datetime.datetime.now()
+        total_base = Module.objects.count() * 24 * 60 # Total minutes all modules can be offline in a day
         
         incidents = []
         for d in xrange(6, -1, -1):
@@ -135,6 +141,8 @@ class AggregatedStatus(models.Model):
                         incident[1] += d.total_downtime
                     else:
                         incident = [key, d.total_downtime]
+                else:
+                    incident[1] = percentage(incident[1], total_base)
             else:
                 incident = [key, 0]
             
@@ -148,6 +156,7 @@ class AggregatedStatus(models.Model):
     def uptime_data(self):
         today = datetime.datetime.now()
         num_modules = Module.objects.count()
+        total_base = num_modules * 24 * 60
         
         uptimes = []
         for d in xrange(6, -1, -1):
@@ -171,8 +180,9 @@ class AggregatedStatus(models.Model):
                     n -= 1
                 else:
                     uptime[1] += 24*60*n
+                    uptime[1] = percentage(uptime[1], total_base)
             else:
-                uptime = [key, 24*60*num_modules]
+                uptime = [key, 100.0]
             
             uptimes.append(uptime)
         
@@ -209,11 +219,11 @@ class DailyModuleStatus(models.Model):
     
     @property
     def percentage_uptime(self):
-        return (self.total_uptime()/100) * self.total_downtime
+        return percentage(self.total_uptime, 24*60)
     
     @property
     def percentage_downtime(self):
-        return 100.0 - self.percentage_uptime
+        return percentage(self.total_downtime, self.total_uptime)
     
     def add_status(self, status):
         if status is None:
@@ -326,6 +336,7 @@ def module_event_post_save(sender, instance, created, **kwargs):
         day_status.add_status(instance.module.status)
         
         day_status.total_downtime += instance.total_downtime
+        instance.module.total_downtime += instance.total_downtime
         
         aggregation.total_downtime += instance.total_downtime
         
