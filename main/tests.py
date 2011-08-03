@@ -11,12 +11,21 @@ from django.core.urlresolvers import reverse
 from main.models import *
 
 class TestSiteStatus(TestCase):
+    def __init__(self, *args, **kwargs):
+        super(TestSiteStatus, self).__init__(*args, **kwargs)
+    
     def setUp(self):
         # This is necessary to test datastore and memcache
         self.testbed = testbed.Testbed()
         self.testbed.activate()
         self.testbed.init_datastore_v3_stub()
         self.testbed.init_memcache_stub()
+        
+        # Create global aggregation entry.
+        self.aggregation = AggregatedStatus()
+        self.aggregation.created_at = datetime.datetime.now() - datetime.timedelta(days=10)
+        self.aggregation.updated_at = self.aggregation.created_at
+        self.aggregation.save()
         
         self._create_passive_test_modules()
         self._create_active_test_modules()
@@ -77,6 +86,92 @@ class TestSiteStatus(TestCase):
         pass
     
     def test_module_methods(self):
+        pass
+    
+    def _create_60_min_event(self):
+        now = datetime.datetime.now()
+        hour_ago = now - datetime.timedelta(minutes=60)
+        
+        event = ModuleEvent()
+        event.module = self.passive_sane_module
+        event.down_at = hour_ago
+        event.back_at = now
+        event.status = 'service_disruption'
+        event.save()
+        
+        return event
+    
+    def _create_open_event(self):
+        hour_ago = datetime.datetime.now() - datetime.timedelta(minutes=60)
+        
+        event = ModuleEvent()
+        event.module = self.passive_sane_module
+        event.down_at = hour_ago
+        event.status = 'service_disruption'
+        event.save()
+        
+        return event
+        
+    def test_availability_accuracy(self):
+        event = self._create_60_min_event()
+        
+        self.assertEqual(event.total_downtime, 60)
+        
+        aggregation = AggregatedStatus.objects.all()[0]
+        
+        self.assertEqual(aggregation.total_downtime, 60)
+        self.assertEqual(aggregation.total_uptime, 14340)
+        self.assertTrue(aggregation.percentage_uptime > 99)
+        self.assertEqual(aggregation.status, 'on-line')
+    
+    def test_aggregation_status(self):
+        event = self._create_open_event()
+
+        self.assertEqual(event.total_downtime, 60)
+        
+        aggregation = AggregatedStatus.objects.all()[0]
+        self.assertEqual(aggregation.status, 'service_disruption')
+        
+        event.back_at = datetime.datetime.now()
+        event.save()
+        
+        aggregation = AggregatedStatus.objects.all()[0]
+        self.assertEqual(aggregation.status, 'on-line')
+        
+        self.assertEqual(aggregation.total_downtime, 60)
+        self.assertEqual(aggregation.total_uptime, 14340)
+        self.assertTrue(aggregation.percentage_uptime > 99)
+    
+    def test_uptime_graph_accuracy(self):
+        event = self._create_60_min_event()
+        num_modules = Module.objects.count()
+        
+        aggregation = AggregatedStatus.objects.all()[0]
+        today = '%s/%s' % (event.down_at.month, event.down_at.day)
+        
+        for up in aggregation.uptime_data:
+            if up[0] == today:
+                self.assertEqual(up[1], (24*60*num_modules) - event.total_downtime)
+            else:
+                self.assertEqual(up[1], 24*60*num_modules)
+    
+    def test_incidents_graph_accuracy(self):
+        event = self._create_60_min_event()
+        num_modules = Module.objects.count()
+        
+        aggregation = AggregatedStatus.objects.all()[0]
+        today = '%s/%s' % (event.down_at.month, event.down_at.day)
+        
+        for inc in aggregation.incidents_data:
+            if inc[0] == today:
+                self.assertEqual(inc[1], event.total_downtime)
+            else:
+                self.assertEqual(inc[1], 0)
+    
+    def test_feeds(self):
+        pass
+    
+    def test_event_view(self):
         pass
     
     def _test_passive_module(self, module, right_status, right_statuses, right_list_statuses):

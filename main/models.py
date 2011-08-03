@@ -93,8 +93,8 @@ class NotifyOnEvent(models.Model):
 
 
 class AggregatedStatus(models.Model):
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField()
+    updated_at = models.DateTimeField()
     total_downtime = models.FloatField(default=0.0)
     time_estimate_all_modules = models.FloatField(default=0.0)
     status = models.CharField(max_length=30, choices=STATUS, default=STATUS[0][0])
@@ -139,7 +139,9 @@ class AggregatedStatus(models.Model):
                 incident = [key, 0]
             
             incidents.append(incident)
-                    
+        
+        logging.critical("# TODO: Need to fix incidents to show proportion, rather than the minutes off. This will make the graph look less sharp. %s" % incidents)
+                
         return incidents
 
     @property
@@ -160,11 +162,15 @@ class AggregatedStatus(models.Model):
         
             key = '%s/%s' % (day.month, day.day)
             if data:
+                n = num_modules
                 for d in data:
                     if key in uptime:
                         uptime[1] += d.total_uptime
                     else:
                         uptime = [key, d.total_uptime]
+                    n -= 1
+                else:
+                    uptime[1] += 24*60*n
             else:
                 uptime = [key, 24*60*num_modules]
             
@@ -183,7 +189,7 @@ class AggregatedStatus(models.Model):
     def __unicode__(self):
         return 'Uptime: %s - Downtime: %s - Availability: %s%% - Status %s' % \
                         (self.total_uptime, self.total_downtime,
-                         self.availability, self.status)
+                         self.percentage_uptime, self.status)
 
 
 class DailyModuleStatus(models.Model):
@@ -284,7 +290,6 @@ class ModuleEvent(models.Model):
                        module=self.module,
                        verbose_status=verbose_status(self.status),
                        verbose_time=pretty_date(self.down_at))
-        logging.critical('>>> Verbose HTML: %s' % str(context))
         return render_to_string('parts/last_incident.html', context) 
     
     @property
@@ -308,9 +313,13 @@ def module_event_post_save(sender, instance, created, **kwargs):
     day_status = instance.module.get_day_status(instance.down_at)
     day_status.add_event(instance.id)
     
+    aggregation = AggregatedStatus.objects.all()[0]
+    
     if created:
         instance.module.status = instance.status
         day_status.add_status(instance.status)
+        
+        aggregation.status = instance.status
     
     if instance.back_at:
         instance.module.status = 'on-line'
@@ -318,10 +327,16 @@ def module_event_post_save(sender, instance, created, **kwargs):
         
         day_status.total_downtime += instance.total_downtime
         
-        aggregation = AggregatedStatus.objects.all()[0]
         aggregation.total_downtime += instance.total_downtime
-        aggregation.save()
+        
+        # Sync aggregation status
+        open_event = ModuleEvent.objects.filter(back_at=None).order_by('-down_at')[:1]
+        if not open_event:
+            aggregation.status = 'on-line'
+        else:
+            aggregation.status = open_event[0].status
     
+    aggregation.save()
     day_status.save()
     instance.module.save()
 
