@@ -304,7 +304,10 @@ class ModuleEvent(models.Model):
     
     @property
     def verbose(self):
-        return ''
+        return "%(module)s (%(verbose_status)s) - %(verbose_time)s" % \
+                    dict(module=self.module.name,
+                         verbose_status=verbose_status(self.status),
+                         verbose_time=pretty_date(self.down_at))
     
     def __unicode__(self):
         if self.back_at:

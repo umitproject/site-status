@@ -10,6 +10,8 @@ handler500 = 'djangotoolbox.errorviews.server_error'
 urlpatterns = patterns('',
     ('^_ah/warmup$', 'djangoappengine.views.warmup'),
     ('^$', 'main.views.home'),
+    ('^subscribe/event/(?P<event_id>\d+)/?$', 'main.views.subscribe'),
+    ('^subscribe/module/(?P<module_id>\d+)/?$', 'main.views.subscribe'),
     ('^subscribe/?$', 'main.views.subscribe'),
     ('^event/(?P<event_id>\d+)/?$', 'main.views.event'),
     

@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% load media %}
+{% load status_tags %}
+
+{% block title %}{{ event.verbose }} - {{ SITE_NAME }} Status{% endblock %}
+
+{% block extra_head %}{% endblock %}
+
+{% block header_status %}
+{% endblock %}
+	
+{% block first_content %}
+	<div class="box">
+		<div class="text_box">
+			<p class="title">{{ event.verbose }}</p>
+			<div class="description">
+				<p class="event_status">
+				{% if event.back_at %}
+					<b>System have recovered from this event since {{ event.back_at }}</b>
+				{% else %}
+					<b>We're still working to recover from this event. <a href='/subscribe/{{ event.id }}'>Subscribe now</a> to receive a notification as soon as we're back!</b>
+				{% endif %}
+				</p>
+				<p class="event_detail"><b>Module:</b> {% if event.module.url %}<a href="{{ event.module.url }}">{{ event.module.name }}</a>{% else %}{{ event.module.name }}{% endif %}</p>
+				<p class="event_detail"><b>Down at:</b> {{ event.down_at }}</p>
+				{% if event.back_at %}
+					<p class="event_detail"><b>Back at:</b> {{ event.back_at }}</p>
+				{% endif %}
+				{% if event.details %}
+					<p class="event_detail"><b>Details:</b> {{ event.details }}</p>
+				{% endif %}
+				<div class="more"><a href="/">All Status</a></div>
+			</div>
+		</div>
+	</div>
+	{% if scheduled_maintenances or twitter_account %}
+		<img src="{% media_url "img/hr.png" %}" alt="" />
+	{% endif %}
+{% endblock %}
+			
+{% block twitter %}
+	{% if twitter_account %}
+	<div class="box">
+		<div class="text_box">
+			<p class="title">Twitter</p>
+				<script src="http://widgets.twimg.com/j/2/widget.js"></script>
+				<script>
+				new TWTR.Widget({
+				  version: 2,
+				  type: 'profile',
+				  rpp: 4,
+				  interval: 6000,
+				  width: 880,
+				  height: 500,
+				  theme: {
+				    shell: {
+				      background: '#333333',
+				      color: '#ffffff'
+				    },
+				    tweets: {
+				      background: '#000000',
+				      color: '#ffffff',
+				      links: '#4aed05'
+				    }
+				  },
+				  features: {
+				    scrollbar: false,
+				    loop: false,
+				    live: false,
+				    hashtags: true,
+				    timestamp: true,
+				    avatars: false,
+				    behavior: 'all'
+				  }
+				}).render().setUser('{{ twitter_account.login }}').start();
+				</script>
+			<div class="more"><a href="" ></a></div>
+		</div>
+	</div>
+		{% if scheduled_maintenances %}
+			<img src="{% media_url "img/hr.png" %}" alt="" />
+		{% endif %}
+	{% endif %}
+{% endblock %}
+			
+{% block scheduled_maintenances %}
+	{% if scheduled_maintenances %}
+		<br />
+		<br />
+		<div class="big_round_box">
+			<p class="title">Scheduled Maintenances</p>
+			<p class="description">{{ scheduled_maintenances }}</p>
+		</div>
+	{% endif %}
+{% endblock %}

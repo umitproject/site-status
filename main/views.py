@@ -5,7 +5,7 @@ import datetime
 import urllib2
 import logging
 
-from django.shortcuts import render, render_to_response
+from django.shortcuts import render, render_to_response, get_object_or_404
 from django.http import HttpResponse, Http404
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -31,12 +31,44 @@ def home(request, msg=None):
 
 def event(request, event_id):
     # TODO: Must show event details
+    event = get_object_or_404(ModuleEvent, pk=event_id)
+    scheduled_maintenances = ScheduledMaintenance.objects.filter(module=event.module)
+    
     context = locals()
-    context['msg'] = event_id
-    return render(request, 'home.html', context)
+    return render(request, 'event.html', context)
     
 
-def subscribe(request):
+def subscribe(request, event_id=None, module_id=None):
+    """Possible behaviors:
+    
+    1 - If no id is provided
+      - We show the full form, and let user decide whether he want to remain
+        subscribed to receive whatever status for this system or receive a
+        one time notification once this system have recovered from current
+        disruption.
+    2 - If event_id is provided
+      - We show the full form, and let user decide whether he want to remain
+        subscribed to receive whatever status for this event or receive a
+        one time notification once this event have recovered from current
+        disruption. If event is recovered, let user subscribe to the module
+        instead and don't show one-time option.
+    3 - If module_id is provided
+      - We show the full form, and let user decide whether he want to remain
+        subscribed to receive whatever status for this module or receive a
+        one time notification once this module have recovered from current
+        disruption. If module is online, let user subscribe to the module
+        instead and don't show one-time option.
+    """
+    system = False
+    module = False
+    event = False
+    one_time = False
+    
+    if (event_id is None) and (module_id is None):
+        system = True
+    elif (event_id is not None) and (module_id is None):
+        pass
+    
     context = locals()
     return render(request, 'subscribe.html', context)
 
