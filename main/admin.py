@@ -1,8 +1,7 @@
 from django.contrib import admin
 from main.models import *
 
-admin.site.register(Subscribers)
-admin.site.register(AlwaysNotifyOnEvent)
+admin.site.register(Subscriber)
 admin.site.register(NotifyOnEvent)
 admin.site.register(AggregatedStatus)
 admin.site.register(DailyModuleStatus)

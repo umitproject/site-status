@@ -11,6 +11,7 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.utils import simplejson as json
 
+from main.decorators import staff_member_required
 from main.models import *
 from main.forms import *
 
@@ -89,6 +90,31 @@ def subscribe(request, event_id=None, module_id=None):
         else:
             form = SubscribeForm()
     
+    if form.is_valid():
+        # Now, we need to check if user opted for one_time or not
+        one_time = form.cleaned_data.get('one_time', False)
+        email = form.cleaned_data['email']
+        
+        subscriber = Subscriber.objects.filter(email=email)
+        if not subscriber:
+            subscriber = Subscriber()
+            subscriber.created_at = datetime.datetime.now()
+            subscriber.last_access = subscriber.created_at
+            subscriber.email = email
+            subscriber.subscribed = True
+            subscriber.save()
+        else:
+            subscriber = subscriber[0]
+            subscriber.last_access = datetime.datetime.now()
+            subscriber.save()
+        
+        if module:
+            saved = subscriber.subscribe(one_time, request.META['REMOTE_ADDR'], module_id=module.id)
+        if event:
+            saved = subscriber.subscribe(one_time, request.META['REMOTE_ADDR'], event_id=event.id) or saved
+        if not module and not event:
+            saved = subscriber.subscribe(one_time, request.META['REMOTE_ADDR']) or saved
+    
     context = locals()
     return render(request, 'subscribe.html', context)
 
@@ -122,8 +148,8 @@ def _create_fake_module(name, description, module_type, host, url):
     mod.save()
     
     _create_fake_events(mod, range_days)
-    
-    
+
+@staff_member_required
 def test_populate(request):
     if settings.DEBUG:
         if not Module.objects.filter(name="Umit Project"):
@@ -184,15 +210,15 @@ def test_populate(request):
     
     raise Http404
 
+@staff_member_required
 def test_events_and_aggregations(request):
     modules = Module.objects.all()
-    logging.critical('Creating fake events... %s' % modules)
     for module in modules:
-        logging.critical('Creating fake events for %s' % module)
         _create_fake_events(module, 7)
     
     return home(request, 'Test Events and Aggregations OK')
 
+@staff_member_required
 def clean_cache(request):
     msg = ''
     if memcache.flush_all():
@@ -201,6 +227,7 @@ def clean_cache(request):
         msg = 'Flush cache FAILED'
     return home(request, msg)
 
+@staff_member_required
 def hard_reset(request):
     [m.delete() for m in Module.objects.all()]
     [e.delete() for e in ModuleEvent.objects.all()]

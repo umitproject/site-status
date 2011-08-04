@@ -15,12 +15,13 @@ from google.appengine.api import urlfetch
 
 from main.models import *
 from main.memcache import memcache
+from main.decorators import staff_member_required
 
 ################
 # Memcache Keys
 CHECK_HOST_KEY = 'check_passive_host_%s'
 
-
+@staff_member_required
 def check_passive_hosts(request):
     modules = Module.objects.filter(module_type='passive')
     
@@ -47,6 +48,30 @@ def check_passive_hosts(request):
     
     return HttpResponse("OK")
 
+@staff_member_required
+def check_notifications(request):
+    """This method calls out the tasks to create notification queues.
+    Since it is a cron called view, there is a timeout, so we might want to
+    make sure we never get more notifications than we can handle within that
+    timeframe.
+    """
+    notifications = Notification.objects.filter(sent_at=None)
+    for notification in notifications:
+        # Create the notification queue
+        pass
+
+@staff_member_required
+def create_notification_queue(request, one_time, notification_queue_id):
+    """This task will actually send out the notifications.
+    """
+    pass
+
+@staff_member_required
+def check_notifications_task(request, one_time, notification_queue_id):
+    """This task will actually send out the notifications.
+    """
+    pass
+
 def _get_status_code(module):
     if settings.GAE:
         result = urlfetch.fetch(module.url)
@@ -54,7 +79,7 @@ def _get_status_code(module):
     result = urllib2.urlopen(module.url)
     return result.getcode()
         
-
+@staff_member_required
 def check_passive_hosts_task(request, module_key):
     module = Module.objects.get(id=module_key)
     events = ModuleEvent.objects.filter(module=module).filter(back_at=None)
@@ -84,7 +109,7 @@ def check_passive_hosts_task(request, module_key):
             for event in events:
                 event.back_at = now
                 event.save()
-                logging.critical("Site is back online %s" % module.name)
+                logging.info("Site is back online %s" % module.name)
     
     except urllib2.HTTPError, e:
         logging.critical("urlfetch.HTTPError %s" % module.name)
@@ -183,6 +208,7 @@ def check_passive_hosts_task(request, module_key):
     memcache.delete(CHECK_HOST_KEY % module.id)
     return HttpResponse("OK")
 
+@staff_member_required
 def aggregate_daily_status(request):
     for module in Module.objects.all():
         module.today_status

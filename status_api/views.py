@@ -4,7 +4,9 @@ import urllib2
 from django.http import HttpResponse, Http404
 
 from main.models import *
+from main.decorators import login_required
 
+@login_required
 def save_active_host_status(request):
     status = request.POST['module_status']
     api = request.POST['module_api']

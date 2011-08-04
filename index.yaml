@@ -26,6 +26,11 @@ indexes:
   - name: __key__
     direction: desc
 
+- kind: main_alwaysnotifyonevent
+  properties:
+  - name: __key__
+    direction: desc
+
 - kind: main_dailymodulestatus
   properties:
   - name: __key__
@@ -42,6 +47,16 @@ indexes:
     direction: desc
 
 - kind: main_moduleevent
+  properties:
+  - name: __key__
+    direction: desc
+
+- kind: main_notifyonevent
+  properties:
+  - name: __key__
+    direction: desc
+
+- kind: main_subscriber
   properties:
   - name: __key__
     direction: desc

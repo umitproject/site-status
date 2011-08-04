@@ -1,5 +1,6 @@
-
+import re
 import unittest
+
 from google.appengine.api import memcache
 from google.appengine.ext import db
 from google.appengine.ext import testbed
@@ -7,6 +8,7 @@ from google.appengine.ext import testbed
 from django.test import TestCase
 from django.test.client import Client
 from django.core.urlresolvers import reverse
+from django.contrib.auth.models import User
 
 from main.models import *
 
@@ -29,12 +31,24 @@ class TestSiteStatus(TestCase):
         
         self._create_passive_test_modules()
         self._create_active_test_modules()
+        self._create_admin()
     
     def tearDown(self):
         self.testbed.deactivate()
+        
+    def _create_admin(self):
+        user = User.objects.create_user('admin', 'whatever@whatever.wha', 'test')
+        user.is_staff = True
+        user.is_superuser = True
+        user.save()
+    
+    def _login_as_admin(self):
+        self.client.login(username='admin', password='test')
     
     def _create_passive_test_modules(self):
         self.passive_sane_module = Module()
+        self.passive_sane_module.monitoring_since = datetime.datetime.now()
+        self.passive_sane_module.updated_at = datetime.datetime.now()
         self.passive_sane_module.name = 'Umit Project'
         self.passive_sane_module.description = 'This is the sane module being tested.'
         self.passive_sane_module.module_type = 'passive'
@@ -46,6 +60,8 @@ class TestSiteStatus(TestCase):
         self.passive_sane_module.save()
         
         self.passive_insane_module = Module()
+        self.passive_insane_module.monitoring_since = datetime.datetime.now()
+        self.passive_insane_module.updated_at = datetime.datetime.now()
         self.passive_insane_module.name = 'Freako'
         self.passive_insane_module.description = 'This is the insane module being tested.'
         self.passive_insane_module.module_type = 'passive'
@@ -58,6 +74,8 @@ class TestSiteStatus(TestCase):
     
     def _create_active_test_modules(self):
         self.active_sane_module = Module()
+        self.active_sane_module.monitoring_since = datetime.datetime.now()
+        self.active_sane_module.updated_at = datetime.datetime.now()
         self.active_sane_module.name = 'Umit Project'
         self.active_sane_module.description = 'This is the sane module being tested.'
         self.active_sane_module.module_type = 'active'
@@ -69,6 +87,8 @@ class TestSiteStatus(TestCase):
         self.active_sane_module.save()
         
         self.active_insane_module = Module()
+        self.active_insane_module.monitoring_since = datetime.datetime.now()
+        self.active_insane_module.updated_at = datetime.datetime.now()
         self.active_insane_module.name = 'Freako'
         self.active_insane_module.description = 'This is the insane module being tested.'
         self.active_insane_module.module_type = 'active'
@@ -80,6 +100,55 @@ class TestSiteStatus(TestCase):
         self.active_insane_module.save()
     
     def test_daily_module_status_automatic_creation(self):
+        pass
+    
+    def test_system_subscribe(self):
+        email = 'test@umitproject.org'
+        
+        # Test always notify behavior
+        response = self.client.post(reverse('system_subscribe'), {'email':email})
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(re.findall('.*?(successfuly subscribed).*?', response.content))
+        
+        # Checking if exists and if it isn't duplicated
+        subscriber = Subscriber.objects.get(email=email)
+        
+        self.assertTrue(AlwaysNotifyOnEvent.objects.filter(email=email, module=None))
+        
+        # Test one time notify behavior
+        event = self._create_open_event()
+        response = self.client.post(reverse('system_subscribe'), {'email':email, 'one_time':True})
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(re.findall('.*?(successfuly subscribed).*?', response.content))
+        
+        # Checking if exists and if it isn't duplicated
+        subscriber = Subscriber.objects.get(email=email)
+        
+        notification = NotifyOnEvent.objects.filter(email=email, module=None, event=None, notified=False)
+        self.assertTrue(notification)
+        notification = notification[0]
+        
+        # Now, test that once the system is back user is notified
+        event.back_at = datetime.datetime.now()
+        event.save()
+        
+        self._login_as_admin()
+        response = self.client.get(reverse('cron_send_notifications_task',
+                                           {'one_time':1, 'notification_id':notification.id}))
+        self.assertEqual(response.status_code, 200)
+        notification = NotifyOnEvent.objects.filter(email=email, module=None, event=None, notified=True)
+        self.assertTrue(notification)
+    
+    def test_module_subscribe(self):
+        pass
+    
+    def test_event_subscribe(self):
+        pass
+    
+    def test_subscriber_creation(self):
+        pass
+    
+    def test_unsubscription(self):
         pass
     
     def test_event_creation_signal(self):
@@ -201,10 +270,9 @@ class TestSiteStatus(TestCase):
         pass
     
     def _test_passive_module(self, module, right_status, right_statuses, right_list_statuses):
-        c = Client()
-        response = c.get(reverse('check_passive_hosts_task',
-                                  kwargs=dict(module_key=module.id)),
-                         follow=True)
+        self._login_as_admin()
+        response = self.client.get(reverse('check_passive_hosts_task',
+                                  kwargs=dict(module_key=module.id)))
         
         self.assertEqual(response.status_code, 200)
         

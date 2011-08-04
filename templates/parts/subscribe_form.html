@@ -10,7 +10,7 @@
 
 <div class="description">
 	{% if saved %}
-		You successfuly subscribed to receive {% if one_time %}a one time notification as soon as the system is back on line{% else %}notifications whenever an incident happens with the system{% endif %}.
+		You've successfuly subscribed to receive {% if one_time %}a one time notification as soon as the system is back on line{% else %}notifications whenever an incident happens with the system{% endif %}.
 	{% else %}
 		{% if event %}
 			<form action="/subscribe/event/{{ event.id }}" method="POST">
