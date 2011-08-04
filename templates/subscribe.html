@@ -1,99 +1,78 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
-   "http://www.w3.org/TR/html4/loose.dtd">
-<html>
-<head>
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8" > 
-<!-- This is a modern and clean business template with a powerful identity. Strong colors in contrast with different shades of grey.
-The template was created with HTML, CSS and CSS3, using Gimp and gedit.
-Some photos were used from http://www.freedigitalphotos.net/ .
+{% extends 'base.html' %}
+{% load media %}
+{% load status_tags %}
 
-Designed by Ioana Condor
-http://behindtheovermind.wordpress.com/
--->
-<title>Solutions</title>
-	<link href="reset.css" rel="stylesheet" type="text/css" />
-	<link href="typography.css" rel="stylesheet" type="text/css" />
-	<link href="style.css" rel="stylesheet" type="text/css" />
+{% block title %}{{ event.verbose }} - {{ SITE_NAME }} Status{% endblock %}
 
-</head>
-<body id="body">
-<div id="top_div">
-	<div id="top_content">
-		<div id="logo">
-			<h1>loremIpsum</h1>
-			<h4>Phasellus malesuada</h4>
+{% block extra_head %}{% endblock %}
+
+{% block header_status %}
+{% endblock %}
+	
+{% block first_content %}
+	<div class="box">
+		<div class="text_box">
+			{% include "parts/subscribe_form.html" %}
+			<div class="more"><a href="/">All Status</a></div>
 		</div>
 	</div>
-</div>
-<div class="menu">
-		<div class="menu_content">
-			<ul>
-				<li><a href="index.html">Home</a></li>
-				<li><a href="solutions.html">About Us</a></li>
-				<li><a href="solutions.html">Products</a></li>	
-				<li><a href="index.html">Company</a></li>	
-				<li><a href="index.html">Support</a></li>
-			</ul>
-		</div>
-</div>
-
-<div id="page">
-	<div id="page_content">
-		<p class="page_title">About loremIpsum</p>
-		<p class="page_text">About Lorem Ipsum contents: </p>
-			<ol type="1">
-				<li class="page_text_red">About </li>
-				<li class="page_text_red">Services</li>
-				<li class="page_text_red">Purpose </li>
-				<li class="page_text_red">Implementation </li>
-				<li class="page_text_red">Planning solutions</li>
-			</ol>
-		<p class="page_text_red">1. About</p>
-		<p class="page_text">Nullam lectus sapien, pharetra eget commodo non, elementum eu mi. Maecenas fermentum vestibulum arcu, sit amet iaculis diam varius vel. Sed sit amet libero id diam tristique bibendum. </p>
-		<p class="page_text_red">2. Services</p>
-		<p class="page_text">Fusce rutrum lectus eget libero pretium vitae sollicitudin mauris volutpat:</p> 
-			<ul style="list-style-type:disc;padding-left:30px;">
-				<li class="page_text">Fusce rutrum </li>
-				<li class="page_text">Lectus eget</li>
-				<li class="page_text">Pretium vitae sollicitudin </li>
-				<li class="page_text">Mauris volutpat</li>
-			</ul>
-		<p class="page_text">Nunc metus nisl, accumsan nec luctus et, accumsan pellentesque odio. In ac est ac eros vestibulum posuere. In sed nisi non nunc iaculis eleifend eu rutrum sapien. Proin sed turpis mi, id porttitor est. Lorem ipsum dolor sit amet, consectetur adipiscing elit. </p>
-
-		<div class="big_round_box" style="margin-bottom:25px;margin-left:15px;">
-			<p class="page_text_red">Lorem Ipsum</p>
-			<p class="description">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin et elit in risus mollis commodo nec consequat lectus. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Suspendisse potenti. Curabitur et massa nec ligula volutpat sollicitudin. Aliquam consequat aliquam enim, a porta turpis facilisis a. Nunc consequat urna tincidunt magna pretium cursus.  </p>
-		</div>
-		<p class="page_text_red" >3.Purpose</p>
-		<p class="page_text">Etiam quis ligula urna, quis sollicitudin enim.</p>
-		<p class="page_text">Aenean auctor quam eget justo ullamcorper tincidunt. </p>
-		<p class="page_text_red" >4.Implementation</p>
-		<p class="page_text">Nam magna ante, elementum nec pulvinar sit amet, commodo pulvinar purus. Pellentesque molestie ultricies nibh, vitae vehicula ipsum porta vitae. Integer accumsan velit a quam scelerisque interdum. Sed euismod ullamcorper nibh in consequat.</p>
-		<p class="page_text">Etiam quis ligula urna, quis sollicitudin enim.</p>
-		<p class="page_text_red" >5.Planning solutions</p>
-		<p class="page_text">Aenean auctor quam eget justo ullamcorper tincidunt. Maecenas malesuada purus vel neque condimentum ac eleifend nisl commodo. Pellentesque mattis odio quis lectus ultrices placerat.</p>
-		<p class="page_text">Maecenas fermentum vestibulum arcu, sit amet iaculis diam varius vel. Sed sit amet libero id diam tristique bibendum. </p>
-	</div>	
-</div>
-<div id="bottom">
-	<div id="bottom_content">
-		<div class="callcenter">
-			<p class="call_us" style="color:#e44038;padding-left:30px;">Suport 24/7: </p>
-			<p class="call_us"><img src="img/phone.png" alt="phone">  (045)0205968600 or (045)0205968611</p>
-			<p class="call_us"><img src="img/email.png" alt="email">  contact@contact.com</p>
-
-		</div>
-		<div id="menu_bottom_list">
-				<div class="menu_bottom" ><a href="" class="bottom_link" > Home </a></div>
-				<div class="menu_bottom" ><a href="" class="bottom_link"> Try it </a></div>
-				<div class="menu_bottom" ><a href="" class="bottom_link"> Download </a></div>
-				<div class="menu_bottom" ><a href="" class="bottom_link"> Documentation </a></div>
-				<div class="menu_bottom" ><a href="" class="bottom_link"> About </a></div>
-		</div>
-		<div class="copyright description">&copy; 2011 Ioana Condor
+	{% if scheduled_maintenances or twitter_account %}
+		<img src="{% media_url "img/hr.png" %}" alt="" />
+	{% endif %}
+{% endblock %}
+			
+{% block twitter %}
+	{% if twitter_account %}
+	<div class="box">
+		<div class="text_box">
+			<p class="title">Twitter</p>
+				<script src="http://widgets.twimg.com/j/2/widget.js"></script>
+				<script>
+				new TWTR.Widget({
+				  version: 2,
+				  type: 'profile',
+				  rpp: 4,
+				  interval: 6000,
+				  width: 880,
+				  height: 500,
+				  theme: {
+				    shell: {
+				      background: '#333333',
+				      color: '#ffffff'
+				    },
+				    tweets: {
+				      background: '#000000',
+				      color: '#ffffff',
+				      links: '#4aed05'
+				    }
+				  },
+				  features: {
+				    scrollbar: false,
+				    loop: false,
+				    live: false,
+				    hashtags: true,
+				    timestamp: true,
+				    avatars: false,
+				    behavior: 'all'
+				  }
+				}).render().setUser('{{ twitter_account.login }}').start();
+				</script>
+			<div class="more"><a href="" ></a></div>
 		</div>
 	</div>
-</div>
-<div style="text-align: center; font-size: 0.75em;">Design downloaded from <a href="http://www.freewebtemplates.com/">free website templates</a>.</div></body>
-</html>
-
+		{% if scheduled_maintenances %}
+			<img src="{% media_url "img/hr.png" %}" alt="" />
+		{% endif %}
+	{% endif %}
+{% endblock %}
+			
+{% block scheduled_maintenances %}
+	{% if scheduled_maintenances %}
+		<br />
+		<br />
+		<div class="big_round_box">
+			<p class="title">Scheduled Maintenances</p>
+			<p class="description">{{ scheduled_maintenances }}</p>
+		</div>
+	{% endif %}
+{% endblock %}

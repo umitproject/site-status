@@ -1,0 +1,28 @@
+{% if event %}
+	<p class="title">Subscribe to Event - {{ event.verbose }}</p>
+{% else %}
+	{% if module %}
+		<p class="title">Subscribe to Module {{ module.name }}</p>
+	{% else %}
+		<p class="title">Subscribe</p>
+	{% endif %}
+{% endif %}
+
+<div class="description">
+	{% if saved %}
+		You successfuly subscribed to receive {% if one_time %}a one time notification as soon as the system is back on line{% else %}notifications whenever an incident happens with the system{% endif %}.
+	{% else %}
+		{% if event %}
+			<form action="/subscribe/event/{{ event.id }}" method="POST">
+		{% else %}
+			{% if module %}
+				<form action="/subscribe/module/{{ module.id }}" method="POST">
+			{% else %}
+				<form action="/subscribe" method="POST">
+			{% endif %}
+		{% endif %}
+				{{ form.as_p }}
+				<input type="submit" value="Submit"/>
+		</form>
+	{% endif %}
+</div>

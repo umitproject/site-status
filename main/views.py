@@ -12,6 +12,7 @@ from django.contrib.auth.models import User
 from django.utils import simplejson as json
 
 from main.models import *
+from main.forms import *
 
 
 def home(request, msg=None):
@@ -63,15 +64,33 @@ def subscribe(request, event_id=None, module_id=None):
     module = False
     event = False
     one_time = False
+    form = None
+    saved = False
     
-    if (event_id is None) and (module_id is None):
+    if (event_id is not None) and (module_id is None):
+        event = get_object_or_404(ModuleEvent, pk=event_id)
+        one_time = not event.back_at
+    elif (event_id is None) and (module_id is not None):
+        module = get_object_or_404(Module, pk=module_id)
+        one_time = module.status != 'on-line'
+    else:
         system = True
-    elif (event_id is not None) and (module_id is None):
-        pass
+        aggregation = AggregatedStatus.objects.all()[0]
+        one_time = aggregation.status != 'on-line'
+    
+    if one_time:
+        if request.POST:
+            form = SubscribeOneTimeForm(request.POST)
+        else:
+            form = SubscribeOneTimeForm()
+    else:
+        if request.POST:
+            form = SubscribeForm(request.POST)
+        else:
+            form = SubscribeForm()
     
     context = locals()
     return render(request, 'subscribe.html', context)
-
 
 def _create_fake_events(module, range_days):
     today = datetime.datetime.now()

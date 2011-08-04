@@ -65,6 +65,30 @@ class Subscribers(models.Model):
     last_notified = models.DateTimeField()
     last_access = models.DateTimeField()
     email = models.EmailField()
+    subscribed = modules.BooleanField()
+    unsubscribed_at = models.DateTimeField()
+    
+    def unsubscribe(self, module_id=None, event_id=None):
+        if self.unsubscribed_at:
+            return False
+        
+        module = False
+        event = False
+        unsubscribed = False
+        
+        if module_id is not None:
+            unsubscribed = AlwaysNotifyOnEvent.unsubscribe(self.email, module_id)
+            
+            # I used the or condition at the end in case one succeed, and the other failed.
+            # For that case, unsubscribed should still be set to True.
+            unsubscribed = NotifyOnEvent.unsubscribe(self.email, module_id=module_id) or unsubscribed
+        elif event_id is not None:
+            unsubscribed = NotifyOnEvent.unsubscribe(self.email, event_id=event_id)
+        
+        return unsubscribed
+    
+    def subscribe(self, one_time, module_id=None, event_id=None):
+        pass
     
     def __unicode__(self):
         return self.email
@@ -76,11 +100,23 @@ class AlwaysNotifyOnEvent(models.Model):
     '''
     created_at = models.DateTimeField(auto_now_add=True)
     last_notified = models.DateTimeField(auto_now=True)
+    module = models.ForeignKey('main.Module')
     email = models.EmailField()
+    
+    @staticmethod
+    def can_unsubscribe(email, module):
+        return bool(AlwaysNotifyOnEvent.objects.filter(email=email, module=module_id).count())
+    
+    @staticmethod
+    def unsubscribe(email, module):
+        if AlwaysNotifyOnEvent.can_unsubscribe(email, module):
+            for obj in AlwaysNotifyOnEvent.objects.filter(email=email, module=module_id):
+                obj.delete()
+            return True
+        return False
     
     def __unicode__(self):
         return self.email
-
 
 class NotifyOnEvent(models.Model):
     '''Aggregation for all users who asked to be notified about an specific
@@ -90,7 +126,35 @@ class NotifyOnEvent(models.Model):
     email = models.EmailField()
     originating_ip = models.CharField(max_length='50')
     event = models.ForeignKey('main.ModuleEvent')
+    module = models.ForeignKey('main.Module') 
     notified = models.BooleanField(default=False)
+    
+    @staticmethod
+    def can_unsubscribe(email, module_id=None, event_id=None):
+        unsubscribe = False
+        if module_id is not None:
+            unsubscribe = bool(NotifyOnEvent.objects.filter(email=email, module=module_id).count())
+        
+        if event_id is not None:
+            unsubscribe =  bool(NotifyOnEvent.objects.filter(email=email, event=event_id).count()) or unsubscribe
+        
+        return unsubscribe
+    
+    @staticmethod
+    def unsubscribe(email, module_id=None, event_id=None):
+        unsubscribe = False
+        
+        if NotifyOnEvent.can_unsubscribe(email, module_id=module_id):
+            for obj in NotifyOnEvent.objects.filter(email=email, module=module_id):
+                obj.delete()
+            unsubscribe = True
+        
+        if NotifyOnEvent.can_unsubscribe(email, event_id=event_id):
+            for obj in NotifyOnEvent.objects.filter(email=email, event=event_id):
+                obj.delete()
+            unsubscribe = True
+        
+        return unsubscribe
     
     def __unicode__(self):
         return '%s %s' % (self.email,
