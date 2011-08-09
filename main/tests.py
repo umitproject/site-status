@@ -210,8 +210,8 @@ class TestSiteStatus(TestCase):
         # TODO5: Expose these tests to have them ran through the production server (admin only, of course)
         
         # This is the amount of notifications the system should handle per minute
-        # 1200 is equivalent to 100 notifications per second
-        test_size = 1200
+        # 1200 is equivalent to 140 notifications per second
+        test_size = 8400
         events = []
         notifications = []
         
