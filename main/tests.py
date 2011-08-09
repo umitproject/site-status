@@ -116,9 +116,9 @@ class TestSiteStatus(TestCase):
     
     def test_system_subscribe(self):
         self._test_subscription('test@umitproject.org', 'system', False)
+        self._test_subscription('test@umitproject.org', 'system', True)
     
     def _test_subscription(self, email, notification_type, one_time):
-        # TODO: Totally remake this test to fit new scalable notification system.
         # TODO3: Gotta confirm the cron job can handle a huge number of notifications at a time (1000)
         # TODO4: Gotta confirm the time necessary to send one notification (task execution time) with a large number of recipients (100)
         # TODO5: Expose these tests to have them ran through the production server (admin only, of course)
@@ -156,21 +156,6 @@ class TestSiteStatus(TestCase):
                                                  target_id=target_id, one_time=one_time)
         self.assertTrue(subscriber.email in notification.list_emails)
         
-        # Test one time notify behavior
-        response = self.client.post(reverse('system_subscribe'), {'email':email, 'one_time':True})
-        self.assertEqual(response.status_code, 200)
-        self.assertTrue(re.findall('.*?(successfuly subscribed).*?', response.content))
-        
-        # Checking if exists and if it isn't duplicated
-        subscriber = Subscriber.objects.get(email=email)
-        
-        notification = NotifyOnEvent.objects.filter(notification_type='system', one_time=True, target_id=None, last_notified=None)
-        self.assertTrue(notification)
-        notification = notification[0]
-        
-        # Check if email is there
-        self.assertTrue(subscriber.email in notification.list_emails)
-        
         # Now, test that once the system is back user is notified
         event.back_at = datetime.datetime.now()
         event.save()
@@ -192,9 +177,11 @@ class TestSiteStatus(TestCase):
                                            kwargs={'notification_id':notification_event.id}))
         self.assertEqual(response.status_code, 200)
         
-        notification = NotifyOnEvent.objects.filter(notification_type='system', one_time=True, target_id=None)
-        self.assertTrue(notification)
-        notification = notification[0]
+        notification = NotifyOnEvent.objects.get(notification_type=notification_type,
+                                                 one_time=one_time, target_id=target_id)
+        
+        if notification.last_notified == None:
+            logging.critical('<<< Failing notification: %s' % notification)
         
         self.assertFalse(notification.last_notified == None)
     
@@ -211,10 +198,57 @@ class TestSiteStatus(TestCase):
         return notification
     
     def test_module_subscribe(self):
-        pass
+        self._test_subscription('test@umitproject.org', 'module', False)
+        self._test_subscription('test@umitproject.org', 'module', True)
     
     def test_event_subscribe(self):
-        pass
+        self._test_subscription('test@umitproject.org', 'event', True)
+        
+    def test_notification_load(self):
+        # TODO3: Gotta confirm the cron job can handle a huge number of notifications at a time (1000)
+        # TODO4: Gotta confirm the time necessary to send one notification (task execution time) with a large number of recipients (100)
+        # TODO5: Expose these tests to have them ran through the production server (admin only, of course)
+        
+        # This is the amount of notifications the system should handle per minute
+        # 1200 is equivalent to 100 notifications per second
+        test_size = 1200
+        events = []
+        notifications = []
+        
+        for i in xrange(test_size):
+            events.append(self._create_open_event())
+            
+            # Setting the event back_at should create a notification 
+            events[-1].back_at = datetime.datetime.now()
+            events[-1].save()
+            
+            notifications.append(Notification.objects.get(notification_type='event',
+                                                          target_id=events[-1].id,
+                                                          sent_at=None))
+        
+        self.assertEqual(len(events), test_size)
+        self.assertEqual(len(notifications), test_size)
+        
+        self._login_as_admin()
+        
+        # Now, we need to time the execution of the view.
+        # If greater than 30 seconds, we're in danger of timeout
+        start = datetime.datetime.now()
+        response = self.client.get(reverse('check_notifications'))
+        end = datetime.datetime.now()
+        
+        logging.critical('>>> Time to process %s: %s seconds' % (test_size, (end - start).seconds))
+        
+        # Check if it returned a 200. First indication that it succeeded
+        self.assertEqual(response.status_code, 200)
+        
+        # Check the time it took to process everything is fewer than 30 secs
+        self.assertTrue((end - start).seconds < 30)
+        
+        # Check if all tasks were scheduled properly
+        for notification_event in notifications:
+            not_key = CHECK_NOTIFICATION_KEY % notification_event.id
+            self.assertTrue(memcache.get(not_key, False))
     
     def test_subscriber_creation(self):
         pass

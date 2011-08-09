@@ -64,7 +64,10 @@ def check_notifications(request):
     make sure we never get more notifications than we can handle within that
     timeframe.
     """
-    notifications = Notification.objects.filter(sent_at=None).order_by('-created_at')[:100]
+    notifications = Notification.objects.filter(sent_at=None).order_by('-created_at')
+    
+    logging.info('>>> Checking %s notifications.' % len(notifications))
+    
     for notification in notifications:
         # Create the notification queue
         not_key = CHECK_NOTIFICATION_KEY % notification.id
@@ -81,9 +84,9 @@ def check_notifications(request):
             task_name = 'check_notification_%s_%s' % (notification.id, uuid.uuid4())
             task = taskqueue.add(url='/cron/send_notification_task/%s' % notification.id,
                                  name= task_name, queue_name='cron')
+            if task is None:
+                logging.critical("!!!! TASK IS NONE! %s " % task_name)
             memcache.set(not_key, task)
-            
-            logging.info('Scheduled task %s' % task_name)
             
         except taskqueue.TaskAlreadyExistsError, e:
             logging.info('Task is still running for module %s: %s' % \
@@ -97,8 +100,6 @@ def send_notification_task(request, notification_id):
     """
     notification = Notification.objects.get(pk=notification_id)
     notification.build_email_data()
-    
-    logging.critical('Sending notification to: %s' % notification.list_emails)
     
     sent = send_mail(NOTIFICATION_SENDER, NOTIFICATION_TO,
                      bcc=notification.list_emails,

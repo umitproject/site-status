@@ -1,7 +1,7 @@
 cron:
 - description: Check passive hosts
   url: /cron/check_passive_hosts
-  schedule: every 2 minutes
+  schedule: every 1 minutes
 
 - description: Check notifications
   url: /cron/check_notifications

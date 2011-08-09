@@ -147,8 +147,6 @@ class Subscriber(models.Model):
         self.save()
         notification.save()
         
-        logging.critical('+++ Notif. %s, %s, %s' % (notification.notification_type, notification.one_time, notification.target_id))
-        
         return notification
     
     def __unicode__(self):
