@@ -4,10 +4,13 @@ import datetime
 import logging
 from decimal import *
 import uuid
+from types import StringTypes
+import itertools
 
 from django.db import models
 from django.db.models.signals import post_save, pre_save
 from django.template.loader import render_to_string
+from django.conf import settings
 
 from main.memcache import memcache
 from main.utils import pretty_date
@@ -27,13 +30,19 @@ STATUS = (
           ('investigating', 'Investigating'),
           ('updating', 'Updating'),
           ('service_disruption', 'Service Disruption'),
-          ('unknown', 'Unknown')
+          ('unknown', 'Unknown'),
           )
 
 MODULE_TYPES = (
                 ('passive', 'Passive'),
-                ('active', 'Active')
+                ('active', 'Active'),
                 )
+
+NOTIFICATION_TYPES = (
+                      ('module', 'Module'),
+                      ('event', 'Event'),
+                      ('system', 'System'),
+                      )
 
 ################
 # MEMCACHE KEYS
@@ -54,29 +63,203 @@ def timedelta_seconds(delta):
     return (delta.days * 24 * 60 * 60) + delta.seconds + (delta.microseconds/1000000)
 
 def percentage(value, total):
+    if type(value) not in StringTypes:
+        value = '%.2f' % value
+    if type(total) not in StringTypes:
+        total = '%.2f' % total
+    
     return round((Decimal(value) * Decimal(100)) / Decimal(total), 2)
+
+class Subscriber(models.Model):
+    '''Full list of all users who ever registered asking to be notified.
+    Used for consultation on when was last time user accessed the status site
+    or since when he is registered, as well as his email that is used as a key.
+    '''
+    unique_identifier = models.CharField(max_length=36, blank=True, null=True, default='')
+    created_at = models.DateTimeField()
+    updated_at = models.DateTimeField(null=True, blank=True, default=None)
+    email = models.EmailField()
+    subscriptions = models.TextField()
+    originating_ips = models.TextField()
+    unsubscribed_at = models.DateTimeField(null=True, blank=True, default=None)
+    
+    @property
+    def list_subscriptions_ids(self):
+        return [int(s) for s in self.subscriptions.split(',') if s != '']
+    
+    @property
+    def list_subscriptions(self):
+        return [NotifyOnEvent.objects.get(pk=int(s)) for s in self.subscriptions.split(',')]
+    
+    @property
+    def list_ips(self):
+        return self.originating_ips.split(',')
+    
+    def add_ip(self, ip):
+        list_ips = self.list_ips
+        if ip not in list_ips:
+            list_ips.append(ip)
+            self.originating_ips = ','.join(list_ips)
+            return True
+        return False
+    
+    def add_subscription(self, notification_id):
+        subs_ids = self.list_subscriptions_ids
+        if notification_id in subs_ids:
+            subs_ids.append(notification_id)
+            self.subscriptions = ','.join([str(id) for id in subs_ids])
+            return True
+        return False
+    
+    def remove_subscription(self, notification_id):
+        subs_ids = self.list_subscriptions_ids
+        if notification_id in subs_ids:
+            subs_ids.remove(notification_id)
+            self.subscriptions = ','.join([str(id) for id in subs_ids])
+            return True
+        return False
+    
+    def save(self, *args, **kwargs):
+        # This is in order to have a unique ID that is safe to be exposed.
+        # The entity id is a sequential number that is too easy to guess.
+        # Beware we must do this only once. Otherwise, the id would change
+        # after a save.
+        if not self.unique_identifier:
+            self.unique_identifier = str(uuid.uuid4())
+        
+        super(Subscriber, self).save(*args, **kwargs)
+    
+    def unsubscribe(self, notification_type, one_time, target_id=None):
+        return NotifyOnEvent.unsubscribe(self.email, notification_type, one_time, target_id)
+    
+    def subscribe(self, notification_type, one_time, target_id=None):
+        notification = NotifyOnEvent.objects.filter(notification_type=notification_type,
+                                                    one_time=one_time, target_id=target_id)
+        
+        if not notification:
+            notification = NotifyOnEvent(created_at=datetime.datetime.now(),
+                                         notification_type=notification_type,
+                                         one_time=one_time, target_id=target_id) 
+        
+        notification.add_email(self.email)
+        self.add_subscription(notification.id)
+        
+        self.save()
+        notification.save()
+        
+        logging.critical('+++ Notif. %s, %s, %s' % (notification.notification_type, notification.one_time, notification.target_id))
+        
+        return notification
+    
+    def __unicode__(self):
+        return self.email
 
 class Notification(models.Model):
     """When an event happens, a notification is created.
+    When a notification is created, the pre_save signal must go look for
+    the relevant NotifyOnEvent instances and save the emails it will need
+    to send out.
     """
     created_at = models.DateTimeField()
     sent_at = models.DateTimeField(null=True, blank=True, default=None)
-    event = models.ForeignKey('main.ModuleEvent', null=True, default=None)
-    module = models.IntegerField('main.Module', null=True, default=None)
+    notification_type = models.CharField(max_length=10, choices=NOTIFICATION_TYPES)
+    target_id = models.IntegerField(null=True, blank=True, default=None)
+    subject = models.CharField(max_length=400)
+    body = models.TextField()
+    html = models.TextField()
+    emails = models.TextField()
     previous_status = models.CharField(max_length=20)
     current_status = models.CharField(max_length=20)
-    downtime = models.DecimalField(max_digits=5, decimal_places=2)
+    downtime = models.DecimalField(max_digits=5, decimal_places=2,
+                                   default=None, null=True)
+    
+    @property
+    def list_emails(self):
+        return [e for e in self.emails.split(',') if e]
+    
+    def build_email_data(self):
+        target_url = settings.MAIN_SITE_URL
+        target_name = settings.SITE_NAME
+        
+        if self.notification_type == 'event':
+            event = ModuleEvent.objects.get(pk=self.target_id)
+            target_url = event.module.url
+            target_name = event.module.name
+        elif self.notification_type == 'module':
+            module = Module.objects.get(pk=self.target_id)
+            target_url = module.url
+            target_name = module.name
+        
+        context = dict(TARGET_URL=target_url,
+                       TARGET_NAME=target_name)
+        
+        self.subject = "%s is back!" % target_name
+        self.body = render_to_string('parts/notification_body.txt', context)
+        self.html = render_to_string('parts/notification_body.html', context)
+    
+    def save(self, *args, **kwargs):
+        if not self.id:
+            self._retrieve_emails()
+        
+        super(Notification, self).save(*args, **kwargs)
+    
+    def _notify_emails(self, notification_type, one_time, target_id):
+        notify = None
+        if one_time:
+            notify = NotifyOnEvent.objects.filter(one_time=one_time,
+                                                  notification_type=notification_type,
+                                                  target_id=target_id,
+                                                  last_notified=None)
+        else:
+            notify = NotifyOnEvent.objects.filter(one_time=one_time,
+                                                  notification_type=notification_type,
+                                                  target_id=target_id)
+            
+        if notify:
+            notify = notify[0]
+        else:
+            notify = []
+        
+        return notify
 
-class NotificationQueue(models.Model):
-    """The cron job looks for Notification entries, and if any, creates the
-    queue to be processed by the tasks who will send out the emails.
-    """
-    created_at = models.DateTimeField()
-    sent_at = models.DateTimeField(null=True, blank=True, default=None)
-    one_time = models.BooleanField(default=False)
-    notification = models.ForeignKey('main.Notification')
-    subscription = models.ForeignKey('main.NotifyOnEvent')
-    email = models.EmailField()
+    def _retrieve_emails(self):
+        notifications = []
+        
+        # System wide
+        notifications.append(self._notify_emails('system', False, None))
+        
+        # System wide one_time
+        notifications.append(self._notify_emails('system', True, None))
+        
+        # Specific event
+        if self.notification_type == 'event':
+            # We need to notify event and module also
+            notifications.append(self._notify_emails(self.notification_type, True, self.target_id))
+            
+            module = ModuleEvent.objects.get(pk=self.target_id).module
+            
+            if module:
+                notifications.append(self._notify_emails('module', False, module.id))
+                notifications.append(self._notify_emails('module', True, module.id))
+        elif self.notification_type == 'module':
+            notifications.append(self._notify_emails(self.notification_type, True, self.target_id))
+            notifications.append(self._notify_emails(self.notification_type, False, self.target_id))
+
+        notification_emails = [n.list_emails for n in notifications if n != []]
+        
+        emails = []
+        for email in itertools.chain(*notification_emails):
+            if email not in emails:
+                emails.append(email)
+        
+        self.emails = ','.join(emails)
+        
+        now = datetime.datetime.now()
+        for notification in notifications:
+            if notification != []:
+                notification.last_notified = now
+                notification.save()
+
 
 class NotifyOnEvent(models.Model):
     '''Aggregation for all users who asked to be notified about an specific
@@ -86,135 +269,75 @@ class NotifyOnEvent(models.Model):
     '''
     created_at = models.DateTimeField()
     last_notified = models.DateTimeField(null=True, blank=True, default=None)
-    one_time = models.BooleanField(default=False, required=False)
-    email = models.EmailField()
-    originating_ip = models.CharField(max_length='50')
-    event = models.ForeignKey('main.ModuleEvent', null=True, default=None)
-    module = models.ForeignKey('main.Module', null=True, default=None) 
-    notified = models.BooleanField(default=False)
+    one_time = models.BooleanField(default=False)
+    notification_type = models.CharField(max_length=10, choices=NOTIFICATION_TYPES)
+    target_id = models.IntegerField(null=True, blank=True, default=None)
+    emails = models.TextField()
+    
+    @property
+    def list_emails(self):
+        return self.emails.split(',')
+    
+    def add_email(self, email):
+        list_emails = self.list_emails
+        if email not in list_emails:
+            list_emails.append(email)
+            self.emails = ','.join(list_emails)
+            return True
+        return False
+    
+    def remove_email(self, email):
+        list_emails = self.list_emails
+        if email in list_emails:
+            list_emails.remove(email)
+            self.emails = ','.join(list_emails)
+            return True
+        return False
     
     @staticmethod
-    def can_unsubscribe(email, module_id=None, event_id=None):
-        unsubscribe = False
-        if module_id is not None:
-            unsubscribe = bool(NotifyOnEvent.objects.filter(email=email, module=module_id).count())
-        
-        if event_id is not None:
-            unsubscribe =  bool(NotifyOnEvent.objects.filter(email=email, event=event_id).count()) or unsubscribe
-            
-        if module_id is None and event_id is None:
-            unsubscribe = boll(NotifyOneEvent.objects.filter(email=email).count()) or unsubscribe 
-        
-        return unsubscribe
+    def can_unsubscribe(email, notification_type, one_time, target_id=None):
+        instance = NotifyOnEvent.objects.filter(notification_type=notification_type,
+                                                one_time=one_time,
+                                                target_id=target_id)
+        if instance and email in instance.list_emails:
+            return True
+        return False
     
     @staticmethod
-    def unsubscribe(email, module_id=None, event_id=None):
-        unsubscribe = False
-        
-        if NotifyOnEvent.can_unsubscribe(email, module_id=module_id):
-            for obj in NotifyOnEvent.objects.filter(email=email, module=module_id):
-                obj.delete()
-            unsubscribe = True
-        
-        if NotifyOnEvent.can_unsubscribe(email, event_id=event_id):
-            for obj in NotifyOnEvent.objects.filter(email=email, event=event_id):
-                obj.delete()
-            unsubscribe = True
-        
-        if NotifyOnEvent.can_unsubscribe(email):
-            for obj in NotifyOnEvent.objects.filter(email=email):
-                obj.delete()
-            unsubscribe = True
-        
-        return unsubscribe
+    def unsubscribe(email, notification_type, one_time, target_id=None):
+        instance = NotifyOnEvent.objects.filter(notification_type=notification_type,
+                                                one_time=one_time,
+                                                target_id=target_id)
+        list_emails = instance.list_emails
+        if instance and email in list_emails:
+            
+            # Removing the NotifyOnEvent id from subscriber's instance
+            subscriber = Subscriber.objects.get(email=email)
+            
+            subs_ids = subscriber.list_subscriptions_ids
+            subs_ids.remove(instance.id)
+            subscriber.subscriptions = ','.join(subs_ids)
+            subscriber.save()
+            
+            # Removing subscriber's email from NotifyOnEvent instance
+            if len(list_emails) == 1:
+                instance.delete()
+            else:
+                list_emails.remove(email)
+                instance.emails = ','.join(list_emails)
+                instance.save()
+            
+            return True
+        return False
     
     def __unicode__(self):
-        return '%s %s' % (self.email,
-                          'notified' if self.notified else 'not notified')
+        return '%s (%s) - %s' % (self.notification_type, self.target_id,
+                          'notified' if self.last_notified else 'not notified')
 
-
-class Subscriber(models.Model):
-    '''Full list of all users who ever registered asking to be notified.
-    Used for consultation on when was last time user accessed the status site
-    or since when he is registered, as well as his email that is used as a key.
-    '''
-    unique_identifier = models.CharField(max_length=36, blank=True, null=True, default='')
-    created_at = models.DateTimeField()
-    last_notified = models.DateTimeField(null=True, blank=True, default=None)
-    last_access = models.DateTimeField()
-    email = models.EmailField()
-    subscribed = models.BooleanField()
-    unsubscribed_at = models.DateTimeField(null=True, blank=True, default=None)
-    
-    def save(self, *args, **kwargs):
-        # This is in order to have a unique ID that is safe to be exposed.
-        # The entity id is a sequential number that is too easy to guess.
-        self.unique_identifier = str(uuid.uuid4())
-        super(Subscriber, self).save(*args, **kwargs)
-    
-    def unsubscribe(self, module_id=None, event_id=None):
-        if self.unsubscribed_at:
-            return False
-        
-        module = False
-        event = False
-        unsubscribed = False
-        
-        if module_id is not None:
-            unsubscribed = NotifyOnEvent.unsubscribe(self.email, module_id=module_id)
-        elif event_id is not None:
-            unsubscribed = NotifyOnEvent.unsubscribe(self.email, event_id=event_id)
-        
-        return unsubscribed
-    
-    def subscribe(self, one_time, originating_ip, module_id=None, event_id=None):
-        module = False
-        event = False
-        notification = None
-        
-        if module_id is not None:
-            module = Module.objects.filter(pk=module_id)
-            if module:
-                module = module[0]
-        
-        if event_id is not None:
-            event = ModuleEvent.objects.filter(pk=module_id, back_at=None)
-            if event:
-                event = event[0]
-        
-        notification = NotifyOnEvent()
-        notification.created_at = datetime.datetime.now()
-        notification.email = self.email
-        notification.originating_ip = originating_ip
-        
-        if one_time:
-            # Notify once
-            notification.one_time = True
-        
-        if module:
-            # One Time Module Notification
-            notification.module = module
-            notification.save()
-            
-            return notification
-        
-        if event:
-            # One Time Event Notification
-            notification.event = event
-            notification.save()
-            
-            return notification
-        
-        # In this case, notify on system wide status change
-        notification.save()
-        return notification
-    
-    def __unicode__(self):
-        return self.email
 
 class AggregatedStatus(models.Model):
     created_at = models.DateTimeField()
-    updated_at = models.DateTimeField()
+    updated_at = models.DateTimeField(null=True, blank=True, default=None)
     total_downtime = models.FloatField(default=0.0)
     time_estimate_all_modules = models.FloatField(default=0.0)
     status = models.CharField(max_length=30, choices=STATUS, default=STATUS[0][0])
@@ -317,7 +440,7 @@ class AggregatedStatus(models.Model):
 
 class DailyModuleStatus(models.Model):
     created_at = models.DateTimeField()
-    updated_at = models.DateTimeField(blank=True, null=True)
+    updated_at = models.DateTimeField(null=True, blank=True, default=None)
     total_downtime = models.FloatField(default=0.0) # minutes
     statuses = models.TextField()
     events = models.TextField()
@@ -462,6 +585,16 @@ def module_event_post_save(sender, instance, created, **kwargs):
             aggregation.status = 'on-line'
         else:
             aggregation.status = open_event[0].status
+        
+        # Create notification
+        notification = Notification()
+        notification.created_at = datetime.datetime.now()
+        notification.notification_type = 'event'
+        notification.target_id = instance.id
+        notification.previous_status = instance.status
+        notification.current_status = 'on-line'
+        notification.downtime = instance.total_downtime
+        notification.save()
     
     aggregation.save()
     day_status.save()
@@ -472,7 +605,7 @@ post_save.connect(module_event_post_save, sender=ModuleEvent)
 
 class Module(models.Model):
     monitoring_since = models.DateTimeField()
-    updated_at = models.DateTimeField()
+    updated_at = models.DateTimeField(null=True, blank=True, default=None)
     name = models.CharField(max_length=50)
     description = models.TextField()
     total_downtime = models.FloatField(default=0.0)
@@ -561,10 +694,10 @@ class Module(models.Model):
 
 class ScheduledMaintenance(models.Model):
     created_at = models.DateTimeField()
-    updated_at = models.DateTimeField()
+    updated_at = models.DateTimeField(null=True, blank=True, default=None)
     status = models.CharField(max_length=30, choices=STATUS)
     time_estimate = models.IntegerField(default=0)
-    scheduled_to = models.DateTimeField()
+    scheduled_to = models.DateTimeField(null=True, blank=True, default=None)
     total_downtime = models.FloatField(default=0.0)
     message = models.TextField()
     module = models.ForeignKey('main.Module')

@@ -90,7 +90,11 @@ def subscribe(request, event_id=None, module_id=None):
         else:
             form = SubscribeForm()
     
+    logging.critical('--- Subscribe: %s' % form)
+    
     if form.is_valid():
+        logging.critical('--- Subscribe form is valid %s' % form.cleaned_data)
+        
         # Now, we need to check if user opted for one_time or not
         one_time = form.cleaned_data.get('one_time', False)
         email = form.cleaned_data['email']
@@ -102,18 +106,23 @@ def subscribe(request, event_id=None, module_id=None):
             subscriber.last_access = subscriber.created_at
             subscriber.email = email
             subscriber.subscribed = True
-            subscriber.save()
         else:
             subscriber = subscriber[0]
             subscriber.last_access = datetime.datetime.now()
-            subscriber.save()
+        
+        subscriber.add_ip(request.META['REMOTE_ADDR'])
+        subscriber.save()
+        
+        logging.critical('--- Subscriber: %s' % subscriber)
         
         if module:
-            saved = subscriber.subscribe(one_time, request.META['REMOTE_ADDR'], module_id=module.id)
+            saved = subscriber.subscribe('module', one_time, module.id)
         if event:
-            saved = subscriber.subscribe(one_time, request.META['REMOTE_ADDR'], event_id=event.id) or saved
+            saved = subscriber.subscribe('event', one_time, event.id) or saved
         if not module and not event:
-            saved = subscriber.subscribe(one_time, request.META['REMOTE_ADDR']) or saved
+            logging.critical('--- Subscribing to system: %s - %s' % (one_time, request.META['REMOTE_ADDR']))
+            saved = subscriber.subscribe('system', one_time, None) or saved
+            logging.critical('--- Notification: %s' % saved)
     
     context = locals()
     return render(request, 'subscribe.html', context)

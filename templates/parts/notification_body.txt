@@ -1,0 +1,3 @@
+Just wanted to let you know that <a href="{{ TARGET_URL }}">{{ TARGET_NAME }}</a> is back on-line!
+
+Thank you for your patience!

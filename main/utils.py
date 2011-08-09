@@ -2,6 +2,29 @@
 
 from datetime import datetime
 
+from django.conf import settings
+
+EmailMessage = None
+if settings.GAE:
+    from google.appengine.api.mail import EmailMessage
+
+def send_mail(sender, to, cc='', bcc='', reply_to='', subject='', body='', html='', attachments=[], headers={}):
+    if settings.GAE:
+        return _gae_send_mail(sender, to, cc, bcc, reply_to, subject, body, html, attachments, headers)
+
+def _gae_send_mail(sender, to, cc=None, bcc=None, reply_to=None, subject='', body='', html='', attachments=[], headers={}):
+    email = EmailMessage(sender=sender,
+                         to=to,
+                         cc=cc,
+                         bcc=bcc,
+                         reply_to=reply_to,
+                         subject=subject,
+                         body=body,
+                         html=html,
+                         attachments=attachments,
+                         headers=headers)
+    return email.send()
+
 def pretty_date(time=False):
     """
     Copied from http://www.evaisse.net/2009/python-pretty-date-function-50002

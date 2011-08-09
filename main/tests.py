@@ -1,9 +1,11 @@
+import os
 import re
 import unittest
 
 from google.appengine.api import memcache
 from google.appengine.ext import db
 from google.appengine.ext import testbed
+from google.appengine.api import apiproxy_stub_map
 
 from django.test import TestCase
 from django.test.client import Client
@@ -28,6 +30,11 @@ class TestSiteStatus(TestCase):
         self.aggregation.created_at = datetime.datetime.now() - datetime.timedelta(days=10)
         self.aggregation.updated_at = self.aggregation.created_at
         self.aggregation.save()
+        
+        # Task stub fix
+        taskqueue_stub = apiproxy_stub_map.apiproxy.GetStub( 'taskqueue' ) 
+        dircontainingqueuedotyaml = os.path.dirname(os.path.dirname( __file__ ))
+        taskqueue_stub._root_path = dircontainingqueuedotyaml
         
         self._create_passive_test_modules()
         self._create_active_test_modules()
@@ -103,6 +110,11 @@ class TestSiteStatus(TestCase):
         pass
     
     def test_system_subscribe(self):
+        # TODO: Totally remake this test to fit new scalable notification system.
+        # TODO2: Gotta call the cron job and confirm it worked
+        # TODO3: Gotta confirm the cron job can handle a huge number of notifications at a time (1000)
+        # TODO4: Gotta confirm the time necessary to send one notification (task execution time) with a large number of recipients (100)
+        # TODO5: Expose these tests to have them ran through the production server (admin only, of course)
         email = 'test@umitproject.org'
         
         # Test always notify behavior
@@ -113,7 +125,8 @@ class TestSiteStatus(TestCase):
         # Checking if exists and if it isn't duplicated
         subscriber = Subscriber.objects.get(email=email)
         
-        self.assertTrue(AlwaysNotifyOnEvent.objects.filter(email=email, module=None))
+        notification = NotifyOnEvent.objects.get(notification_type='system', target_id=None, one_time=False)
+        self.assertTrue(subscriber.email in notification.list_emails)
         
         # Test one time notify behavior
         event = self._create_open_event()
@@ -124,20 +137,45 @@ class TestSiteStatus(TestCase):
         # Checking if exists and if it isn't duplicated
         subscriber = Subscriber.objects.get(email=email)
         
-        notification = NotifyOnEvent.objects.filter(email=email, module=None, event=None, notified=False)
+        notification = NotifyOnEvent.objects.filter(notification_type='system', one_time=True, target_id=None, last_notified=None)
         self.assertTrue(notification)
         notification = notification[0]
+        
+        # Check if email is there
+        self.assertTrue(subscriber.email in notification.list_emails)
         
         # Now, test that once the system is back user is notified
         event.back_at = datetime.datetime.now()
         event.save()
         
+        notification_event = Notification.objects.get(notification_type='event',
+                                                      target_id=event.id,
+                                                      sent_at=None)
+        
         self._login_as_admin()
-        response = self.client.get(reverse('cron_send_notifications_task',
-                                           {'one_time':1, 'notification_id':notification.id}))
+        response = self.client.get(reverse('check_notifications'))
         self.assertEqual(response.status_code, 200)
-        notification = NotifyOnEvent.objects.filter(email=email, module=None, event=None, notified=True)
+        
+        response = self.client.get(reverse('send_notification_task',
+                                           kwargs={'notification_id':notification_event.id}))
+        self.assertEqual(response.status_code, 200)
+        notification = NotifyOnEvent.objects.filter(notification_type='system', one_time=True, target_id=None)
         self.assertTrue(notification)
+        notification = notification[0]
+        
+        self.assertFalse(notification.last_notified == None)
+    
+    def _create_notification(self, notification_type, target_id, previous_status, current_status, downtime):
+        notification = Notification()
+        notification.created_at = datetime.datetime.now()
+        notification.notification_type = notification_type
+        notification.target_id = target_id
+        notification.previous_status = previous_status
+        notification.current_status = current_status
+        notification.downtime = downtime
+        notification.save()
+    
+        return notification
     
     def test_module_subscribe(self):
         pass

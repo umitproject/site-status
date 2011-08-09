@@ -4,6 +4,7 @@ import datetime
 import logging
 import uuid
 import traceback
+import itertools
 
 from django.http import HttpResponse, Http404
 from django.conf import settings
@@ -16,10 +17,18 @@ from google.appengine.api import urlfetch
 from main.models import *
 from main.memcache import memcache
 from main.decorators import staff_member_required
+from main.utils import send_mail
 
 ################
 # Memcache Keys
 CHECK_HOST_KEY = 'check_passive_host_%s'
+CHECK_NOTIFICATION_KEY = 'check_notification_%s'
+
+################
+# Notification email sender/to/reply_to
+NOTIFICATION_SENDER = settings.NOTIFICATION_SENDER
+NOTIFICATION_TO = settings.NOTIFICATION_TO
+NOTIFICATION_REPLY_TO = settings.NOTIFICATION_REPLY_TO
 
 @staff_member_required
 def check_passive_hosts(request):
@@ -38,7 +47,7 @@ def check_passive_hosts(request):
             task_name = 'check_passive_host_%s_%s' % ("-".join(module.name.split(" ")).lower(), uuid.uuid4())
             task = taskqueue.add(url='/cron/check_passive_hosts_task/%s' % module.id,
                           name= task_name, queue_name='cron')
-            memcache.set(CHECK_HOST_KEY % module.id, task, 60)
+            memcache.set(CHECK_HOST_KEY % module.id, task)
             
             logging.info('Scheduled task %s' % task_name)
             
@@ -50,21 +59,59 @@ def check_passive_hosts(request):
 
 @staff_member_required
 def check_notifications(request):
-    """This method calls out the tasks to create notification queues.
+    """This method calls out the tasks send notifications.
     Since it is a cron called view, there is a timeout, so we might want to
     make sure we never get more notifications than we can handle within that
     timeframe.
     """
-    notifications = Notification.objects.filter(sent_at=None)
+    notifications = Notification.objects.filter(sent_at=None).order_by('-created_at')[:100]
     for notification in notifications:
         # Create the notification queue
-        pass
+        not_key = CHECK_NOTIFICATION_KEY % notification.id
+        if memcache.get(not_key, False):
+            # This means that we still have a processing task for this host
+            # TODO: Check if the amount of retries is too high, and if it is
+            #       then create an event to sinalize that there is an issue
+            #       with this host.
+            logging.critical('Task %s is still processing...' %
+                                (CHECK_NOTIFICATION_KEY % notification.id))
+            continue
+        
+        try:
+            task_name = 'check_notification_%s_%s' % (notification.id, uuid.uuid4())
+            task = taskqueue.add(url='/cron/send_notification_task/%s' % notification.id,
+                                 name= task_name, queue_name='cron')
+            memcache.set(not_key, task)
+            
+            logging.info('Scheduled task %s' % task_name)
+            
+        except taskqueue.TaskAlreadyExistsError, e:
+            logging.info('Task is still running for module %s: %s' % \
+                 (module.name,'/cron/create_notification_queue/%s' % notification.id))
+    
+    return HttpResponse("OK")
 
 @staff_member_required
-def create_notification_queue(request, one_time, notification_queue_id):
-    """This task will actually send out the notifications.
+def send_notification_task(request, notification_id):
+    """This task will send out the notifications
     """
-    pass
+    notification = Notification.objects.get(pk=notification_id)
+    notification.build_email_data()
+    
+    logging.critical('Sending notification to: %s' % notification.list_emails)
+    
+    sent = send_mail(NOTIFICATION_SENDER, NOTIFICATION_TO,
+                     bcc=notification.list_emails,
+                     reply_to=NOTIFICATION_REPLY_TO,
+                     subject=notification.subject,
+                     body=notification.body,
+                     html=notification.html)
+    
+    notification.sent_at = datetime.datetime.now()
+    notification.save()
+    
+    memcache.delete(CHECK_NOTIFICATION_KEY % notification.id)
+    return HttpResponse("OK")
 
 @staff_member_required
 def check_notifications_task(request, one_time, notification_queue_id):

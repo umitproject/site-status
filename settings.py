@@ -55,6 +55,10 @@ COURRIER_STATUS_CAMPAIGN_KEY = ""
 #EMAIL_PORT = 25
 #EMAIL_USE_TLS = False
 
+# the emails that are going to feature the sender, to and reply to fields in all notification emails
+NOTIFICATION_SENDER = 'test@adriano-marques.appspotmail.com'
+NOTIFICATION_TO = 'notifications@adriano-marques.appspotmail.com'
+NOTIFICATION_REPLY_TO = 'do_not_reply@adriano-marques.appspotmail.com'
 
 ########################
 # MEDIA HANDLING SECTION

@@ -3,6 +3,10 @@ cron:
   url: /cron/check_passive_hosts
   schedule: every 2 minutes
 
+- description: Check notifications
+  url: /cron/check_notifications
+  schedule: every 1 minutes
+
 - description: Aggregate daily status
   url: /cron/aggregate_daily_status
   schedule: every day 00:00
