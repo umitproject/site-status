@@ -13,16 +13,18 @@ def send_mail(sender, to, cc='', bcc='', reply_to='', subject='', body='', html=
         return _gae_send_mail(sender, to, cc, bcc, reply_to, subject, body, html, attachments, headers)
 
 def _gae_send_mail(sender, to, cc=None, bcc=None, reply_to=None, subject='', body='', html='', attachments=[], headers={}):
-    email = EmailMessage(sender=sender,
-                         to=to,
-                         cc=cc,
-                         bcc=bcc,
-                         reply_to=reply_to,
-                         subject=subject,
-                         body=body,
-                         html=html,
-                         attachments=attachments,
-                         headers=headers)
+    email = EmailMessage()
+    email.sender = sender
+    email.to = to
+    email.subject = subject
+    email.body = body
+    if cc: email.cc = cc
+    if bcc: email.bcc = bcc
+    if reply_to: email.reply_to = reply_to
+    if html: email.html = html
+    if attachments: email.attachments = attachments
+    if headers: email.headers = headers
+    
     return email.send()
 
 def pretty_date(time=False):

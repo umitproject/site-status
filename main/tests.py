@@ -13,6 +13,7 @@ from django.core.urlresolvers import reverse
 from django.contrib.auth.models import User
 
 from main.models import *
+from status_cron.views import CHECK_NOTIFICATION_KEY
 
 class TestSiteStatus(TestCase):
     def __init__(self, *args, **kwargs):
@@ -109,27 +110,53 @@ class TestSiteStatus(TestCase):
     def test_daily_module_status_automatic_creation(self):
         pass
     
+    def test_populate_view(self):
+        response = self.client.post(reverse('test_populate'))
+        self.assertEqual(response.status_code, 200)
+    
     def test_system_subscribe(self):
+        self._test_subscription('test@umitproject.org', 'system', False)
+    
+    def _test_subscription(self, email, notification_type, one_time):
         # TODO: Totally remake this test to fit new scalable notification system.
-        # TODO2: Gotta call the cron job and confirm it worked
         # TODO3: Gotta confirm the cron job can handle a huge number of notifications at a time (1000)
         # TODO4: Gotta confirm the time necessary to send one notification (task execution time) with a large number of recipients (100)
         # TODO5: Expose these tests to have them ran through the production server (admin only, of course)
-        email = 'test@umitproject.org'
         
-        # Test always notify behavior
-        response = self.client.post(reverse('system_subscribe'), {'email':email})
+        response = None
+        event = self._create_open_event()
+        target_id = None
+        
+        if notification_type == 'system':
+            response = self.client.post(reverse('system_subscribe'),
+                                        {'email':email,
+                                         'one_time':one_time})
+        elif notification_type == 'event':
+            target_id = event.id
+            response = self.client.post(reverse('event_subscribe',
+                                                kwargs={'event_id':target_id}),
+                                        {'email':email,
+                                         'one_time':one_time})
+        elif notification_type == 'module':
+            target_id = event.module.id
+            response = self.client.post(reverse('module_subscribe',
+                                                kwargs={'module_id':target_id}),
+                                        {'email':email,
+                                         'one_time':one_time})
+        else:
+            raise Exception('Unknown notification_type: %s' % notification_type)
+        
         self.assertEqual(response.status_code, 200)
         self.assertTrue(re.findall('.*?(successfuly subscribed).*?', response.content))
         
         # Checking if exists and if it isn't duplicated
         subscriber = Subscriber.objects.get(email=email)
         
-        notification = NotifyOnEvent.objects.get(notification_type='system', target_id=None, one_time=False)
+        notification = NotifyOnEvent.objects.get(notification_type=notification_type,
+                                                 target_id=target_id, one_time=one_time)
         self.assertTrue(subscriber.email in notification.list_emails)
         
         # Test one time notify behavior
-        event = self._create_open_event()
         response = self.client.post(reverse('system_subscribe'), {'email':email, 'one_time':True})
         self.assertEqual(response.status_code, 200)
         self.assertTrue(re.findall('.*?(successfuly subscribed).*?', response.content))
@@ -156,9 +183,15 @@ class TestSiteStatus(TestCase):
         response = self.client.get(reverse('check_notifications'))
         self.assertEqual(response.status_code, 200)
         
+        # Check if task was scheduled
+        not_key = CHECK_NOTIFICATION_KEY % notification_event.id
+        self.assertTrue(memcache.get(not_key, False))
+        
+        # But since the stub won't work locally, we ought to call the task ourselves
         response = self.client.get(reverse('send_notification_task',
                                            kwargs={'notification_id':notification_event.id}))
         self.assertEqual(response.status_code, 200)
+        
         notification = NotifyOnEvent.objects.filter(notification_type='system', one_time=True, target_id=None)
         self.assertTrue(notification)
         notification = notification[0]
