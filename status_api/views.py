@@ -4,25 +4,43 @@ import urllib2
 from django.http import HttpResponse, Http404
 
 from main.models import *
-from main.decorators import login_required
 
-@login_required
-def save_active_host_status(request):
+from status_api.decorators import authenticate_api_request
+
+@authenticate_api_request
+def report_status(request):
     status = request.POST['module_status']
-    api = request.POST['module_api']
-    secret = request.POST['module_secret']
-    module = request.POST['module']
     
-    module = Module.objects.get(name=module)
-    if module.authenticate(api, secret):
-        module.save() # This is in order to mark when was last updated
+    module = request.module
+    module.updated_at = datetime.datetime.now()
+    module.save()
         
-        if status != 'online':
-            event = ModuleEvent()
-            event.status = status
-            event.module = module
-            event.save()
-        else:
-            return HttpResponse('OK')
+    if status != 'online':
+        event = ModuleEvent.objects.get_or_create()
+        event.down_at = datetime.datetime.now()
+        event.status = status
+        event.module = module
+        event.save()
     
-    raise Http404
+    return HttpResponse('OK')
+
+def check_status(request):
+    pass
+
+def check_incidents(request):
+    pass
+
+def check_uptime(request):
+    pass
+
+def check_availability(request):
+    pass
+
+
+###################################
+# Future:
+# - Schedule Maintenance
+# - Send notification
+# - Set site message
+# - Disable/Enable monitored module
+###################################

@@ -160,63 +160,83 @@ def check_passive_hosts_task(request, module_key):
                 logging.info("Site is back online %s" % module.name)
     
     except urllib2.HTTPError, e:
-        logging.critical("urlfetch.HTTPError %s" % module.name)
-        logging.critical(e)
-        logging.critical(traceback.extract_stack())
-        logging.critical("Events: %s" % events)
+        details = '''%s %s
+%s
+---
+%s
+---
+Events: %s''' % ("urlfetch.HTTPError", module.name, e,
+                 traceback.extract_stack(), events)
         
         if not events:
             event = ModuleEvent()
             event.down_at = start
             event.status = "unknown"
             event.module = module
-            event.details = str(e)
+            event.details = details
             event.save()
     
     except urllib2.URLError, e:
+        details = '''%s %s
+%s
+---
+%s
+---
+Events: %s''' % ("urllib2.URLError", module.name, e,
+                 traceback.extract_stack(), events)
+        
         logging.critical("Events: %s" % events)
         if not events:
             event = ModuleEvent()
             event.down_at = start
             event.status = "off-line"
             event.module = module
-            event.details = str(e)
+            event.details = details
             event.save()
     
     except urlfetch.InvalidURLError, e:
-        logging.critical("urlfetch.InvalidURLError %s" % module.name)
-        logging.critical(e)
-        logging.critical(traceback.extract_stack())
-        logging.critical("Events: %s" % events)
-        
+        details = '''%s %s
+%s
+---
+%s
+---
+Events: %s''' % ("urlfetch.InavlidURLError", module.name, e,
+                 traceback.extract_stack(), events)
+
         if not events:
             event = ModuleEvent()
             event.down_at = start
             event.status = "unknown"
             event.module = module
-            event.details = str(e)
+            event.details = details
             event.save()
     
     except urlfetch.DownloadError, e:
-        logging.critical("urlfetch.DownloadError %s" % module.name)
-        logging.critical(e)
-        logging.critical(traceback.extract_stack())
-        logging.critical("Events: %s" % events)
-        
+        details = '''%s %s
+%s
+---
+%s
+---
+Events: %s''' % ("urlfetch.DownloadError", module.name, e,
+                 traceback.extract_stack(), events)
+
         if not events:
             event = ModuleEvent()
             event.down_at = start
             event.status = "unknown"
             event.module = module
-            event.details = str(e)
+            event.details = details
             event.save()
     
     except urlfetch.ResponseTooLargeError, e:
-        logging.critical("urlfetch.ResponseTooLargeError %s" % module.name)
-        logging.critical(e)
-        logging.critical(traceback.extract_stack())
-        logging.critical("Events: %s" % events)
-        
+        details = '''%s %s
+%s
+---
+%s
+---
+Events: %s''' % ("urlfetch.ResponseTooLargeError", module.name, e,
+                 traceback.extract_stack(), events)
+
         if not events:
             event = ModuleEvent()
             event.down_at = start
@@ -226,31 +246,37 @@ def check_passive_hosts_task(request, module_key):
             event.save()
     
     except urlfetch.Error, e:
-        logging.critical("urlfetch.Error %s" % module.name)
-        logging.critical(e)
-        logging.critical(traceback.extract_stack())
-        logging.critical("Events: %s" % events)
-        
+        details = '''%s %s
+%s
+---
+%s
+---
+Events: %s''' % ("urlfetch.Error", module.name, e,
+                 traceback.extract_stack(), events)
+
         if not events:
             event = ModuleEvent()
             event.down_at = start
             event.status = "unknown"
             event.module = module
-            event.details = str(e)
+            event.details = details
             event.save()
     
     except Exception, e:
-        logging.critical("Error while executing check for %s" % module.name)
-        logging.critical(e)
-        logging.critical(traceback.extract_stack())
-        logging.critical("Events: %s" % events)
+        details = '''%s %s
+%s
+---
+%s
+---
+Events: %s''' % ("Exception", module.name, e,
+                 traceback.extract_stack(), events)
         
         if not events:
             event = ModuleEvent()
             event.down_at = start
             event.status = "unknown"
             event.module = module
-            event.details = str(e)
+            event.details = details
             event.save()
     
     memcache.delete(CHECK_HOST_KEY % module.id)

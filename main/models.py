@@ -593,7 +593,7 @@ def module_event_post_save(sender, instance, created, **kwargs):
         notification.target_id = instance.id
         notification.previous_status = instance.status
         notification.current_status = 'on-line'
-        notification.downtime = instance.total_downtime
+        notification.downtime = Decimal('%.2f' % instance.total_downtime)
         notification.save()
     
     aggregation.save()
@@ -688,6 +688,11 @@ class Module(models.Model):
         
         memcache.set(MODULE_DAY_STATUS_KEY % (day.month, day.day, self.id), day_status)
         return day_status
+    
+    def authenticate(self, api, secret):
+        if self.api_key == api and self.api_secret == secret:
+            return True
+        return False
 
     def __unicode__(self):
         return "%s - %s - %s" % (self.name, self.module_type, self.host)
