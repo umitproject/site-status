@@ -87,7 +87,10 @@ def percentage(value, total):
     if type(total) not in StringTypes:
         total = '%.2f' % total
     
-    return round((Decimal(value) * Decimal(100)) / Decimal(total), 2)
+    total = Decimal(total)
+    if total:
+        return round((Decimal(value) * Decimal(100)) / Decimal(total), 2)
+    return Decimal('100.00')
 
 class Subscriber(models.Model):
     '''Full list of all users who ever registered asking to be notified.

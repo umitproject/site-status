@@ -21,7 +21,7 @@
 			</tr>
 			{% for module in modules %}
 			<tr>
-				<td>{{ module.name }}</td>
+				<td><a href='{{ module.url }}'>{{ module.name }}</a></td>
 				{% for day in module.last_7_days %}
 				<td>
 					{% for status in day.list_statuses %}
