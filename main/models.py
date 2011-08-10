@@ -139,7 +139,9 @@ class Subscriber(models.Model):
         if not notification:
             notification = NotifyOnEvent(created_at=datetime.datetime.now(),
                                          notification_type=notification_type,
-                                         one_time=one_time, target_id=target_id) 
+                                         one_time=one_time, target_id=target_id)
+        else:
+            notification = notification[0] 
         
         notification.add_email(self.email)
         self.add_subscription(notification.id)

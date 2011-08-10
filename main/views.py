@@ -90,8 +90,6 @@ def subscribe(request, event_id=None, module_id=None):
         else:
             form = SubscribeForm()
     
-    logging.critical('--- Subscribe: %s' % form)
-    
     if form.is_valid():
         # Now, we need to check if user opted for one_time or not
         one_time = form.cleaned_data.get('one_time', False)

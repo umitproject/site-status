@@ -185,33 +185,60 @@ class TestSiteStatus(TestCase):
         
         self.assertFalse(notification.last_notified == None)
     
-    def _create_notification(self, notification_type, target_id, previous_status, current_status, downtime):
-        notification = Notification()
-        notification.created_at = datetime.datetime.now()
-        notification.notification_type = notification_type
-        notification.target_id = target_id
-        notification.previous_status = previous_status
-        notification.current_status = current_status
-        notification.downtime = downtime
-        notification.save()
-    
-        return notification
-    
     def test_module_subscribe(self):
         self._test_subscription('test@umitproject.org', 'module', False)
         self._test_subscription('test@umitproject.org', 'module', True)
     
     def test_event_subscribe(self):
         self._test_subscription('test@umitproject.org', 'event', True)
+    
+    def test_notification_task_sending_to_huge_amount_of_recipients(self):
+        # TODO4: Gotta confirm the time necessary to send one notification
+        #        (task execution time) with a large number of recipients (10000)
+        email_mask = 'test+%s@umitproject.org'
+        test_size = 50
+        for i in xrange(test_size):
+            response = self.client.post(reverse('system_subscribe'),
+                                        {'email':email_mask % i,
+                                         'one_time':False})
+            self.assertEqual(response.status_code, 200)
         
+        event = self._create_open_event()
+        event.back_at = datetime.datetime.now()
+        event.save()
+        
+        notification_event = Notification.objects.get(notification_type='event',
+                                                      target_id=event.id,
+                                                      sent_at=None)
+        
+        self._login_as_admin()
+        start = datetime.datetime.now()
+        response = self.client.get(reverse('send_notification_task',
+                                           kwargs={'notification_id':notification_event.id}))
+        end = datetime.datetime.now()
+        
+        logging.critical('>>> Time to process tasks on %s recipients: %s seconds' % (test_size, (end - start).seconds))
+        
+        self.assertEqual(response.status_code, 200)
+        
+        notification = NotifyOnEvent.objects.get(notification_type='system', one_time=False, target_id=None)
+        
+        if notification.last_notified == None:
+            logging.critical('<<< Failing notification: %s' % notification)
+        
+        self.assertFalse(notification.last_notified == None)
+        
+    
     def test_notification_load(self):
-        # TODO3: Gotta confirm the cron job can handle a huge number of notifications at a time (1000)
-        # TODO4: Gotta confirm the time necessary to send one notification (task execution time) with a large number of recipients (100)
         # TODO5: Expose these tests to have them ran through the production server (admin only, of course)
         
         # This is the amount of notifications the system should handle per minute
-        # 1200 is equivalent to 140 notifications per second
-        test_size = 8400
+        # 8400 is equivalent to 140 notifications per second - This should be able
+        # to run on virtually any robust setup.
+        # If in somewhere else (other than appengine) this can scale even further,
+        # and even in appengine can scale further if we make more than one cron
+        # request per minute (totally possible).
+        test_size = 50
         events = []
         notifications = []
         
