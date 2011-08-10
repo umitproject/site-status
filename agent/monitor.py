@@ -1,12 +1,35 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+##
+## Author: Adriano Monteiro Marques <adriano@umitproject.org>
+##
+## Copyright (C) 2011 S2S Network Consultoria e Tecnologia da Informacao LTDA
+##
+## This program is free software: you can redistribute it and/or modify
+## it under the terms of the GNU Affero General Public License as
+## published by the Free Software Foundation, either version 3 of the
+## License, or (at your option) any later version.
+##
+## This program is distributed in the hope that it will be useful,
+## but WITHOUT ANY WARRANTY; without even the implied warranty of
+## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+## GNU Affero General Public License for more details.
+##
+## You should have received a copy of the GNU Affero General Public License
+## along with this program.  If not, see <http://www.gnu.org/licenses/>.
+##
 
 import re
-import time
+from time import sleep
 import urllib2
+
+import logging
 
 import agent
 from agent import settings
 
-if settings.FREQUENCY < 1:
+FREQUENCY = settings.FREQUENCY
+if FREQUENCY < 1:
     FREQUENCY = 1
 
 TEST_RE = re.compile('(.*)' if settings.TEST_URL_REGEX is None else settings.TEST_URL_REGEX)
@@ -14,23 +37,18 @@ TEST_RE = re.compile('(.*)' if settings.TEST_URL_REGEX is None else settings.TES
 def enter_mainloop():
     while True:
         # Run URL test
-        response = urllib2.urlopen(settings.TEST_URL)
-        
-        # Check status code
-        status_ok = response.status_code == 200
-        
-        # Run Regex against content
-        status_ok = TEST_RE.match(response.read()) and status_ok
-        
-        # If something is wrong, send report if not disabled
-        # If disabled, just print to output
-        if not status_ok:
-            if DISABLED:
-                print "Failed to test module %s" % settings.MODULE_ID
+        if not agent.test_url(settings.TEST_URL, TEST_RE):
+            if settings.DISABLED:
+                logging.warning("Failed to test module %s" % settings.MODULE_ID)
             else:
-                response = urllib2.urlopen(settings.API_URL + '/report_status', {'api_key': settings.API_KEY,
-                                                                                 'api_secret': settings.API_KEY,
-                                                                                 'module_id':settings.MODULE_ID})
+                response = agent.call('report_status',
+                                      module_api=settings.API_KEY,
+                                      module_secret=settings.API_KEY,
+                                      module_id=settings.MODULE_ID,
+                                      module_status='off-line')
+                logging.warning('Status reported: %s' % response)
+        else:
+            logging.warning('Succeed!')
         
         sleep(60 * FREQUENCY)
 

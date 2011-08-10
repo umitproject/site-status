@@ -1,3 +1,32 @@
-#Thu Aug 04 07:25:02 BRT 2011
+#Wed Aug 10 10:33:54 BRT 2011
 eclipse.preferences.version=1
+encoding//agent/__init__.py=utf-8
+encoding//agent/monitor.py=utf-8
+encoding//agent/settings.py=utf-8
 encoding//main/decorators.py=utf-8
+encoding//main/feeds.py=utf-8
+encoding//main/forms.py=utf-8
+encoding//main/memcache.py=utf-8
+encoding//main/models.py=utf-8
+encoding//main/tests.py=utf-8
+encoding//main/utils.py=utf-8
+encoding//main/views.py=utf-8
+encoding//status_api/__init__.py=utf-8
+encoding//status_api/decorators.py=utf-8
+encoding//status_api/models.py=utf-8
+encoding//status_api/tests.py=utf-8
+encoding//status_api/urls.py=utf-8
+encoding//status_api/views.py=utf-8
+encoding//status_cron/__init__.py=utf-8
+encoding//status_cron/models.py=utf-8
+encoding//status_cron/tests.py=utf-8
+encoding//status_cron/urls.py=utf-8
+encoding//status_cron/views.py=utf-8
+encoding//status_notification/__init__.py=utf-8
+encoding//status_notification/models.py=utf-8
+encoding//status_notification/tests.py=utf-8
+encoding//status_notification/urls.py=utf-8
+encoding//status_notification/views.py=utf-8
+encoding/__init__.py=utf-8
+encoding/settings.py=utf-8
+encoding/urls.py=utf-8
