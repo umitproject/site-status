@@ -51,6 +51,23 @@ indexes:
   - name: __key__
     direction: desc
 
+- kind: main_moduleevent
+  properties:
+  - name: back_at
+  - name: down_at
+    direction: desc
+
+- kind: main_notification
+  properties:
+  - name: __key__
+    direction: desc
+
+- kind: main_notification
+  properties:
+  - name: sent_at
+  - name: created_at
+    direction: desc
+
 - kind: main_notifyonevent
   properties:
   - name: __key__

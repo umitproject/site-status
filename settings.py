@@ -49,11 +49,11 @@ COURRIER_CUSTOMER_KEY = ''
 COURRIER_API_SECRET = ''
 COURRIER_STATUS_CAMPAIGN_KEY = ""
 
-#EMAIL_HOST = ''
-#EMAIL_HOST_USER = ''
-#EMAIL_HOST_PASSWORD = ''
-#EMAIL_PORT = 25
-#EMAIL_USE_TLS = False
+EMAIL_HOST = ''
+EMAIL_HOST_USER = ''
+EMAIL_HOST_PASSWORD = ''
+EMAIL_PORT = 25
+EMAIL_USE_TLS = True
 
 # the emails that are going to feature the sender, to and reply to fields in all notification emails
 NOTIFICATION_SENDER = 'test@adriano-marques.appspotmail.com'

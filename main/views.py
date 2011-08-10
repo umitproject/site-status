@@ -141,6 +141,7 @@ def _create_fake_module(name, description, module_type, host, url):
     
     mod = Module()
     mod.name = name
+    mod.monitoring_since = datetime.datetime.now() - datetime.timedelta(days=10)
     mod.description = description
     mod.module_type = module_type
     mod.host = host
