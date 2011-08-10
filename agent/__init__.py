@@ -22,17 +22,29 @@
 import urllib2
 from urllib import urlencode
 
+from django.utils import simplejson as json
+
 import logging
 
 from agent import settings
 
 def call(method, **kwargs):
     url =  '%s/%s' % (settings.API_URL, method)
+    kwargs.update(dict(module_api=settings.API_KEY,
+                       module_secret=settings.API_KEY,
+                       module_id=settings.MODULE_ID))
     response = urllib2.urlopen(url, urlencode(kwargs))
     
     logging.info('>>> Response info from %s: %s' % (url, response.info()))
     
-    return response.read()
+    response = response.read()
+    
+    try:
+        response = json.loads(response)
+    except Exception, e:
+        response = dict(response='FAIL', reason="%s - %s" % (response, str(e)))
+    
+    return response
 
 def test_url(url, re):
     try:

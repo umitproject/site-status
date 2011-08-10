@@ -40,8 +40,8 @@ def report_status(request):
     module.updated_at = datetime.datetime.now()
     module.save()
         
+    event = ModuleEvent.objects.filter(module=module, back_at=None)
     if status != 'online':
-        event = ModuleEvent.objects.filter(module=module, back_at=None)
         if not event:
             event = ModuleEvent()
             event.down_at = datetime.datetime.now()
@@ -49,6 +49,9 @@ def report_status(request):
             event.module = module
             event.save()
             new = True
+    else:
+        event.back_at = datetime.datetime.now()
+        event.save()
     
     return __build_response(response='OK',
                             new=new)

@@ -35,19 +35,23 @@ if FREQUENCY < 1:
 TEST_RE = re.compile('(.*)' if settings.TEST_URL_REGEX is None else settings.TEST_URL_REGEX)
 
 def enter_mainloop():
+    current_status = agent.call('check_status').get('status', 'unknown')
+
     while True:
         # Run URL test
         if not agent.test_url(settings.TEST_URL, TEST_RE):
             if settings.DISABLED:
                 logging.warning("Failed to test module %s" % settings.MODULE_ID)
             else:
-                response = agent.call('report_status',
-                                      module_api=settings.API_KEY,
-                                      module_secret=settings.API_KEY,
-                                      module_id=settings.MODULE_ID,
-                                      module_status='off-line')
+                response = agent.call('report_status', module_status='off-line')
                 logging.warning('Status reported: %s' % response)
+            current_status = 'off-line'
         else:
+            if current_status != 'on-line' and not DISABLED:
+                response = agent.call('report_status', module_status='on-line')
+                logging.warning('Status reported: %s' % response)
+                current_status = 'on-line'
+            
             logging.warning('Succeed!')
         
         sleep(60 * FREQUENCY)

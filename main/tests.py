@@ -29,7 +29,6 @@ from google.appengine.ext import testbed
 from google.appengine.api import apiproxy_stub_map
 
 from django.test import TestCase
-from django.test.client import Client
 from django.core.urlresolvers import reverse
 from django.contrib.auth.models import User
 
