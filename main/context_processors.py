@@ -22,15 +22,14 @@ import logging
 
 from django.conf import settings
 
-from main.models import twitter_account
-
 def get_settings(request):
-    return {'GOOGLE_ANALYTICS_ID': settings.GOOGLE_ANALYTICS_ID,
-            'SITE_NAME': settings.SITE_NAME,
-            'MAIN_SITE_URL': settings.MAIN_SITE_URL,
-            'CONTACT_PHONE': settings.CONTACT_PHONE,
-            'CONTACT_EMAIL': settings.CONTACT_EMAIL,
-            'SHOW_INCIDENTS': settings.SHOW_INCIDENTS,
-            'SHOW_UPTIME': settings.SHOW_UPTIME,
-            'SHOW_LAST_INCIDENT': settings.SHOW_LAST_INCIDENT,
-            'twitter_account': twitter_account()}
+    return {'GOOGLE_ANALYTICS_ID': request.site_config.analytics_id,
+            'SITE_NAME': request.site_config.site_name,
+            'MAIN_SITE_URL': request.site_config.main_site_url,
+            'CONTACT_PHONE': request.site_config.contact_phone,
+            'CONTACT_EMAIL': request.site_config.contact_email,
+            'SHOW_INCIDENTS': request.site_config.show_incidents,
+            'SHOW_UPTIME': request.site_config.show_uptime,
+            'SHOW_LAST_INCIDENT': request.site_config.show_last_incident,
+            'twitter_account': request.site_config.twitter_account,
+            'site_config':request.site_config}

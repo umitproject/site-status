@@ -46,10 +46,17 @@ class TestSiteStatus(TestCase):
         self.testbed.init_datastore_v3_stub()
         self.testbed.init_memcache_stub()
         
+        self.site_config = SiteConfig()
+        self.site_config.site_name = "Test Suite"
+        self.site_config.status_url = "localhost"
+        self.site_config.main_site_url = "localhost"
+        self.site_config.save()
+        
         # Create global aggregation entry.
         self.aggregation = AggregatedStatus()
         self.aggregation.created_at = datetime.datetime.now() - datetime.timedelta(days=10)
         self.aggregation.updated_at = self.aggregation.created_at
+        self.aggregation.site_config = self.site_config
         self.aggregation.save()
         
         # Task stub fix
@@ -83,8 +90,7 @@ class TestSiteStatus(TestCase):
         self.passive_sane_module.host = 'www.google.com'
         self.passive_sane_module.url = 'http://www.google.com'
         self.passive_sane_module.status = 'unknown' # unknown is the default starting status for any module
-        self.passive_sane_module.api_key = 'kjh'
-        self.passive_sane_module.api_secret = 'ouiopu'
+        self.passive_sane_module.site_config = self.site_config
         self.passive_sane_module.save()
         
         self.passive_insane_module = Module()
@@ -96,8 +102,7 @@ class TestSiteStatus(TestCase):
         self.passive_insane_module.host = 'weird.weird.o'
         self.passive_insane_module.url = 'http://weird.weird.o'
         self.passive_insane_module.status = 'unknown' # unknown is the default starting status for any module
-        self.passive_insane_module.api_key = 'iuewryt'
-        self.passive_insane_module.api_secret = 'kjzxhf'
+        self.passive_insane_module.site_config = self.site_config
         self.passive_insane_module.save()
     
     def _create_active_test_modules(self):
@@ -110,8 +115,7 @@ class TestSiteStatus(TestCase):
         self.active_sane_module.host = 'www.google.com'
         self.active_sane_module.url = 'http://www.google.com'
         self.active_sane_module.status = 'unknown' # unknown is the default starting status for any module
-        self.active_sane_module.api_key = 'kjh'
-        self.active_sane_module.api_secret = 'ouiopu'
+        self.active_sane_module.site_config = self.site_config
         self.active_sane_module.save()
         
         self.active_insane_module = Module()
@@ -123,8 +127,7 @@ class TestSiteStatus(TestCase):
         self.active_insane_module.host = 'weird.weird.o'
         self.active_insane_module.url = 'http://weird.weird.o'
         self.active_insane_module.status = 'unknown' # unknown is the default starting status for any module
-        self.active_insane_module.api_key = 'iuewryt'
-        self.active_insane_module.api_secret = 'kjzxhf'
+        self.active_insane_module.site_config = self.site_config
         self.active_insane_module.save()
     
     def test_daily_module_status_automatic_creation(self):
@@ -173,7 +176,8 @@ class TestSiteStatus(TestCase):
         subscriber = Subscriber.objects.get(email=email)
         
         notification = NotifyOnEvent.objects.get(notification_type=notification_type,
-                                                 target_id=target_id, one_time=one_time)
+                                                 target_id=target_id, one_time=one_time,
+                                                 site_config=subscriber.site_config)
         self.assertTrue(subscriber.email in notification.list_emails)
         
         # Now, test that once the system is back user is notified
@@ -182,7 +186,8 @@ class TestSiteStatus(TestCase):
         
         notification_event = Notification.objects.get(notification_type='event',
                                                       target_id=event.id,
-                                                      sent_at=None)
+                                                      sent_at=None,
+                                                      site_config=subscriber.site_config)
         
         self._login_as_admin()
         response = self.client.get(reverse('check_notifications'))
@@ -198,7 +203,8 @@ class TestSiteStatus(TestCase):
         self.assertEqual(response.status_code, 200)
         
         notification = NotifyOnEvent.objects.get(notification_type=notification_type,
-                                                 one_time=one_time, target_id=target_id)
+                                                 one_time=one_time, target_id=target_id,
+                                                 site_config=subscriber.site_config)
         
         if notification.last_notified == None:
             logging.critical('<<< Failing notification: %s' % notification)
@@ -344,6 +350,7 @@ class TestSiteStatus(TestCase):
         event.down_at = hour_ago
         event.back_at = now
         event.status = 'service_disruption'
+        event.site_config = self.site_config
         event.save()
         
         return event
@@ -355,6 +362,7 @@ class TestSiteStatus(TestCase):
         event.module = self.passive_sane_module
         event.down_at = hour_ago
         event.status = 'service_disruption'
+        event.site_config = self.site_config
         event.save()
         
         return event

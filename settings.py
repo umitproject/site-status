@@ -32,14 +32,6 @@ DATABASES['default'] = {'ENGINE': 'dbindexer', 'TARGET': 'native'}
 AUTOLOAD_SITECONF = 'indexes'
 
 DEBUG = True
-SITE_NAME = "Umit Project"
-MAIN_SITE_URL = "http://www.umitproject.org"
-CONTACT_PHONE = "+55 62 6262626262"
-CONTACT_EMAIL = "contact@umitproject.org"
-FEED_SIZE = 5
-SITE_STATUS_URL = "http://localhost:9000"
-
-GOOGLE_ANALYTICS_ID = ''
 
 ENVIRONMENT = os.environ.get('SERVER_SOFTWARE', '')
 GAE = True
@@ -57,9 +49,9 @@ elif ENVIRONMENT.startswith('GAETest'):
 
 #####################
 # CURRENT STATUS BAR
-SHOW_INCIDENTS = True
-SHOW_UPTIME = True
-SHOW_LAST_INCIDENT = True
+DEFAULT_SHOW_INCIDENTS = True
+DEFAULT_SHOW_UPTIME = True
+DEFAULT_SHOW_LAST_INCIDENT = True
 
 ######################
 # NOTIFICATION SYSTEM
@@ -76,10 +68,9 @@ EMAIL_HOST_PASSWORD = ''
 EMAIL_PORT = 25
 EMAIL_USE_TLS = True
 
-# the emails that are going to feature the sender, to and reply to fields in all notification emails
-NOTIFICATION_SENDER = 'test@adriano-marques.appspotmail.com'
-NOTIFICATION_TO = 'notifications@adriano-marques.appspotmail.com'
-NOTIFICATION_REPLY_TO = 'do_not_reply@adriano-marques.appspotmail.com'
+DEFAULT_NOTIFICATION_SENDER = 'test@adriano-marques.appspotmail.com'
+DEFAULT_NOTIFICATION_TO = 'notifications@adriano-marques.appspotmail.com'
+DEFAULT_NOTIFICATION_REPLY_TO = 'do_not_reply@adriano-marques.appspotmail.com'
 
 ########################
 # MEDIA HANDLING SECTION
@@ -145,6 +136,7 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'main.middleware.SiteConfigMiddleware',
 )
 
 TEMPLATE_CONTEXT_PROCESSORS = (

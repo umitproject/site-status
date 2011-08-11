@@ -36,14 +36,13 @@ from main.forms import *
 
 
 def home(request, msg=None):
-    modules = Module.objects.all()
-    show_days = Module.show_days()
-    aggregation = AggregatedStatus.objects.all()[0]
-    last_incident = aggregation.last_incident
-    current_availability = aggregation.percentage_uptime
+    modules = Module.objects.filter(site_config=request.site_config)
+    show_days = Module.show_days(request.site_config)
+    last_incident = request.aggregation.last_incident
+    current_availability = request.aggregation.percentage_uptime
     
-    incidents_data = json.dumps(aggregation.incidents_data)
-    uptime_data = json.dumps(aggregation.uptime_data)
+    incidents_data = json.dumps(request.aggregation.incidents_data)
+    uptime_data = json.dumps(request.aggregation.uptime_data)
     
     context = locals()
     if msg is not None:
@@ -95,8 +94,7 @@ def subscribe(request, event_id=None, module_id=None):
         one_time = module.status != 'on-line'
     else:
         system = True
-        aggregation = AggregatedStatus.objects.all()[0]
-        one_time = aggregation.status != 'on-line'
+        one_time = request.aggregation.status != 'on-line'
     
     if one_time:
         if request.POST:
@@ -126,6 +124,7 @@ def subscribe(request, event_id=None, module_id=None):
             subscriber.last_access = datetime.datetime.now()
         
         subscriber.add_ip(request.META['REMOTE_ADDR'])
+        subscriber.site_config = request.site_config
         subscriber.save()
         
         if module:

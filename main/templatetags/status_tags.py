@@ -9,9 +9,9 @@ from main.utils import pretty_date
 
 register = template.Library()
 
-@register.simple_tag
-def last_days_header(days):
-    days = Module.show_days(int(days))
+@register.simple_tag(takes_context=True)
+def last_days_header(context, days):
+    days = Module.show_days(context['site_config'], int(days))
     header = []
     today = datetime.date.today()
     for day in xrange(days):

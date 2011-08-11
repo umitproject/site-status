@@ -44,12 +44,6 @@ from main.utils import send_mail
 CHECK_HOST_KEY = 'check_passive_host_%s'
 CHECK_NOTIFICATION_KEY = 'check_notification_%s'
 
-################
-# Notification email sender/to/reply_to
-NOTIFICATION_SENDER = settings.NOTIFICATION_SENDER
-NOTIFICATION_TO = settings.NOTIFICATION_TO
-NOTIFICATION_REPLY_TO = settings.NOTIFICATION_REPLY_TO
-
 @staff_member_required
 def check_passive_hosts(request):
     modules = Module.objects.filter(module_type='passive')
@@ -121,9 +115,10 @@ def send_notification_task(request, notification_id):
     notification = Notification.objects.get(pk=notification_id)
     notification.build_email_data()
     
-    sent = send_mail(NOTIFICATION_SENDER, NOTIFICATION_TO,
+    sent = send_mail(notification.site_config.notification_sender,
+                     notification.site_config.notification_to,
                      bcc=notification.list_emails,
-                     reply_to=NOTIFICATION_REPLY_TO,
+                     reply_to=notification.site_config.notification_reply_to,
                      subject=notification.subject,
                      body=notification.body,
                      html=notification.html)
@@ -142,7 +137,10 @@ def check_notifications_task(request, one_time, notification_queue_id):
 
 def _get_status_code(module):
     if settings.GAE:
-        result = urlfetch.fetch(module.url)
+        result = urlfetch.fetch(module.url,
+                                follow_redirects=True,
+                                allow_truncated=True,
+                                deadline=60)
         return result.status_code
     result = urllib2.urlopen(module.url)
     return result.getcode()
@@ -171,6 +169,7 @@ def check_passive_hosts_task(request, module_key):
                 event.back_at = start
                 event.status = "unknown"
                 event.module = module
+                event.site_config = module.site_config
                 event.save()
             
             now = datetime.datetime.now() 
@@ -194,6 +193,7 @@ Events: %s''' % ("urlfetch.HTTPError", module.name, e,
             event.status = "unknown"
             event.module = module
             event.details = details
+            event.site_config = module.site_config
             event.save()
     
     except urllib2.URLError, e:
@@ -212,6 +212,7 @@ Events: %s''' % ("urllib2.URLError", module.name, e,
             event.status = "off-line"
             event.module = module
             event.details = details
+            event.site_config = module.site_config
             event.save()
     
     except urlfetch.InvalidURLError, e:
@@ -229,6 +230,7 @@ Events: %s''' % ("urlfetch.InavlidURLError", module.name, e,
             event.status = "unknown"
             event.module = module
             event.details = details
+            event.site_config = module.site_config
             event.save()
     
     except urlfetch.DownloadError, e:
@@ -246,6 +248,7 @@ Events: %s''' % ("urlfetch.DownloadError", module.name, e,
             event.status = "unknown"
             event.module = module
             event.details = details
+            event.site_config = module.site_config
             event.save()
     
     except urlfetch.ResponseTooLargeError, e:
@@ -263,6 +266,7 @@ Events: %s''' % ("urlfetch.ResponseTooLargeError", module.name, e,
             event.status = "unknown"
             event.module = module
             event.details = str(e)
+            event.site_config = module.site_config
             event.save()
     
     except urlfetch.Error, e:
@@ -280,6 +284,7 @@ Events: %s''' % ("urlfetch.Error", module.name, e,
             event.status = "unknown"
             event.module = module
             event.details = details
+            event.site_config = module.site_config
             event.save()
     
     except Exception, e:
@@ -297,6 +302,7 @@ Events: %s''' % ("Exception", module.name, e,
             event.status = "unknown"
             event.module = module
             event.details = details
+            event.site_config = module.site_config
             event.save()
     
     memcache.delete(CHECK_HOST_KEY % module.id)

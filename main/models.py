@@ -34,10 +34,6 @@ from django.conf import settings
 from main.memcache import memcache
 from main.utils import pretty_date
 
-############
-# CONSTANTS
-SHOW_DAYS = 7 # amount of days to show in main page
-
 ##########
 # CHOICES
 STATUS = (
@@ -67,6 +63,7 @@ NOTIFICATION_TYPES = (
 # MEMCACHE KEYS
 MODULE_TODAY_STATUS_KEY = 'module_today_status_%s'
 MODULE_DAY_STATUS_KEY = 'module_day_status_%s_%s__%s'
+SITE_CONFIG_KEY = 'site_config_%s'
 
 
 ###################
@@ -92,18 +89,50 @@ def percentage(value, total):
         return round((Decimal(value) * Decimal(100)) / Decimal(total), 2)
     return Decimal('100.00')
 
+class SiteConfig(models.Model):
+    created_at = models.DateTimeField(auto_now_add=True)
+    site_name = models.CharField(max_length=200, default="")
+    main_site_url = models.CharField(max_length=500, null=True, blank=True, default="")
+    contact_phone = models.CharField(max_length=50, null=True, blank=True, default="")
+    contact_email = models.EmailField(null=True, blank=True, default="")
+    feed_size = models.IntegerField(default=5)
+    status_url = models.CharField(max_length=500)
+    analytics_id = models.CharField(max_length=20, null=True, blank=True, default="")
+    twitter_account = models.ForeignKey('main.TwitterAccount', null=True, blank=True, default=None)
+    notification_sender = models.EmailField(null=True, blank=True, default=settings.DEFAULT_NOTIFICATION_SENDER)
+    notification_to = models.EmailField(null=True, blank=True, default=settings.DEFAULT_NOTIFICATION_TO)
+    notification_reply_to = models.EmailField(null=True, blank=True, default=settings.DEFAULT_NOTIFICATION_REPLY_TO)
+    show_days = models.IntegerField(default=7)
+    show_incidents = models.BooleanField(default=settings.DEFAULT_SHOW_INCIDENTS)
+    show_uptime = models.BooleanField(default=settings.DEFAULT_SHOW_UPTIME)
+    show_last_incident = models.BooleanField(default=settings.DEFAULT_SHOW_LAST_INCIDENT)
+    api_key = models.CharField(max_length=100, null=True, blank=True)
+    api_secret = models.CharField(max_length=100, null=True, blank=True)
+    
+    def save(self, *args, **kwargs):
+        memcache.delete(SITE_CONFIG_KEY % self.site_name)
+        
+        if not self.api_key:
+            self.api_key = uuid.uuid4()
+        
+        if not self.api_secret:
+            self.api_secret = uuid.uuid4()
+        
+        super(SiteConfig, self).save(*args, **kwargs)
+
 class Subscriber(models.Model):
     '''Full list of all users who ever registered asking to be notified.
     Used for consultation on when was last time user accessed the status site
     or since when he is registered, as well as his email that is used as a key.
     '''
     unique_identifier = models.CharField(max_length=36, blank=True, null=True, default='')
-    created_at = models.DateTimeField()
+    created_at = models.DateTimeField(null=True, blank=True, default=None)
     updated_at = models.DateTimeField(null=True, blank=True, default=None)
     email = models.EmailField()
     subscriptions = models.TextField()
     originating_ips = models.TextField()
     unsubscribed_at = models.DateTimeField(null=True, blank=True, default=None)
+    site_config = models.ForeignKey('main.SiteConfig')
     
     @property
     def list_subscriptions_ids(self):
@@ -152,16 +181,22 @@ class Subscriber(models.Model):
         super(Subscriber, self).save(*args, **kwargs)
     
     def unsubscribe(self, notification_type, one_time, target_id=None):
-        return NotifyOnEvent.unsubscribe(self.email, notification_type, one_time, target_id)
+        return NotifyOnEvent.unsubscribe(self.email,
+                                         notification_type,
+                                         one_time,
+                                         target_id,
+                                         site_config=self.site_config)
     
     def subscribe(self, notification_type, one_time, target_id=None):
         notification = NotifyOnEvent.objects.filter(notification_type=notification_type,
-                                                    one_time=one_time, target_id=target_id)
+                                                    one_time=one_time, target_id=target_id,
+                                                    site_config=self.site_config)
         
         if not notification:
             notification = NotifyOnEvent(created_at=datetime.datetime.now(),
                                          notification_type=notification_type,
-                                         one_time=one_time, target_id=target_id)
+                                         one_time=one_time, target_id=target_id,
+                                         site_config=self.site_config)
         else:
             notification = notification[0] 
         
@@ -182,7 +217,7 @@ class Notification(models.Model):
     the relevant NotifyOnEvent instances and save the emails it will need
     to send out.
     """
-    created_at = models.DateTimeField()
+    created_at = models.DateTimeField(null=True, blank=True, default=None)
     sent_at = models.DateTimeField(null=True, blank=True, default=None)
     notification_type = models.CharField(max_length=10, choices=NOTIFICATION_TYPES)
     target_id = models.IntegerField(null=True, blank=True, default=None)
@@ -194,14 +229,15 @@ class Notification(models.Model):
     current_status = models.CharField(max_length=20)
     downtime = models.DecimalField(max_digits=5, decimal_places=2,
                                    default=None, null=True)
+    site_config = models.ForeignKey('main.SiteConfig')
     
     @property
     def list_emails(self):
         return [e for e in self.emails.split(',') if e]
     
     def build_email_data(self):
-        target_url = settings.MAIN_SITE_URL
-        target_name = settings.SITE_NAME
+        target_url = self.site_config.main_site_url
+        target_name = self.site_config.site_name
         
         if self.notification_type == 'event':
             event = ModuleEvent.objects.get(pk=self.target_id)
@@ -289,12 +325,13 @@ class NotifyOnEvent(models.Model):
     it is back) or always (whenever there is a status change for a module or
     system).
     '''
-    created_at = models.DateTimeField()
+    created_at = models.DateTimeField(null=True, blank=True, default=None)
     last_notified = models.DateTimeField(null=True, blank=True, default=None)
     one_time = models.BooleanField(default=False)
     notification_type = models.CharField(max_length=10, choices=NOTIFICATION_TYPES)
     target_id = models.IntegerField(null=True, blank=True, default=None)
     emails = models.TextField()
+    site_config = models.ForeignKey('main.SiteConfig')
     
     @property
     def list_emails(self):
@@ -358,11 +395,12 @@ class NotifyOnEvent(models.Model):
 
 
 class AggregatedStatus(models.Model):
-    created_at = models.DateTimeField()
+    created_at = models.DateTimeField(null=True, blank=True, default=None)
     updated_at = models.DateTimeField(null=True, blank=True, default=None)
     total_downtime = models.FloatField(default=0.0)
     time_estimate_all_modules = models.FloatField(default=0.0)
     status = models.CharField(max_length=30, choices=STATUS, default=STATUS[0][0])
+    site_config = models.ForeignKey('main.SiteConfig')
     
     @property
     def total_uptime(self):
@@ -461,13 +499,14 @@ class AggregatedStatus(models.Model):
 
 
 class DailyModuleStatus(models.Model):
-    created_at = models.DateTimeField()
+    created_at = models.DateTimeField(null=True, blank=True, default=None)
     updated_at = models.DateTimeField(null=True, blank=True, default=None)
     total_downtime = models.FloatField(default=0.0) # minutes
     statuses = models.TextField()
     events = models.TextField()
     status = models.CharField(max_length=30, choices=STATUS)
     module = models.ForeignKey('main.Module')
+    site_config = models.ForeignKey('main.SiteConfig')
     
     # TODO: on creation, revoke module's today_status memcache
     
@@ -532,11 +571,18 @@ class DailyModuleStatus(models.Model):
                                                             self.total_downtime,
                                                             self.created_at)
 class ModuleEvent(models.Model):
-    down_at = models.DateTimeField()
+    down_at = models.DateTimeField(null=True, blank=True, default=None)
     back_at = models.DateTimeField(null=True, blank=True, default=None)
     details = models.TextField()
     status = models.CharField(max_length=30, choices=STATUS)
     module = models.ForeignKey('main.Module')
+    site_config = models.ForeignKey('main.SiteConfig')
+    
+    def save(self, *args, **kwargs):
+        if self.site_config is None and self.module is not None:
+            self.site_config = self.module.site_config
+        
+        super(ModuleEvent, self).save(*args, **kwargs)
     
     @property
     def total_downtime(self):
@@ -616,6 +662,7 @@ def module_event_post_save(sender, instance, created, **kwargs):
         notification.previous_status = instance.status
         notification.current_status = 'on-line'
         notification.downtime = Decimal('%.2f' % instance.total_downtime)
+        notification.site_config = instance.site_config
         notification.save()
     
     aggregation.save()
@@ -626,7 +673,7 @@ post_save.connect(module_event_post_save, sender=ModuleEvent)
 
 
 class Module(models.Model):
-    monitoring_since = models.DateTimeField()
+    monitoring_since = models.DateTimeField(null=True, blank=True, default=None)
     updated_at = models.DateTimeField(null=True, blank=True, default=None)
     name = models.CharField(max_length=50)
     description = models.TextField()
@@ -636,17 +683,16 @@ class Module(models.Model):
     url = models.CharField(max_length=1000)
     status = models.CharField(max_length=30, choices=STATUS) # current_status
     tags = models.TextField(default="", blank=True, null=True)
-    api_key = models.CharField(max_length=100)
-    api_secret = models.CharField(max_length=100)
+    site_config = models.ForeignKey('main.SiteConfig')
     
     @property
     def list_tags(self):
         return [tag.strip() for tag in self.tags.split(',')]
     
     @staticmethod
-    def show_days(days=None):
-        modules = Module.objects.all()
-        show_days = SHOW_DAYS
+    def show_days(site_config, days=None):
+        modules = Module.objects.filter(site_config=site_config)
+        show_days = site_config.show_days
         
         if days is not None:
             show_days = days
@@ -706,13 +752,15 @@ class Module(models.Model):
         day_status.module = self
         day_status.statuses = self.status
         day_status.status = self.status
+        day_status.site_config = self.site_config
         day_status.save()
         
         memcache.set(MODULE_DAY_STATUS_KEY % (day.month, day.day, self.id), day_status)
         return day_status
     
     def authenticate(self, api, secret):
-        if self.api_key == api and self.api_secret == secret:
+        if self.site_config.api_key == api and \
+            self.site_config.api_secret == secret:
             return True
         return False
 
@@ -720,7 +768,7 @@ class Module(models.Model):
         return "%s - %s - %s" % (self.name, self.module_type, self.host)
 
 class ScheduledMaintenance(models.Model):
-    created_at = models.DateTimeField()
+    created_at = models.DateTimeField(null=True, blank=True, default=None)
     updated_at = models.DateTimeField(null=True, blank=True, default=None)
     status = models.CharField(max_length=30, choices=STATUS)
     time_estimate = models.IntegerField(default=0)
@@ -728,6 +776,7 @@ class ScheduledMaintenance(models.Model):
     total_downtime = models.FloatField(default=0.0)
     message = models.TextField()
     module = models.ForeignKey('main.Module')
+    site_config = models.ForeignKey('main.SiteConfig')
     
     def __unicode__(self):
         return 'Scheduled to %s. Estimate of %s minutes.' % (self.scheduled_to,
@@ -743,23 +792,3 @@ class TwitterAccount(models.Model):
     
     def __unicode__(self):
         return '@%s' % self.login
-
-
-singleton_twitter_account = TwitterAccount.objects.all()[:1]
-if not singleton_twitter_account:
-    singleton_twitter_account = None
-
-singleton_aggregated_status = AggregatedStatus.objects.all()[:1]
-if not singleton_aggregated_status:
-    singleton_aggregated_status = AggregatedStatus()
-    singleton_aggregated_status.save()
-
-
-def twitter_account():
-    global singleton_twitter_account
-    
-    if singleton_twitter_account:
-        return singleton_twitter_account
-    
-    singleton_twitter_account = TwitterAccount.objects.all()[:1]
-    return singleton_twitter_account
