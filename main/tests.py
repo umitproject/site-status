@@ -47,10 +47,14 @@ class TestSiteStatus(TestCase):
         self.testbed.init_memcache_stub()
         
         self.site_config = SiteConfig()
-        self.site_config.site_name = "Test Suite"
-        self.site_config.status_url = "localhost"
-        self.site_config.main_site_url = "localhost"
+        self.site_config.site_name = "testserver"
+        self.site_config.main_site_url = "testserver"
         self.site_config.save()
+        
+        status_domain = StatusSiteDomain()
+        status_domain.status_url = "testserver"
+        status_domain.site_config = self.site_config
+        status_domain.save()
         
         # Create global aggregation entry.
         self.aggregation = AggregatedStatus()
@@ -131,7 +135,7 @@ class TestSiteStatus(TestCase):
         self.active_insane_module.save()
     
     def test_daily_module_status_automatic_creation(self):
-        pass
+        pass    
     
     def test_populate_view(self):
         response = self.client.post(reverse('test_populate'))
@@ -177,7 +181,7 @@ class TestSiteStatus(TestCase):
         
         notification = NotifyOnEvent.objects.get(notification_type=notification_type,
                                                  target_id=target_id, one_time=one_time,
-                                                 site_config=subscriber.site_config)
+                                                 site_config=self.site_config)
         self.assertTrue(subscriber.email in notification.list_emails)
         
         # Now, test that once the system is back user is notified
@@ -187,7 +191,7 @@ class TestSiteStatus(TestCase):
         notification_event = Notification.objects.get(notification_type='event',
                                                       target_id=event.id,
                                                       sent_at=None,
-                                                      site_config=subscriber.site_config)
+                                                      site_config=self.site_config)
         
         self._login_as_admin()
         response = self.client.get(reverse('check_notifications'))
@@ -204,7 +208,7 @@ class TestSiteStatus(TestCase):
         
         notification = NotifyOnEvent.objects.get(notification_type=notification_type,
                                                  one_time=one_time, target_id=target_id,
-                                                 site_config=subscriber.site_config)
+                                                 site_config=self.site_config)
         
         if notification.last_notified == None:
             logging.critical('<<< Failing notification: %s' % notification)

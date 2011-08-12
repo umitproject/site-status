@@ -89,6 +89,14 @@ def percentage(value, total):
         return round((Decimal(value) * Decimal(100)) / Decimal(total), 2)
     return Decimal('100.00')
 
+class StatusSiteDomain(models.Model):
+    status_url = models.CharField(max_length=500)
+    site_config = models.ForeignKey('main.SiteConfig')
+    
+    def __unicode__(self):
+        return '%s -> %s' % (self.status_url, self.site_config.site_name)
+
+
 class SiteConfig(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     site_name = models.CharField(max_length=200, default="")
@@ -96,7 +104,6 @@ class SiteConfig(models.Model):
     contact_phone = models.CharField(max_length=50, null=True, blank=True, default="")
     contact_email = models.EmailField(null=True, blank=True, default="")
     feed_size = models.IntegerField(default=5)
-    status_url = models.CharField(max_length=500)
     analytics_id = models.CharField(max_length=20, null=True, blank=True, default="")
     twitter_account = models.ForeignKey('main.TwitterAccount', null=True, blank=True, default=None)
     notification_sender = models.EmailField(null=True, blank=True, default=settings.DEFAULT_NOTIFICATION_SENDER)
@@ -108,6 +115,13 @@ class SiteConfig(models.Model):
     show_last_incident = models.BooleanField(default=settings.DEFAULT_SHOW_LAST_INCIDENT)
     api_key = models.CharField(max_length=100, null=True, blank=True)
     api_secret = models.CharField(max_length=100, null=True, blank=True)
+    
+    @staticmethod
+    def get_from_domain(domain):
+        status_site = StatusSiteDomain.objects.filter(status_url=domain)
+        if status_site:
+            return status_site[0].site_config
+        return None
     
     def save(self, *args, **kwargs):
         memcache.delete(SITE_CONFIG_KEY % self.site_name)
@@ -132,7 +146,7 @@ class Subscriber(models.Model):
     subscriptions = models.TextField()
     originating_ips = models.TextField()
     unsubscribed_at = models.DateTimeField(null=True, blank=True, default=None)
-    site_config = models.ForeignKey('main.SiteConfig')
+    site_config = models.ForeignKey('main.SiteConfig', null=True)
     
     @property
     def list_subscriptions_ids(self):
@@ -229,7 +243,7 @@ class Notification(models.Model):
     current_status = models.CharField(max_length=20)
     downtime = models.DecimalField(max_digits=5, decimal_places=2,
                                    default=None, null=True)
-    site_config = models.ForeignKey('main.SiteConfig')
+    site_config = models.ForeignKey('main.SiteConfig', null=True)
     
     @property
     def list_emails(self):
@@ -267,11 +281,13 @@ class Notification(models.Model):
             notify = NotifyOnEvent.objects.filter(one_time=one_time,
                                                   notification_type=notification_type,
                                                   target_id=target_id,
-                                                  last_notified=None)
+                                                  last_notified=None,
+                                                  site_config=self.site_config)
         else:
             notify = NotifyOnEvent.objects.filter(one_time=one_time,
                                                   notification_type=notification_type,
-                                                  target_id=target_id)
+                                                  target_id=target_id,
+                                                  site_config=self.site_config)
             
         if notify:
             notify = notify[0]
@@ -331,7 +347,7 @@ class NotifyOnEvent(models.Model):
     notification_type = models.CharField(max_length=10, choices=NOTIFICATION_TYPES)
     target_id = models.IntegerField(null=True, blank=True, default=None)
     emails = models.TextField()
-    site_config = models.ForeignKey('main.SiteConfig')
+    site_config = models.ForeignKey('main.SiteConfig', null=True)
     
     @property
     def list_emails(self):
@@ -357,7 +373,8 @@ class NotifyOnEvent(models.Model):
     def can_unsubscribe(email, notification_type, one_time, target_id=None):
         instance = NotifyOnEvent.objects.filter(notification_type=notification_type,
                                                 one_time=one_time,
-                                                target_id=target_id)
+                                                target_id=target_id,
+                                                site_config=self.site_config)
         if instance and email in instance.list_emails:
             return True
         return False
@@ -366,12 +383,13 @@ class NotifyOnEvent(models.Model):
     def unsubscribe(email, notification_type, one_time, target_id=None):
         instance = NotifyOnEvent.objects.filter(notification_type=notification_type,
                                                 one_time=one_time,
-                                                target_id=target_id)
+                                                target_id=target_id,
+                                                site_config=self.site_config)
         list_emails = instance.list_emails
         if instance and email in list_emails:
             
             # Removing the NotifyOnEvent id from subscriber's instance
-            subscriber = Subscriber.objects.get(email=email)
+            subscriber = Subscriber.objects.get(email=email, site_config=self.site_config)
             
             subs_ids = subscriber.list_subscriptions_ids
             subs_ids.remove(instance.id)
@@ -400,7 +418,7 @@ class AggregatedStatus(models.Model):
     total_downtime = models.FloatField(default=0.0)
     time_estimate_all_modules = models.FloatField(default=0.0)
     status = models.CharField(max_length=30, choices=STATUS, default=STATUS[0][0])
-    site_config = models.ForeignKey('main.SiteConfig')
+    site_config = models.ForeignKey('main.SiteConfig', null=True)
     
     @property
     def total_uptime(self):
@@ -419,7 +437,7 @@ class AggregatedStatus(models.Model):
     @property
     def incidents_data(self):
         today = datetime.datetime.now()
-        total_base = Module.objects.count() * 24 * 60 # Total minutes all modules can be offline in a day
+        total_base = Module.objects.filter(site_config=self.site_config).count() * 24 * 60 # Total minutes all modules can be offline in a day
         
         incidents = []
         for d in xrange(6, -1, -1):
@@ -430,7 +448,8 @@ class AggregatedStatus(models.Model):
                         filter(down_at__gte=datetime.datetime(\
                                  day.year, day.month, day.day, 0, 0, 0)).\
                         filter(down_at__lte=datetime.datetime(\
-                                 day.year, day.month, day.day, 23, 59, 59, 999999))
+                                 day.year, day.month, day.day, 23, 59, 59, 999999)).\
+                        filter(site_config=self.site_config)
         
             key = '%s/%s' % (day.month, day.day)
             if data:
@@ -451,7 +470,7 @@ class AggregatedStatus(models.Model):
     @property
     def uptime_data(self):
         today = datetime.datetime.now()
-        num_modules = Module.objects.count()
+        num_modules = Module.objects.filter(site_config=self.site_config).count()
         total_base = num_modules * 24 * 60
         
         uptimes = []
@@ -463,7 +482,8 @@ class AggregatedStatus(models.Model):
                         filter(created_at__gte=datetime.datetime(\
                                  day.year, day.month, day.day, 0, 0, 0)).\
                         filter(created_at__lte=datetime.datetime(\
-                                 day.year, day.month, day.day, 23, 59, 59, 999999))
+                                 day.year, day.month, day.day, 23, 59, 59, 999999)).\
+                        filter(site_config=self.site_config)
         
             key = '%s/%s' % (day.month, day.day)
             if data:
@@ -486,7 +506,7 @@ class AggregatedStatus(models.Model):
     
     @property
     def last_incident(self):
-        last_incident = ModuleEvent.objects.all().order_by('-down_at')[:1]
+        last_incident = ModuleEvent.objects.filter(site_config=self.site_config).order_by('-down_at')[:1]
         if last_incident:
             last_incident = last_incident[0]
         
@@ -506,7 +526,7 @@ class DailyModuleStatus(models.Model):
     events = models.TextField()
     status = models.CharField(max_length=30, choices=STATUS)
     module = models.ForeignKey('main.Module')
-    site_config = models.ForeignKey('main.SiteConfig')
+    site_config = models.ForeignKey('main.SiteConfig', null=True)
     
     # TODO: on creation, revoke module's today_status memcache
     
@@ -576,7 +596,7 @@ class ModuleEvent(models.Model):
     details = models.TextField()
     status = models.CharField(max_length=30, choices=STATUS)
     module = models.ForeignKey('main.Module')
-    site_config = models.ForeignKey('main.SiteConfig')
+    site_config = models.ForeignKey('main.SiteConfig', null=True)
     
     def save(self, *args, **kwargs):
         if self.site_config is None and self.module is not None:
@@ -630,7 +650,7 @@ def module_event_post_save(sender, instance, created, **kwargs):
     day_status = instance.module.get_day_status(instance.down_at)
     day_status.add_event(instance.id)
     
-    aggregation = AggregatedStatus.objects.all()[0]
+    aggregation = AggregatedStatus.objects.filter(site_config=instance.site_config)[0]
     
     if created:
         instance.module.status = instance.status
@@ -648,7 +668,7 @@ def module_event_post_save(sender, instance, created, **kwargs):
         aggregation.total_downtime += instance.total_downtime
         
         # Sync aggregation status
-        open_event = ModuleEvent.objects.filter(back_at=None).order_by('-down_at')[:1]
+        open_event = ModuleEvent.objects.filter(back_at=None, site_config=instance.site_config).order_by('-down_at')[:1]
         if not open_event:
             aggregation.status = 'on-line'
         else:
@@ -683,7 +703,7 @@ class Module(models.Model):
     url = models.CharField(max_length=1000)
     status = models.CharField(max_length=30, choices=STATUS) # current_status
     tags = models.TextField(default="", blank=True, null=True)
-    site_config = models.ForeignKey('main.SiteConfig')
+    site_config = models.ForeignKey('main.SiteConfig', null=True)
     
     @property
     def list_tags(self):
@@ -740,7 +760,8 @@ class Module(models.Model):
                         filter(created_at__gte=datetime.datetime(\
                                  day.year, day.month, day.day, 0, 0, 0)).\
                         filter(created_at__lte=datetime.datetime(\
-                                 day.year, day.month, day.day, 23, 59, 59, 999999))
+                                 day.year, day.month, day.day, 23, 59, 59, 999999)).\
+                        filter(site_config=self.site_config)
 
         if day_status:
             memcache.set(MODULE_DAY_STATUS_KEY % (day.month, day.day, self.id), day_status[0])
@@ -776,7 +797,7 @@ class ScheduledMaintenance(models.Model):
     total_downtime = models.FloatField(default=0.0)
     message = models.TextField()
     module = models.ForeignKey('main.Module')
-    site_config = models.ForeignKey('main.SiteConfig')
+    site_config = models.ForeignKey('main.SiteConfig', null=True)
     
     def __unicode__(self):
         return 'Scheduled to %s. Estimate of %s minutes.' % (self.scheduled_to,

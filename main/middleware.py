@@ -10,7 +10,7 @@ from django.http import Http404
 from django.core.urlresolvers import resolve, Resolver404
 from django.utils.http import urlquote
 
-from main.models import SiteConfig, AggregatedStatus
+from main.models import SiteConfig, AggregatedStatus, StatusSiteDomain
 
 DOMAIN_RE = re.compile(r"(?P<domain>[\w\d_:\.-]+)/?(?P<tail>.*)")
 
@@ -27,15 +27,19 @@ class SiteConfigMiddleware(object):
             
             # TODO: Cache site_config to avoid calling datastore on every request
             #       cache is already being evicted on every save for the site_config.
-            site_config = SiteConfig.objects.filter(status_url=domain['domain'])
+            site_config = SiteConfig.get_from_domain(domain['domain'])
             if site_config:
-                request.site_config = site_config[0]
+                request.site_config = site_config
             else:
                 site_config = SiteConfig()
                 site_config.site_name = domain['domain']
-                site_config.status_url = domain['domain']
                 site_config.main_site_url = domain['domain']
                 site_config.save()
+                
+                status_domain = StatusSiteDomain()
+                status_domain.status_url = domain['domain']
+                status_domain.site_config = site_config
+                status_domain.save()
                 
                 request.site_config = site_config
             
