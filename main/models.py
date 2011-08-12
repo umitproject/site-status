@@ -102,6 +102,7 @@ class SiteConfig(models.Model):
     main_site_url = models.CharField(max_length=500, null=True, blank=True, default="")
     contact_phone = models.CharField(max_length=50, null=True, blank=True, default="")
     contact_email = models.EmailField(null=True, blank=True, default="")
+    admin_email = models.EmailField(null=True, blank=True, default="")
     feed_size = models.IntegerField(default=5)
     analytics_id = models.CharField(max_length=20, null=True, blank=True, default="")
     twitter_account = models.ForeignKey('main.TwitterAccount', null=True, blank=True, default=None)
@@ -112,7 +113,8 @@ class SiteConfig(models.Model):
     show_incidents = models.BooleanField(default=settings.DEFAULT_SHOW_INCIDENTS)
     show_uptime = models.BooleanField(default=settings.DEFAULT_SHOW_UPTIME)
     show_last_incident = models.BooleanField(default=settings.DEFAULT_SHOW_LAST_INCIDENT)
-    user_theme_selection = models.BooleanField(default=True, null=True, blank=True)
+    user_theme_selection = models.BooleanField(default=True)
+    send_notifications_automatically = models.BooleanField(default=True)
     api_key = models.CharField(max_length=100, null=True, blank=True)
     api_secret = models.CharField(max_length=100, null=True, blank=True)
     
@@ -236,6 +238,7 @@ class Notification(models.Model):
     """
     created_at = models.DateTimeField(null=True, blank=True, default=None)
     sent_at = models.DateTimeField(null=True, blank=True, default=None)
+    send = models.BooleanField(default=True)
     notification_type = models.CharField(max_length=10, choices=NOTIFICATION_TYPES)
     target_id = models.IntegerField(null=True, blank=True, default=None)
     subject = models.CharField(max_length=400)
@@ -680,6 +683,7 @@ def module_event_post_save(sender, instance, created, **kwargs):
         # Create notification
         notification = Notification()
         notification.created_at = datetime.datetime.now()
+        notification.send = instance.site_config.send_notifications_automatically
         notification.notification_type = 'event'
         notification.target_id = instance.id
         notification.previous_status = instance.status

@@ -73,14 +73,12 @@ def check_passive_hosts(request):
 
 @staff_member_required
 def check_notifications(request):
-    """This method calls out the tasks send notifications.
+    """This method calls out the tasks to send notifications.
     Since it is a cron called view, there is a timeout, so we might want to
     make sure we never get more notifications than we can handle within that
     timeframe.
     """
-    notifications = Notification.objects.filter(sent_at=None).order_by('-created_at')
-    
-    logging.info('>>> Checking %s notifications.' % len(notifications))
+    notifications = Notification.objects.filter(sent_at=None, send=True).order_by('-created_at')
     
     for notification in notifications:
         # Create the notification queue
