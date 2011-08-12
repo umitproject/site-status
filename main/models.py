@@ -30,6 +30,7 @@ from django.db import models
 from django.db.models.signals import post_save, pre_save
 from django.template.loader import render_to_string
 from django.conf import settings
+from django.utils.translation import ugettext_lazy as _
 
 from main.memcache import memcache
 from main.utils import pretty_date
@@ -37,27 +38,27 @@ from main.utils import pretty_date
 ##########
 # CHOICES
 STATUS = (
-          ('on-line', 'On-line'),
-          ('off-line', 'Off-line'),
-          ('smaintenance', 'Scheduled Maintenance'),
-          ('maintenance', 'Maintenance'),
-          ('read-only', 'Read-Only'),
-          ('investigating', 'Investigating'),
-          ('updating', 'Updating'),
-          ('service_disruption', 'Service Disruption'),
-          ('unknown', 'Unknown'),
+          ('on-line', _('On-line')),
+          ('off-line', _('Off-line')),
+          ('smaintenance', _('Scheduled Maintenance')),
+          ('maintenance', _('Maintenance')),
+          ('read-only', _('Read-Only')),
+          ('investigating', _('Investigating')),
+          ('updating', _('Updating')),
+          ('service_disruption', _('Service Disruption')),
+          ('unknown', _('Unknown')),
           )
 
 MODULE_TYPES = (
-                ('passive', 'Passive'),
-                ('active', 'Active'),
+                ('passive', _('Passive')),
+                ('active', _('Active')),
                 )
 
 NOTIFICATION_TYPES = (
-                      ('module', 'Module'),
-                      ('event', 'Event'),
-                      ('system', 'System'),
-                      ('scheduling', 'Scheduling'),
+                      ('module', _('Module')),
+                      ('event', _('Event')),
+                      ('system', _('System')),
+                      ('scheduling', _('Scheduling')),
                       )
 
 ################
@@ -525,7 +526,7 @@ class AggregatedStatus(models.Model):
         return last_incident
     
     def __unicode__(self):
-        return 'Uptime: %s - Downtime: %s - Availability: %s%% - Status %s' % \
+        return _('Uptime: %s - Downtime: %s - Availability: %s%% - Status %s') % \
                         (self.total_uptime, self.total_downtime,
                          self.percentage_uptime, self.status)
 
@@ -598,10 +599,10 @@ class DailyModuleStatus(models.Model):
         memcache.delete(MODULE_DAY_STATUS_KEY % (self.created_at.month, self.created_at.day, self.module.id))
     
     def __unicode__(self):
-        return '%s (%s) had a total downtime %.2d on %s' % (self.module.name,
-                                                            self.status,
-                                                            self.total_downtime,
-                                                            self.created_at)
+        return _('%s (%s) had a total downtime %.2d on %s') % (self.module.name,
+                                                               self.status,
+                                                               self.total_downtime,
+                                                               self.created_at)
 class ModuleEvent(models.Model):
     down_at = models.DateTimeField(null=True, blank=True, default=None)
     back_at = models.DateTimeField(null=True, blank=True, default=None)
@@ -647,14 +648,14 @@ class ModuleEvent(models.Model):
     
     def __unicode__(self):
         if self.back_at:
-            return '%s (%s) for %.2d minutes' % (self.module.name,
+            return _('%s (%s) for %.2d minutes') % (self.module.name,
                                                  self.status,
                                                  self.total_downtime)
         else:
-            return '%s (%s) since %s:%s' % (self.module.name,
-                                           self.status,
-                                           self.down_at.hour,
-                                           self.down_at.minute)
+            return _('%s (%s) since %s:%s') % (self.module.name,
+                                               self.status,
+                                               self.down_at.hour,
+                                               self.down_at.minute)
 
 ######################
 # ModuleEvent signals
@@ -817,7 +818,7 @@ class ScheduledMaintenance(models.Model):
         return status_img(self.status)
     
     def __unicode__(self):
-        return 'Scheduled to %s. Estimate of %s minutes.' % (self.scheduled_to,
+        return _('Scheduled to %s. Estimate of %s minutes.') % (self.scheduled_to,
                                                              self.time_estimate)
 
 class TwitterAccount(models.Model):

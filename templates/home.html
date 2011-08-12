@@ -1,8 +1,9 @@
 {% extends 'base.html' %}
 {% load media %}
+{% load i18n %}
 {% load status_tags %}
 
-{% block title %}{{ SITE_NAME }} Status{% endblock %}
+{% block title %}{% blocktrans %}{{ SITE_NAME }} Status{% endblocktrans %}{% endblock %}
 
 {% block extra_head %}{% endblock %}
 
@@ -13,7 +14,7 @@
 {% block first_content %}
 <div class="box">
 	<div class="text_box">
-		<p class="title">Site Status</p>
+		<p class="title">{% trans "Site Status" %}</p>
 		<table>
 			<tr>
 				<td>Module</td>
@@ -93,9 +94,9 @@
 	<div class='box'>
 		{% for schedule in scheduled_maintenances %}
 			<div class="text_box">
-				<p class="title"><img src='{% media_url schedule.status_img %}' alt='{% verbose_status schedule.status %}'/>&nbsp;&nbsp;{% verbose_status schedule.status %} on {{ schedule.scheduled_to|date:"DATETIME_FORMAT" }}</p>
-				<p class="description">Downtime estimate: <b>{{ schedule.time_estimate }} minutes</b><br/><br/>{{ schedule.message }}</p>
-				<div class="more"><a href="" ></a></div>
+				<p class="title"><img src='{% media_url schedule.status_img %}' alt='{% verbose_status schedule.status %}'/>&nbsp;&nbsp;{% blocktrans %}{% verbose_status schedule.status %} on {{ schedule.scheduled_to|date:"DATETIME_FORMAT" }}{% endblocktrans %}</p>
+				<p class="description">{% trans "Downtime estimate:" %} <b>{% blocktrans %}{{ schedule.time_estimate }} minutes{% endblocktrans %}</b><br/><br/>{{ schedule.message }}</p>
+				<div class="more"><a href=""></a></div>
 			</div>
 		{% endfor %}
 	</div>

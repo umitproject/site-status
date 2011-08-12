@@ -1,10 +1,11 @@
 {% load media %}
+{% load i18n %}
 {% load status_tags %}
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
-	<title>{% block title %}{{ SITE_NAME }} Status{% endblock %}</title>
+	<title>{% block title %}{% blocktrans %}{{ SITE_NAME }} Status{% endblocktrans %}{% endblock %}</title>
 	{% include_media 'main.css' %}
 	{% include_media 'main.js' %}
 	
@@ -32,7 +33,7 @@
 		<div id="top_content">
 			<div id="logo">
 				<h1>{{ SITE_NAME }}</h1>
-				<h4>Site Status</h4>
+				<h4>{% trans "Site Status" %}</h4>
 			</div>
 		</div>
 	</div>
@@ -41,7 +42,7 @@
 		<div class="menu_content">
 			<ul>
 				<li><a href="{{ MAIN_SITE_URL }}">{{ SITE_NAME }}</a></li>
-				<li><a href="/subscribe">Be notified about our status</a></li>
+				<li><a href="/subscribe">{% trans "Be notified about our status" %}</a></li>
 			</ul>
 		</div>
 	</div>
@@ -56,7 +57,7 @@
 			{% block first_content %}
 			<div class="box">
 				<div class="text_box">
-					<p class="title">Site Status</p>
+					<p class="title">{% trans "Site Status" %}</p>
 					<table>
 						<tr>
 							<td>Module</td>
@@ -134,7 +135,7 @@
 				<br />
 				<br />
 				<div class="big_round_box">
-					<p class="title">Scheduled Maintenances</p>
+					<p class="title">{% trans "Scheduled Maintenances" %}</p>
 					<p class="description">{{ scheduled_maintenances }}</p>
 				</div>
 			{% endif %}
@@ -147,13 +148,13 @@
 	<div id="bottom">
 		<div id="bottom_content">
 			<div class="callcenter">
-				<p class="call_us" style="color:#e44038;padding-left:30px;">Suport 24/7: </p>
+				<p class="call_us" style="color:#e44038;padding-left:30px;">{% trans "Suport 24/7:" %} </p>
 				<p class="call_us"><img src="{% media_url "img/phone.png" %}" alt="phone" />{{ CONTACT_PHONE }}</p>
 				<p class="call_us"><img src="{% media_url "img/email.png" %}" alt="email" />{{ CONTACT_EMAIL }}</p>
 			</div>
 			<div id="menu_bottom_list">
 				<div class="menu_bottom" ><a href="{{ MAIN_SITE_URL }}">{{ SITE_NAME }}</a></div>
-				<div class="menu_bottom" ><a href="/subscribe">Be notified about our status</a></div>
+				<div class="menu_bottom" ><a href="/subscribe">{% trans "Be notified about our status" %}</a></div>
 			</div>
 		</div>
 	</div>

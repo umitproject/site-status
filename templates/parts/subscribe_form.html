@@ -1,16 +1,17 @@
+{% load i18n %}
 {% if event %}
-	<p class="title">Subscribe to Event - {{ event.verbose }}</p>
+	<p class="title">{% blocktrans %}Subscribe to Event - {{ event.verbose }}{% endblocktrans %}</p>
 {% else %}
 	{% if module %}
-		<p class="title">Subscribe to Module {{ module.name }}</p>
+		<p class="title">{% blocktrans %}Subscribe to Module {{ module.name }}{% endblocktrans %}</p>
 	{% else %}
-		<p class="title">Subscribe</p>
+		<p class="title">{% trans "Subscribe" %}</p>
 	{% endif %}
 {% endif %}
 
 <div class="description">
 	{% if saved %}
-		You've successfuly subscribed to receive {% if one_time %}a one time notification as soon as the system is back on line{% else %}notifications whenever an incident happens with the system{% endif %}.
+		{% blocktrans %}You've successfuly subscribed to receive {% if one_time %}a one time notification as soon as the system is back on line{% else %}notifications whenever an incident happens with the system{% endif %}.{% endblocktrans %}
 	{% else %}
 		{% if event %}
 			<form action="/subscribe/event/{{ event.id }}" method="POST">
@@ -22,7 +23,7 @@
 			{% endif %}
 		{% endif %}
 				{{ form.as_p }}
-				<input type="submit" value="Submit"/>
+				<input type="submit" value="{% trans "Submit" %}"/>
 		</form>
 	{% endif %}
 </div>

@@ -1,3 +1,4 @@
+{% load i18n %}
 {% if SHOW_INCIDENTS or SHOW_UPTIME %}
 	<script type="text/javascript" src="https://www.google.com/jsapi"></script>
 	<script type="text/javascript">
@@ -6,8 +7,8 @@
 	  {% if SHOW_INCIDENTS %}
 		  function drawIncidentsChart() {
 		    var data = new google.visualization.DataTable();
-		    data.addColumn('string', 'Day');
-		    data.addColumn('number', 'Downtime');
+		    data.addColumn('string', '{% trans "Day" %}');
+		    data.addColumn('number', '{% trans "Downtime" %}');
 		    data.addRows({{ incidents_data|safe }});
 		
 		    var chart = new google.visualization.AreaChart(document.getElementById('incidents_chart'));
@@ -30,8 +31,8 @@
 	  {% if SHOW_UPTIME %}
 		  function drawUptimeChart() {
 		    var data = new google.visualization.DataTable();
-		    data.addColumn('string', 'Day');
-		    data.addColumn('number', 'Uptime');
+		    data.addColumn('string', '{% trans "Day" %}');
+		    data.addColumn('number', '{% trans "Uptime" %}');
 		    data.addRows({{ uptime_data|safe }});
 		
 		    var chart = new google.visualization.AreaChart(document.getElementById('uptime_chart'));
@@ -56,27 +57,27 @@
 <div id="video">
 	<div id="status_header">
 			<div class='status_header_block'>
-				<p class='status_header_title'>Availability</p>
+				<p class='status_header_title'>{% trans "Availability" %}</p>
 				<p class='status_header_value'>{{ current_availability }} %</p>
 			</div>
 			
 			{% if SHOW_LAST_INCIDENT %}
 				<div class='status_header_block'>
-					<p class='status_header_title'>Last Incident</p>
+					<p class='status_header_title'>{% trans "Last Incident" %}</p>
 					<p class='status_header_value'>{{ last_incident.verbose_html|safe }}</p>
 				</div>
 			{% endif %}
 			
 			{% if SHOW_INCIDENTS %}
 				<div class='status_header_block'>
-					<p class='status_header_title'>Incidents</span>
+					<p class='status_header_title'>{% trans "Incidents" %}</span>
 					<div id='incidents_chart'></div>
 				</div>
 			{% endif %}
 			
 			{% if SHOW_UPTIME %}
 				<div class='status_header_block'>
-					<p class='status_header_title'>Uptime</span>
+					<p class='status_header_title'>{% trans "Uptime" %}</span>
 					<div id='uptime_chart'></div>
 				</div>
 			{% endif %}

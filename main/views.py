@@ -30,6 +30,7 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.utils import simplejson as json
 from django.contrib.auth.decorators import login_required
+from django.utils.translation import ugettext_noop as _
 
 from main.decorators import staff_member_required
 from main.models import *
@@ -44,9 +45,6 @@ def home(request, msg=None):
     scheduled_maintenances = ScheduledMaintenance.objects.\
                                 filter(site_config=request.site_config,
                                        scheduled_to__lte=request.site_config.schedule_warning_up_to)
-    logging.critical('>>> SCHEDULED: %s' % scheduled_maintenances)
-    logging.critical('>>> SITE_CONFIG: %s' % request.site_config)
-    logging.critical('>>> UP TO: %s' % request.site_config.schedule_warning_up_to)
     
     incidents_data = json.dumps(request.aggregation.incidents_data)
     uptime_data = json.dumps(request.aggregation.uptime_data)
@@ -151,9 +149,9 @@ def subscribe(request, event_id=None, module_id=None):
 def clean_cache(request):
     msg = ''
     if memcache.flush_all():
-        msg = 'Flush cache OK'
+        msg = _('Flush cache OK')
     else:
-        msg = 'Flush cache FAILED'
+        msg = _('Flush cache FAILED')
     return home(request, msg)
 
 
