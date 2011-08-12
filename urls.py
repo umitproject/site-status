@@ -44,6 +44,7 @@ urlpatterns = patterns('',
     # TESTS
     url('^test_populate/?$', 'main.views.test_populate', name='test_populate'),
     url('^test_events_and_aggregations/?$', 'main.views.test_events_and_aggregations', name='test_events_and_aggregations'),
+    url(r'^hard_reset/', 'main.views.hard_reset', name='hard_reset'),
     
     ######
     # API
@@ -60,6 +61,6 @@ urlpatterns = patterns('',
     ########
     # ADMIN
     url(r'^clean_cache/', 'main.views.clean_cache', name='clean_cache'),
-    url(r'^hard_reset/', 'main.views.hard_reset', name='hard_reset'),
     url(r'^admin/', include(admin.site.urls)),
+    url(r'^accounts/login/$', 'django.contrib.auth.views.login', name='login'),
 )

@@ -29,6 +29,7 @@ from django.http import HttpResponse, Http404
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.utils import simplejson as json
+from django.contrib.auth.decorators import login_required
 
 from main.decorators import staff_member_required
 from main.models import *
@@ -40,6 +41,12 @@ def home(request, msg=None):
     show_days = Module.show_days(request.site_config)
     last_incident = request.aggregation.last_incident
     current_availability = request.aggregation.percentage_uptime
+    scheduled_maintenances = ScheduledMaintenance.objects.\
+                                filter(site_config=request.site_config,
+                                       scheduled_to__lte=request.site_config.schedule_warning_up_to)
+    logging.critical('>>> SCHEDULED: %s' % scheduled_maintenances)
+    logging.critical('>>> SITE_CONFIG: %s' % request.site_config)
+    logging.critical('>>> UP TO: %s' % request.site_config.schedule_warning_up_to)
     
     incidents_data = json.dumps(request.aggregation.incidents_data)
     uptime_data = json.dumps(request.aggregation.uptime_data)
@@ -137,6 +144,22 @@ def subscribe(request, event_id=None, module_id=None):
     context = locals()
     return render(request, 'subscribe.html', context)
 
+###############################################################################
+# ADMIN VIEWS                                                                 #
+###############################################################################
+@staff_member_required
+def clean_cache(request):
+    msg = ''
+    if memcache.flush_all():
+        msg = 'Flush cache OK'
+    else:
+        msg = 'Flush cache FAILED'
+    return home(request, msg)
+
+
+###############################################################################
+# TEST RELATED VIEWS                                                          #
+###############################################################################
 def _create_fake_events(module, range_days):
     today = datetime.datetime.now()
     time = today - datetime.timedelta(days=range_days)
@@ -237,15 +260,6 @@ def test_events_and_aggregations(request):
         _create_fake_events(module, 7)
     
     return home(request, 'Test Events and Aggregations OK')
-
-@staff_member_required
-def clean_cache(request):
-    msg = ''
-    if memcache.flush_all():
-        msg = 'Flush cache OK'
-    else:
-        msg = 'Flush cache FAILED'
-    return home(request, msg)
 
 @staff_member_required
 def hard_reset(request):

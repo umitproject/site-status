@@ -95,6 +95,16 @@ indexes:
   - name: __key__
     direction: desc
 
+- kind: main_scheduledmaintenance
+  properties:
+  - name: __key__
+    direction: desc
+
+- kind: main_scheduledmaintenance
+  properties:
+  - name: site_config_id
+  - name: scheduled_to
+
 - kind: main_siteconfig
   properties:
   - name: __key__

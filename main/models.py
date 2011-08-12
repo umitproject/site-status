@@ -57,6 +57,7 @@ NOTIFICATION_TYPES = (
                       ('module', 'Module'),
                       ('event', 'Event'),
                       ('system', 'System'),
+                      ('scheduling', 'Scheduling'),
                       )
 
 ################
@@ -115,6 +116,7 @@ class SiteConfig(models.Model):
     show_last_incident = models.BooleanField(default=settings.DEFAULT_SHOW_LAST_INCIDENT)
     user_theme_selection = models.BooleanField(default=True)
     send_notifications_automatically = models.BooleanField(default=True)
+    schedule_warning_time = models.IntegerField(default=7)
     api_key = models.CharField(max_length=100, null=True, blank=True)
     api_secret = models.CharField(max_length=100, null=True, blank=True)
     
@@ -124,6 +126,10 @@ class SiteConfig(models.Model):
         if status_site:
             return status_site[0].site_config
         return None
+    
+    @property
+    def schedule_warning_up_to(self):
+        return datetime.datetime.now() + datetime.timedelta(days=self.schedule_warning_time)
     
     def save(self, *args, **kwargs):
         memcache.delete(SITE_CONFIG_KEY % self.site_name)
@@ -805,6 +811,10 @@ class ScheduledMaintenance(models.Model):
     message = models.TextField()
     module = models.ForeignKey('main.Module')
     site_config = models.ForeignKey('main.SiteConfig', null=True)
+    
+    @property
+    def status_img(self):
+        return status_img(self.status)
     
     def __unicode__(self):
         return 'Scheduled to %s. Estimate of %s minutes.' % (self.scheduled_to,

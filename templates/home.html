@@ -90,9 +90,14 @@
 {% if scheduled_maintenances %}
 	<br />
 	<br />
-	<div class="big_round_box">
-		<p class="title">Scheduled Maintenances</p>
-		<p class="description">{{ scheduled_maintenances }}</p>
+	<div class='box'>
+		{% for schedule in scheduled_maintenances %}
+			<div class="text_box">
+				<p class="title"><img src='{% media_url schedule.status_img %}' alt='{% verbose_status schedule.status %}'/>&nbsp;&nbsp;{% verbose_status schedule.status %} on {{ schedule.scheduled_to|date:"DATETIME_FORMAT" }}</p>
+				<p class="description">Downtime estimate: <b>{{ schedule.time_estimate }} minutes</b><br/><br/>{{ schedule.message }}</p>
+				<div class="more"><a href="" ></a></div>
+			</div>
+		{% endfor %}
 	</div>
 {% endif %}
 {% endblock %}
