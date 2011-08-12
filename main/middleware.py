@@ -6,13 +6,20 @@ import logging
 
 from django.conf import settings
 from django.http import Http404
-
+from django.core.cache import cache
 from django.core.urlresolvers import resolve, Resolver404
 from django.utils.http import urlquote
 
 from main.models import SiteConfig, AggregatedStatus, StatusSiteDomain
 
+########
+# REGEX
 DOMAIN_RE = re.compile(r"(?P<domain>[\w\d_:\.-]+)/?(?P<tail>.*)")
+
+############
+# CACHE KEY
+DOMAIN_SITE_CONFIG_CACHE_KEY = 'domain_site_config_%s'
+DOMAIN_AGGREGATION_CACHE_KEY = 'domain_aggregation_%s'
 
 
 class SiteConfigMiddleware(object):
@@ -53,6 +60,9 @@ class SiteConfigMiddleware(object):
                 aggregation = aggregation[0]
                 
             request.aggregation = aggregation
+            
+            cache.set(DOMAIN_SITE_CONFIG_CACHE_KEY % domain['domain'], request.site_config, 120)
+            cache.set(DOMAIN_AGGREGATION_CACHE_KEY % domain['domain'], request.aggregation, 60)
                 
             
                 

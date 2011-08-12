@@ -41,6 +41,17 @@ indexes:
   - name: module_id
   - name: created_at
 
+- kind: main_dailymodulestatus
+  properties:
+  - name: module_id
+  - name: site_config_id
+  - name: created_at
+
+- kind: main_dailymodulestatus
+  properties:
+  - name: site_config_id
+  - name: created_at
+
 - kind: main_module
   properties:
   - name: __key__
@@ -57,6 +68,17 @@ indexes:
   - name: down_at
     direction: desc
 
+- kind: main_moduleevent
+  properties:
+  - name: site_config_id
+  - name: down_at
+
+- kind: main_moduleevent
+  properties:
+  - name: site_config_id
+  - name: down_at
+    direction: desc
+
 - kind: main_notification
   properties:
   - name: __key__
@@ -69,6 +91,16 @@ indexes:
     direction: desc
 
 - kind: main_notifyonevent
+  properties:
+  - name: __key__
+    direction: desc
+
+- kind: main_siteconfig
+  properties:
+  - name: __key__
+    direction: desc
+
+- kind: main_statussitedomain
   properties:
   - name: __key__
     direction: desc

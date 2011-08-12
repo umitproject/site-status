@@ -22,6 +22,7 @@ from django.contrib import admin
 from main.models import *
 
 admin.site.register(SiteConfig)
+admin.site.register(StatusSiteDomain)
 admin.site.register(Subscriber)
 admin.site.register(NotifyOnEvent)
 admin.site.register(Notification)

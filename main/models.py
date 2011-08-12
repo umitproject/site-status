@@ -96,7 +96,6 @@ class StatusSiteDomain(models.Model):
     def __unicode__(self):
         return '%s -> %s' % (self.status_url, self.site_config.site_name)
 
-
 class SiteConfig(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     site_name = models.CharField(max_length=200, default="")
@@ -113,6 +112,7 @@ class SiteConfig(models.Model):
     show_incidents = models.BooleanField(default=settings.DEFAULT_SHOW_INCIDENTS)
     show_uptime = models.BooleanField(default=settings.DEFAULT_SHOW_UPTIME)
     show_last_incident = models.BooleanField(default=settings.DEFAULT_SHOW_LAST_INCIDENT)
+    user_theme_selection = models.BooleanField(default=True, null=True, blank=True)
     api_key = models.CharField(max_length=100, null=True, blank=True)
     api_secret = models.CharField(max_length=100, null=True, blank=True)
     
@@ -133,6 +133,9 @@ class SiteConfig(models.Model):
             self.api_secret = uuid.uuid4()
         
         super(SiteConfig, self).save(*args, **kwargs)
+    
+    def __unicode__(self):
+        return self.site_name
 
 class Subscriber(models.Model):
     '''Full list of all users who ever registered asking to be notified.
