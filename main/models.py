@@ -281,8 +281,8 @@ class Notification(models.Model):
                        TARGET_NAME=target_name)
         
         self.subject = "%s is back!" % target_name
-        self.body = render_to_string('parts/notification_body.txt', context)
-        self.html = render_to_string('parts/notification_body.html', context)
+        self.body = render_to_string('status_notification/notification_body.txt', context)
+        self.html = render_to_string('status_notification/notification_body.html', context)
     
     def save(self, *args, **kwargs):
         if not self.id:
@@ -639,7 +639,7 @@ class ModuleEvent(models.Model):
                        module=self.module,
                        verbose_status=verbose_status(self.status),
                        verbose_time=pretty_date(self.down_at))
-        return render_to_string('parts/last_incident.html', context) 
+        return render_to_string('main/parts/last_incident.html', context) 
     
     @property
     def verbose(self):

@@ -52,7 +52,7 @@ def home(request, msg=None):
     context = locals()
     if msg is not None:
         context['msg'] = msg
-    return render(request, 'home.html', context)
+    return render(request, 'main/home.html', context)
 
 def event(request, event_id):
     # TODO: Must show event details
@@ -60,7 +60,7 @@ def event(request, event_id):
     scheduled_maintenances = ScheduledMaintenance.objects.filter(module=event.module)
     
     context = locals()
-    return render(request, 'event.html', context)
+    return render(request, 'main/event.html', context)
     
 
 def subscribe(request, event_id=None, module_id=None):
@@ -140,7 +140,7 @@ def subscribe(request, event_id=None, module_id=None):
             saved = subscriber.subscribe('system', one_time, None) or saved
     
     context = locals()
-    return render(request, 'subscribe.html', context)
+    return render(request, 'main/subscribe.html', context)
 
 ###############################################################################
 # ADMIN VIEWS                                                                 #
