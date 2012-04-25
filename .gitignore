@@ -4,3 +4,4 @@ _generated_media
 .gaedata/datastore
 .DS_Store
 _generated_media_names.py
+.idea

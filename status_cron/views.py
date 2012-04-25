@@ -142,7 +142,7 @@ def _get_status_code(module):
         return result.status_code
     result = urllib2.urlopen(module.url)
     return result.getcode()
-        
+
 @staff_member_required
 def check_passive_hosts_task(request, module_key):
     module = Module.objects.get(id=module_key)
