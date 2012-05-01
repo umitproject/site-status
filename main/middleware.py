@@ -61,7 +61,8 @@ class SiteConfigMiddleware(object):
                 else:
                     site_config = SiteConfig()
                     site_config.site_name = domain['domain']
-                    site_config.main_site_url = domain['domain']
+                    scheme = 'https://' if request.is_secure() else 'http://'
+                    site_config.main_site_url = scheme + domain['domain']
                     site_config.save()
                     
                     status_domain = StatusSiteDomain()
