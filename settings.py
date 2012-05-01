@@ -175,6 +175,7 @@ MEDIA_BUNDLES = (
     ('main.js',
      'js/jquery.js',
      'js/main.js',
+     'js/modernizr.js'
         ),
     )
 
