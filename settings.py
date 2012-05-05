@@ -99,6 +99,7 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'main.middleware.SubdomainMiddleware',
     'main.middleware.SiteConfigMiddleware',
     )
 
@@ -118,7 +119,7 @@ TEST_RUNNER = 'djangotoolbox.test.CapturingTestSuiteRunner'
 ADMIN_MEDIA_PREFIX = '/media/admin/'
 TEMPLATE_DIRS = (os.path.join(os.path.dirname(__file__), 'templates'),)
 
-ROOT_URLCONF = 'urls'
+ROOT_URLCONF = 'root_urls'
 LOGIN_URL = '/accounts/login/'
 
 CACHES = {
@@ -160,8 +161,10 @@ PRODUCTION_MEDIA_URL = '/media/'
 
 if PRODUCTION:
     MEDIA_URL = PRODUCTION_MEDIA_URL
+    SITE_STATUS_DOMAIN = 'umit-site-status.appspot.com'
 else:
     MEDIA_URL = DEV_MEDIA_URL
+    SITE_STATUS_DOMAIN = 'apredoi-mac.eur.adobe.com:8000'
 
 
 GLOBAL_MEDIA_DIRS = (os.path.join(os.path.dirname(__file__), 'media'),)

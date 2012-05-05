@@ -36,6 +36,9 @@ from main.decorators import staff_member_required
 from main.models import *
 from main.forms import *
 
+def root_home(request, msg=None):
+    context = locals()
+    return render(request, 'main/root_home.html', context)
 
 def home(request, msg=None):
     modules = Module.objects.filter(site_config=request.site_config)
