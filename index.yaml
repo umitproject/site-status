@@ -86,6 +86,7 @@ indexes:
 
 - kind: main_notification
   properties:
+  - name: send
   - name: sent_at
   - name: created_at
     direction: desc
