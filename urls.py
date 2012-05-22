@@ -62,5 +62,4 @@ urlpatterns = patterns('',
     # ADMIN
     url(r'^clean_cache/', 'main.views.clean_cache', name='clean_cache'),
     url(r'^admin/', include(admin.site.urls)),
-    url(r'^accounts/login/$', 'django.contrib.auth.views.login', name='login'),
 )

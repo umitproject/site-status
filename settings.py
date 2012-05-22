@@ -31,6 +31,7 @@ import sys
 from os.path import join, dirname
 
 sys.path.insert(0, join(dirname(__file__), 'djangoappengine', 'lib'))
+sys.path.insert(0, join(dirname(__file__), 'lib'))
 
 
 # Activate django-dbindexer for the default database
@@ -62,7 +63,7 @@ elif ENVIRONMENT.startswith('GAETest'):
 # WARNING: Tests doesn't fully support this yet, because they don't setup
 # the remote datastore properly
 TEST_LOCAL = True
-TEST_REMOTE_HTTP_HOST = "http://localhost:9000"
+TEST_REMOTE_HTTP_HOST = "http://localhost:8000"
 
 
 logging.info("Environment: '%s'" % ENVIRONMENT)
@@ -73,6 +74,7 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.auth',
     'django.contrib.sessions',
+    'registration',
     'djangotoolbox',
     'autoload',
     'dbindexer',
@@ -199,7 +201,7 @@ AUTH_PROFILE_MODULE = 'users.UserProfile'
 ACCOUNT_ACTIVATION_DAYS = 30
 LOGIN_REDIRECT_URL = '/'
 
-EMAIL_BACKEND = 'django.core.mail.backends.dummy.EmailBackend'
+EMAIL_BACKEND = 'appengineemail.EmailBackend'
 #'django.core.mail.backends.console.EmailBackend'
 
 if on_production_server:
@@ -213,13 +215,15 @@ if on_production_server:
 else:
     # local
     EMAIL_HOST = 'localhost'
-    EMAIL_PORT = 1025
-    DEFAULT_FROM_EMAIL = 'webmaster@localhost'
+    EMAIL_PORT = 25
 
 USE_I18N = True
 
 SITENAME = "Site Status"
 
+########################
+# Registration settings
+ACCOUNT_ACTIVATION_DAYS = 2
 
 ##################
 # RESPONSE COUNTS
