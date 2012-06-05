@@ -221,9 +221,7 @@ EMAIL_BACKEND = 'appengineemail.EmailBackend'
 #'django.core.mail.backends.console.EmailBackend'
 
 if on_production_server:
-    EMAIL_HOST = 'smtp.gmail.com'
-    EMAIL_PORT = 25
-    DEFAULT_FROM_EMAIL = 'noreply@umit-site-status.appspot.com'
+    DEFAULT_FROM_EMAIL = 'noreply@umit-site-status.appspotmail.com'
 else:
     # local
     EMAIL_HOST = 'localhost'
