@@ -101,6 +101,7 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
     'main.middleware.SubdomainMiddleware',
     'main.middleware.SiteConfigMiddleware',
     )
@@ -113,13 +114,19 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     'main.context_processors.get_settings',
     )
 
+TEMPLATE_LOADERS = (
+    'django.template.loaders.filesystem.load_template_source',
+    'django.template.loaders.app_directories.load_template_source',
+)
+
 
 # This test runner captures stdout and associates tracebacks with their
 # corresponding output. Helps a lot with print-debugging.
 TEST_RUNNER = 'djangotoolbox.test.CapturingTestSuiteRunner'
 
 ADMIN_MEDIA_PREFIX = '/media/admin/'
-TEMPLATE_DIRS = (os.path.join(os.path.dirname(__file__), 'templates'),)
+TEMPLATE_DIRS = (os.path.join(os.path.dirname(__file__), 'templates'),
+                 os.path.join(os.path.dirname(__file__), 'main/templates'), )
 
 ROOT_URLCONF = 'root_urls'
 LOGIN_URL = '/accounts/login/'
@@ -177,11 +184,20 @@ MEDIA_BUNDLES = (
      'css/style.css',
      'css/typography.css'
         ),
+    ('root.css',
+        'css/root.css'),
     ('main.js',
      'js/jquery.js',
      'js/main.js',
      'js/modernizr.js'
         ),
+    ('bootstrap.js',
+        'bootstrap/js/bootstrap.js',
+        'bootstrap/js/bootstrap-dropdown.js',
+        ),
+    ('bootstrap.css',
+        'bootstrap/css/bootstrap-responsive.css',
+        'bootstrap/css/bootstrap.css',)
     )
 
 ROOT_MEDIA_FILTERS = {
@@ -206,12 +222,8 @@ EMAIL_BACKEND = 'appengineemail.EmailBackend'
 
 if on_production_server:
     EMAIL_HOST = 'smtp.gmail.com'
-    EMAIL_PORT = 587
-    EMAIL_HOST_USER = 'gmailusername@gmail.com'
-    EMAIL_HOST_PASSWORD = 'xxxxxxx'
-    EMAIL_USE_TLS = True
-    DEFAULT_FROM_EMAIL = 'gmailusername@gmail.com'
-    SERVER_EMAIL = 'gmailusername@gmail.com'
+    EMAIL_PORT = 25
+    DEFAULT_FROM_EMAIL = 'noreply@umit-site-status.appspot.com'
 else:
     # local
     EMAIL_HOST = 'localhost'

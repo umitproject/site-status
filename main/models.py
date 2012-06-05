@@ -664,8 +664,9 @@ class ModuleEvent(models.Model):
 def module_event_post_save(sender, instance, created, **kwargs):
     day_status = instance.module.get_day_status(instance.down_at)
     day_status.add_event(instance.id)
-    
-    aggregation = AggregatedStatus.objects.filter(site_config=instance.site_config)[0]
+
+    aggregated_statuses = AggregatedStatus.objects.filter(site_config=instance.site_config)
+    aggregation = aggregated_statuses[0] if len(aggregated_statuses) > 0 else AggregatedStatus()
     
     if created:
         instance.module.status = instance.status
@@ -676,7 +677,7 @@ def module_event_post_save(sender, instance, created, **kwargs):
     if instance.back_at:
         instance.module.status = 'on-line'
         day_status.add_status(instance.module.status)
-        
+
         day_status.total_downtime += instance.total_downtime
         instance.module.total_downtime += instance.total_downtime
         

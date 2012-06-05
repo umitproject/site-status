@@ -1,1 +1,38 @@
-{% extends "base.html" %}
+{% extends "main/root_home.html" %}
+
+{% load media %}
+{% load i18n %}
+{% load status_tags %}
+
+
+{% block menu %}
+    <div class="menu">
+        <div class="menu_content">
+            <ul>
+                <li><a href="{{ MAIN_SITE_URL }}">{{ SITE_NAME }}</a></li>
+            </ul>
+        </div>
+    </div>
+{% endblock %}
+
+
+{% block header_status %} {% endblock %}
+
+{% block title %}{% blocktrans %}{{ SITE_NAME }} Status{% endblocktrans %}{% endblock %}
+
+{% block extra_head %}{% endblock %}
+
+{% block content %}
+    {% block first_content %}
+    {% endblock %}
+{% endblock %}
+
+{% block twitter %}
+
+{% endblock %}
+
+{% block scheduled_maintenances %}
+
+{% endblock %}
+
+{% block selected-menu-entry %}1{% endblock %}

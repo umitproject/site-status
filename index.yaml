@@ -70,6 +70,13 @@ indexes:
 
 - kind: main_moduleevent
   properties:
+  - name: back_at
+  - name: site_config_id
+  - name: down_at
+    direction: desc
+
+- kind: main_moduleevent
+  properties:
   - name: site_config_id
   - name: down_at
 

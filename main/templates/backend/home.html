@@ -1,0 +1,18 @@
+{% load media %}
+{% load i18n %}
+{% load status_tags %}
+<!DOCTYPE HTML>
+<html>
+<head>
+    <title></title>
+    {% include_media 'main.js' %}
+    {% include_media 'bootstrap.js' %}
+    {% include_media 'bootstrap.css' %}
+</head>
+<body>
+    <div id="main-container" class="container">
+        <h1> BACKEND</h1>
+        Hello, {{  user.username }}. <a href="{% url auth_logout %}">Logout</a>
+    </div>
+</body>
+</html>

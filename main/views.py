@@ -24,21 +24,28 @@ import datetime
 import urllib2
 import logging
 
-from django.shortcuts import render, render_to_response, get_object_or_404
+from django.shortcuts import render, render_to_response, get_object_or_404, redirect
 from django.http import HttpResponse, Http404
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.template.context import RequestContext
 from django.utils import simplejson as json
 from django.contrib.auth.decorators import login_required
 from django.utils.translation import ugettext_noop as _
+import user
 
 from main.decorators import staff_member_required
 from main.models import *
 from main.forms import *
 
 def root_home(request, msg=None):
-    context = locals()
-    return render(request, 'main/home.html', context)
+    context = RequestContext(request)
+    return render(request, 'main/root_home.html', context)
+
+@login_required
+def backend(request):
+    context = RequestContext(request)
+    return render(request, 'backend/home.html', {user: request.user})
 
 def home(request, msg=None):
     modules = Module.objects.filter(site_config=request.site_config)
@@ -189,6 +196,15 @@ def _create_fake_module(name, description, module_type, host, url):
     mod.host = host
     mod.url = url
     mod.status = 'on-line'
+
+    site_config = SiteConfig.objects.filter(site_name=name)
+    if not site_config:
+        site_config = SiteConfig()
+        site_config.site_name = name
+        site_config.main_site_url = url
+
+    mod.site_config = site_config
+
     mod.save()
     
     _create_fake_events(mod, range_days)

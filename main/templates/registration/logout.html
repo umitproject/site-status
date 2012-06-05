@@ -1,5 +1,8 @@
 {% extends "registration/registration_base.html" %}
+{% block extra_head %}
+    <meta http-equiv="refresh" content="5; url=/">
+{% endblock %}
 {% block title %}Logged out{% endblock %}
 {% block content %}
-Successfully logged out!
+Successfully logged out! You will be redirected to home page shortly.
 {% endblock %}

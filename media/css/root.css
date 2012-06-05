@@ -1,0 +1,65 @@
+html, body{
+    height: 100%;
+}
+
+body {
+    background-image: -webkit-linear-gradient(#eee, #fff);
+    background-image:    -moz-linear-gradient(#eee, #fff);
+    background-image:      -o-linear-gradient(#eee, #fff);
+    background-image:         linear-gradient(#eee, #fff);
+}
+
+#main-container {
+    min-height: 100%;
+}
+
+
+#push-bottom {
+    height: 150px;
+}
+
+#bottom {
+    height: 99px;
+    margin-top: -150px;
+    border-top: 1px solid #e5e5e5;
+    padding-top: 50px;
+}
+
+.call_us {
+    display: inline;
+    vertical-align: middle;
+}
+
+.callcenter {
+    float:left;
+}
+
+#menu_bottom_list {
+    float: right;
+}
+
+#signin-button {
+    margin: 5px 0 5px 0;
+}
+
+#get-started {
+    margin-top: 50px;
+}
+
+#get-started li {
+    font-size: 1.5em;
+    color: #555;
+    margin: 2em 0 0 0;
+}
+
+#top-header {
+    margin-top: 40px;
+}
+
+#top-header h1 {
+    text-shadow: 1px 1px #fff;
+}
+
+#top-header .lead {
+    margin-top: 10px;
+}

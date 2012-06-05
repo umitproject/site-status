@@ -8,7 +8,7 @@
 	<title>{% block title %}{% blocktrans %}{{ SITE_NAME }} Status{% endblocktrans %}{% endblock %}</title>
 	{% include_media 'main.css' %}
 	{% include_media 'main.js' %}
-	
+
 	{% block extra_head %}{% endblock %}
 </head>
 <body id="body">
@@ -30,6 +30,7 @@
             {% endif %}
         {% endblock %}
 
+        {% block top_div %}
         <div id="top_div">
             <div id="top_content">
                 <div id="logo">
@@ -38,7 +39,9 @@
                 </div>
             </div>
         </div>
+        {% endblock %}
 
+        {% block menu %}
         <div class="menu">
             <div class="menu_content">
                 <ul>
@@ -47,6 +50,7 @@
                 </ul>
             </div>
         </div>
+        {% endblock %}
 
         {% block header_status %}
             {% include "main/parts/header_status.html" %}
