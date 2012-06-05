@@ -1,6 +1,7 @@
 {% load media %}
 {% load i18n %}
 {% load status_tags %}
+{% load user_tags %}
 <!DOCTYPE HTML>
 <html>
 <head>
@@ -8,11 +9,53 @@
     {% include_media 'main.js' %}
     {% include_media 'bootstrap.js' %}
     {% include_media 'bootstrap.css' %}
+    <style>
+        body, section {
+            padding-top: 40px;
+        }
+    </style>
 </head>
-<body>
+<body data-spy="scroll">
     <div id="main-container" class="container">
-        <h1> BACKEND</h1>
-        Hello, {{  user.username }}. <a href="{% url auth_logout %}">Logout</a>
+        <div class="navbar navbar-fixed-top">
+            <div class="navbar-inner">
+                <div class="container">
+                    <ul class="nav pull-left">
+                        <li>
+                            <a href="#profile"><i class="icon-white icon-user"></i> My Profile</a>
+                        </li>
+                        <li>
+                            <a href="#monitors"><i class="icon-white icon-eye-open"></i> Monitors</a>
+                        </li>
+                    </ul>
+                    <ul class="nav pull-right">
+                        <li>
+                        <p class="navbar-text">
+                            <i class="icon-white icon-user"></i> {% get_full_name user %}
+                        </p>
+                        </li>
+                        <li>
+                            <a href="{% url auth_logout %}">Logout</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <section id="profile">
+            <div class="page-header">
+                <h1>My Profile</h1>
+            </div>
+        </section>
+        <section id="monitors">
+            <div class="page-header">
+                <h1>My Monitors</h1>
+            </div>
+
+        </section>
+        <div style="height:1000px;"></div>
     </div>
+    <script type="text/javascript">
+        $("#navbar").scrollspy();
+    </script>
 </body>
 </html>

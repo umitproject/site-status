@@ -1,6 +1,7 @@
 {% load media %}
 {% load i18n %}
 {% load status_tags %}
+{% load user_tags %}
 <!DOCTYPE html>
 <html>
 <head>
@@ -31,11 +32,11 @@
             <p class="lead">Status for your site.</p>
             <div class="subnav">
                 <ul id="main-menu" class="nav nav-pills">
-                    <li><a href="{{ MAIN_SITE_URL }}">Home</a></li>
+                    <li ><a href="{{ MAIN_SITE_URL }}" ><i class="icon-home"></i> Home</a></li>
                     <li class="dropdown pull-right" id="login">
                         {% if not user.is_authenticated %}
                             <a href="#login" class="dropdown-toggle" data-toggle="dropdown">
-                                Account
+                                <i class="icon-user"></i> Account
                                 <b class="caret"></b>
                             </a>
                             <ul class="dropdown-menu span3 well">
@@ -54,7 +55,7 @@
                             </ul>
                             {% else %}
                                 <a href="#account" class="dropdown-toggle" data-toggle="dropdown">
-                                    Howdy, {{  user.username  }}
+                                    Howdy, {% get_first_name user %}
                                     <b class="caret"></b>
                                 </a>
                                 <ul class="dropdown-menu span3 well">
@@ -68,8 +69,8 @@
 
                             {% endif %}
                     </li>
-                    <li><a href="#">About us</a></li>
-                    <li><a href="#">Docs</a></li>
+                    <li><a href="#"><i class="icon-briefcase"></i> About us</a></li>
+                    <li><a href="#"><i class="icon-book"></i> Docs</a></li>
 
                 </ul>
             </div>
@@ -94,8 +95,8 @@
         <div id="bottom_content">
             <div class="callcenter">
                 <p class="call_us" style="color:#e44038;padding-left:30px;">{% trans "Suport 24/7:" %} </p>
-                <p class="call_us"><img src="{% media_url "img/phone.png" %}" alt="phone" />{{ CONTACT_PHONE }}</p>
-                <p class="call_us"><img src="{% media_url "img/email.png" %}" alt="email" />{{ CONTACT_EMAIL }}</p>
+                <p class="call_us"><i class="icon-signal"></i>{{ CONTACT_PHONE }}</p>
+                <p class="call_us"><i class="icon-envelope"></i>{{ CONTACT_EMAIL }}</p>
             </div>
             <div id="menu_bottom_list">
                 <div class="menu_bottom" ><a href="{{ MAIN_SITE_URL }}">{{ SITE_NAME }}</a></div>
