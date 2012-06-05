@@ -42,11 +42,6 @@ def root_home(request, msg=None):
     context = RequestContext(request)
     return render(request, 'main/root_home.html', context)
 
-@login_required
-def backend(request):
-    context = RequestContext(request)
-    return render(request, 'backend/home.html', {user: request.user})
-
 def home(request, msg=None):
     modules = Module.objects.filter(site_config=request.site_config)
     show_days = Module.show_days(request.site_config)

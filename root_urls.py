@@ -13,7 +13,7 @@ handler500 = 'djangotoolbox.errorviews.server_error'
 urlpatterns = patterns('',
     url('^$', 'main.views.root_home', name='root_home'),
     url(r'^accounts/', include('registration.backends.default.urls')),
-    url(r'^backend/', 'main.views.backend', name='backend'),
+    url(r'^backend/', include('main.backend.urls')),
 
     ########
     # TESTS
