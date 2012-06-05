@@ -5,6 +5,7 @@ from django.contrib.sites.models import Site
 from registration import signals
 from registration.forms import RegistrationForm
 from registration.models import RegistrationProfile
+from registration.forms import RegistrationFormUniqueEmail
 
 
 class DefaultBackend(object):
@@ -120,7 +121,7 @@ class DefaultBackend(object):
         Return the default form class used for user registration.
         
         """
-        return RegistrationForm
+        return RegistrationFormUniqueEmail
 
     def post_registration_redirect(self, request, user):
         """
