@@ -101,10 +101,8 @@ class SubdomainMiddleware(object):
 
         request.subdomain = None
 
-        subdomain = matches.group('subdomain')
-
-        if subdomain:
-            request.subdomain = subdomain
+        if matches:
+            request.subdomain = matches.group('subdomain')
             request.urlconf = 'urls'
 
         else:
