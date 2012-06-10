@@ -6,6 +6,7 @@ Forms and validation code for user registration.
 
 from django.contrib.auth.models import User
 from django import forms
+from django.core import validators
 from django.utils.translation import ugettext_lazy as _
 
 
@@ -33,12 +34,15 @@ class RegistrationForm(forms.Form):
                                 max_length=30,
                                 widget=forms.TextInput(attrs=attrs_dict),
                                 label=_("Username"),
-                                error_messages={'invalid': _("This value may contain only letters, numbers and @/./+/-/_ characters.")})
+                                error_messages={'invalid': _('This value may contain only letters, numbers and @/./+/-/_ '
+                                                             + 'characters.')})
     email = forms.EmailField(widget=forms.TextInput(attrs=dict(attrs_dict,
                                                                maxlength=75)),
                              label=_("E-mail"))
     password1 = forms.CharField(widget=forms.PasswordInput(attrs=attrs_dict, render_value=False),
-                                label=_("Password"))
+                                label=_("Password"),
+                                validators=[validators.MinLengthValidator(4)],
+                                error_messages={'min_length': _('Password must be at least 4 characters')})
     password2 = forms.CharField(widget=forms.PasswordInput(attrs=attrs_dict, render_value=False),
                                 label=_("Password (again)"))
     
@@ -62,6 +66,7 @@ class RegistrationForm(forms.Form):
         field.
         
         """
+        #cleaned_data = super(RegistrationForm, self).clean()
         if 'password1' in self.cleaned_data and 'password2' in self.cleaned_data:
             if self.cleaned_data['password1'] != self.cleaned_data['password2']:
                 raise forms.ValidationError(_("The two password fields didn't match."))
