@@ -215,7 +215,7 @@ LOGGING_OUTPUT_ENABLED = True
 
 
 # add support to user profile
-AUTH_PROFILE_MODULE = 'users.UserProfile'
+AUTH_PROFILE_MODULE = 'main.UserProfile'
 ACCOUNT_ACTIVATION_DAYS = 30
 LOGIN_REDIRECT_URL = '/'
 

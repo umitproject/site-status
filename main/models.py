@@ -25,6 +25,7 @@ from decimal import *
 import uuid
 from types import StringTypes
 import itertools
+from django.contrib.auth.models import User
 
 from django.db import models
 from django.db.models.signals import post_save, pre_save
@@ -834,3 +835,22 @@ class TwitterAccount(models.Model):
     
     def __unicode__(self):
         return '@%s' % self.login
+
+
+class UserProfile(models.Model):
+    user = models.OneToOneField(User)
+
+    # adding aditional fields to the user profile
+    birth_date = models.DateField(_('Date of birth'), null=True, blank=True)
+    address = models.CharField(_('Address'), max_length=100, null=True, blank=True)
+    city = models.CharField(_('City'), max_length=50, null=True, blank=True)
+    country = models.CharField(_('Country'), max_length=50, null=True, blank=True)
+    state = models.CharField(_('State'), max_length=50, null=True, blank=True)
+    phone_number = models.CharField(_('Phone number'), max_length=15, null=True, blank=True)
+
+
+def create_user_profile(sender, instance, created, **kwargs):
+    if created:
+        UserProfile.objects.create(user=instance)
+
+post_save.connect(create_user_profile, sender=User)

@@ -1,9 +1,15 @@
 from django import forms
+from django.core import validators
 from django.contrib.auth.models import User
 from django.utils.translation import ugettext_lazy as _
+from main.models import UserProfile
 
 
-class ProfileForm(forms.Form):
+class ProfileForm(forms.ModelForm):
+    class Meta:
+        model=UserProfile
+        exclude=('user',)
+
     username = forms.RegexField(regex=r'^[\w.@+-]+$',
         max_length=30,
         widget=forms.TextInput(attrs={'class':'disabled', 'readonly':'readonly', 'disabled':'disabled' }),
@@ -12,18 +18,28 @@ class ProfileForm(forms.Form):
         required=False)
     email = forms.EmailField(widget=forms.TextInput(attrs=dict({'class':'disabled', 'readonly':'readonly', 'disabled':'disabled' },
         maxlength=75)),
-        label=_("E-mail"), required=False)
+        label=_("E-mail"),
+        required=False,
+        validators=[validators.validate_email],
+        error_messages={'invalid': _("Invalid email address.")})
     first_name = forms.CharField(max_length=30, required=False)
     last_name = forms.CharField(max_length=30, required=False)
     password1 = forms.CharField(widget=forms.PasswordInput(render_value=False),
-        label=_("Password"), required=False)
+        label=_("Password"),
+        validators=[validators.MinLengthValidator(4)],
+        error_messages={'min_length': _('Password must be at least 4 characters')},
+        required = False)
     password2 = forms.CharField(widget=forms.PasswordInput(render_value=False),
         label=_("Password (again)"), required=False)
 
-
+    def __init__(self, *args, **kw):
+        super(forms.ModelForm, self).__init__(*args, **kw)
+        self.fields.keyOrder = ['username', 'email', 'first_name', 'last_name','birth_date', 'address', 'city', 'country',
+                           'state', 'phone_number','password1', 'password2']
 
     def clean(self):
-        if 'password1' in self.cleaned_data and 'password2' in self.cleaned_data:
-            if self.cleaned_data['password1'] != self.cleaned_data['password2']:
+        cleaned_data = super(ProfileForm, self).clean()
+        if 'password1' in cleaned_data and 'password2' in cleaned_data:
+            if cleaned_data['password1'] != cleaned_data['password2']:
                 raise forms.ValidationError(_("The two password fields didn't match."))
-        return self.cleaned_data
+        return cleaned_data
