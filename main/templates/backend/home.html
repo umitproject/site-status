@@ -89,11 +89,20 @@
             $.post(submit_to,data,
                 function(response){
                     console.log($submit_button);
+                    console.log(response);
                     $submit_button.button("complete");
 
                     setTimeout(function() {
                         $submit_button.button("reset");
                     }, 2000);
+
+                    if (response.hasOwnProperty('error') &&
+                            response.hasOwnProperty('message')) {
+                        for (var key in response.message) {
+                            var $input = $this.find('input[name="'+key +'"]');
+                            $input.parent().before("<p>"+ response.message[key] +"</p>");
+                        }
+                    }
                 })
         });
     </script>
