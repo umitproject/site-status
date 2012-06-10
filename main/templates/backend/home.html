@@ -72,10 +72,12 @@
                 data = {};
 
             function get_form_object($form) {
+                var data = {};
                 $form.find('input').each(function(){
                     var $this = $(this);
                     data[$this.attr('name')] = $this.val();
                 });
+                return data;
             }
 
             data = get_form_object($this);
