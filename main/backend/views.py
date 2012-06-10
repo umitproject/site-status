@@ -25,8 +25,19 @@ def backend(request):
 """ API """
 @login_required
 def update_profile(request):
-    
-
-
+    form = ProfileForm(request.POST)
+    if form.is_valid():
+        u = request.user
+        if u.username != form.data.get('username'):
+            return HttpResponse(simplejson.dumps({'error': 'invalid username'}), mimetype='application/json' )
+        if form.data.get('first_name'):
+            u.first_name = form.data.get('first_name')
+        if form.data.get('last_name'):
+            u.last_name = form.data.get('last_name')
+        if form.data.get('password1'):
+            u.set_password(form.data.get('password1'))
+        u.save()
+    else:
+        return HttpResponse(simplejson.dumps({'error': 'inval form'}), mimetype='application/json' )
 
     return HttpResponse(simplejson.dumps({'status': 'ok'}), mimetype='application/json' )

@@ -8,16 +8,18 @@ class ProfileForm(forms.Form):
         max_length=30,
         widget=forms.TextInput(attrs={'class':'disabled', 'readonly':'readonly', 'disabled':'disabled' }),
         label=_("Username"),
-        error_messages={'invalid': _("This value may contain only letters, numbers and @/./+/-/_ characters.")})
+        error_messages={'invalid': _("This value may contain only letters, numbers and @/./+/-/_ characters.")},
+        required=False)
     email = forms.EmailField(widget=forms.TextInput(attrs=dict({'class':'disabled', 'readonly':'readonly', 'disabled':'disabled' },
         maxlength=75)),
-        label=_("E-mail"))
-    first_name = forms.CharField(max_length=30)
-    last_name = forms.CharField(max_length=30)
+        label=_("E-mail"), required=False)
+    first_name = forms.CharField(max_length=30, required=False)
+    last_name = forms.CharField(max_length=30, required=False)
     password1 = forms.CharField(widget=forms.PasswordInput(render_value=False),
-        label=_("Password"))
+        label=_("Password"), required=False)
     password2 = forms.CharField(widget=forms.PasswordInput(render_value=False),
-        label=_("Password (again)"))
+        label=_("Password (again)"), required=False)
+
 
 
     def clean(self):
