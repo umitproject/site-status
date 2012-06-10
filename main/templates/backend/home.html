@@ -44,6 +44,12 @@
         <section id="profile">
             <div class="page-header">
                 <h1>My Profile</h1>
+                <form method='post' action='/backend/update_profile'>{% csrf_token %}
+                    <table>
+                        {{  form.as_table }}
+                    </table>
+                    <button class="btn btn-primary" type="submit" name="Submit" value="update_profile" data-complete-text="Saved!">Save</button>
+                </form>
             </div>
         </section>
         <section id="monitors">
@@ -56,6 +62,38 @@
     </div>
     <script type="text/javascript">
         $("#navbar").scrollspy();
+        $(".btn").button();
+
+
+        $("form").live('submit', function(evt){
+            var submit_to = $(this).attr("action"),
+                $this = $(this),
+                $submit_button = $(this.Submit),
+                data = {};
+
+            function get_form_object($form) {
+                $form.find('input').each(function(){
+                    var $this = $(this);
+                    data[$this.attr('name')] = $this.val();
+                });
+            }
+
+            data = get_form_object($this);
+
+            $submit_button.button("loading");
+
+            evt.preventDefault();
+
+            $.post(submit_to,data,
+                function(response){
+                    console.log($submit_button);
+                    $submit_button.button("complete");
+
+                    setTimeout(function() {
+                        $submit_button.button("reset");
+                    }, 2000);
+                })
+        });
     </script>
 </body>
 </html>

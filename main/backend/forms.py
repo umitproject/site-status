@@ -1,0 +1,27 @@
+from django import forms
+from django.contrib.auth.models import User
+from django.utils.translation import ugettext_lazy as _
+
+
+class ProfileForm(forms.Form):
+    username = forms.RegexField(regex=r'^[\w.@+-]+$',
+        max_length=30,
+        widget=forms.TextInput(attrs={'class':'disabled', 'readonly':'readonly', 'disabled':'disabled' }),
+        label=_("Username"),
+        error_messages={'invalid': _("This value may contain only letters, numbers and @/./+/-/_ characters.")})
+    email = forms.EmailField(widget=forms.TextInput(attrs=dict({'class':'disabled', 'readonly':'readonly', 'disabled':'disabled' },
+        maxlength=75)),
+        label=_("E-mail"))
+    first_name = forms.CharField(max_length=30)
+    last_name = forms.CharField(max_length=30)
+    password1 = forms.CharField(widget=forms.PasswordInput(render_value=False),
+        label=_("Password"))
+    password2 = forms.CharField(widget=forms.PasswordInput(render_value=False),
+        label=_("Password (again)"))
+
+
+    def clean(self):
+        if 'password1' in self.cleaned_data and 'password2' in self.cleaned_data:
+            if self.cleaned_data['password1'] != self.cleaned_data['password2']:
+                raise forms.ValidationError(_("The two password fields didn't match."))
+        return self.cleaned_data
