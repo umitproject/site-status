@@ -2,7 +2,7 @@ from django import forms
 from django.core import validators
 from django.contrib.auth.models import User
 from django.utils.translation import ugettext_lazy as _
-from main.models import UserProfile
+from main.models import SiteConfig, UserProfile
 
 
 class ProfileForm(forms.ModelForm):
@@ -42,4 +42,12 @@ class ProfileForm(forms.ModelForm):
         if 'password1' in cleaned_data and 'password2' in cleaned_data:
             if cleaned_data['password1'] != cleaned_data['password2']:
                 raise forms.ValidationError(_("The two password fields didn't match."))
-        return cleaned_data
+        return self.cleaned_data
+
+
+class SiteConfigForm(forms.ModelForm):
+    api_key = forms.CharField(widget=forms.TextInput(attrs=dict({'class':'disabled', 'readonly':'readonly', 'disabled':'disabled' })), required=False)
+    api_secret = forms.CharField(widget=forms.TextInput(attrs=dict({'class':'disabled', 'readonly':'readonly', 'disabled':'disabled' })), required=False)
+    class Meta:
+        model = SiteConfig
+        exclude = ('user','twitter_account')

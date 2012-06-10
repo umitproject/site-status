@@ -2,12 +2,12 @@
 {% load i18n %}
 {% load status_tags %}
 {% load user_tags %}
+{% load get_range %}
 <!DOCTYPE HTML>
 <html>
 <head>
     <title></title>
     {% include_media 'main.js' %}
-    {% include_media 'bootstrap.js' %}
     {% include_media 'bootstrap.css' %}
     <style>
         body, section {
@@ -15,7 +15,7 @@
         }
     </style>
 </head>
-<body data-spy="scroll">
+<body data-spy="scroll" data-target=".navbar-fixed-top">
     <div id="main-container" class="container">
         <div class="navbar navbar-fixed-top">
             <div class="navbar-inner">
@@ -44,26 +44,58 @@
         <section id="profile">
             <div class="page-header">
                 <h1>My Profile</h1>
+            </div>
                 <form method='post' action='/backend/update_profile'>{% csrf_token %}
                     <table>
-                        {{  form.as_table }}
+                        {{  profile_form.as_table }}
                     </table>
                     <button class="btn btn-primary" type="submit" name="Submit" value="update_profile" data-complete-text="Saved!">Save</button>
                 </form>
-            </div>
         </section>
         <section id="monitors">
             <div class="page-header">
                 <h1>My Monitors</h1>
             </div>
+            <ul class="nav nav-tabs" data-tabs="tabs" id="site-configs">
+                <li class="active">
+                    <a href="#add-site-config" data-toggle="tab"><i class="icon-plus"></i> Add</a>
+                </li>
+                {% for site_config_form in site_config_forms %}
+                    <li><a href="#site-config-{{  forloop.counter }}" data-toggle="tab">{{ site_config_form.initial.site_name }}</a></li>
+                {% endfor %}
+            </ul>
+
+
+            <div class="tab-content">
+                <div class="tab-pane active" id="add-site-config">
+                    <h2>Add a new Site Config</h2>
+                    <form method="post" action='/backend/add_site_config'>{% csrf_token %}
+                        <table>
+                            {{ site_config_form_template.as_table }}
+                        </table>
+                        <input type="hidden" name="site_config_action" value="add"/>
+                        <button class="btn btn-primary" type="submit" name="Submit" value="update_profile" data-complete-text="Saved!">Save</button>
+                    </form>
+                </div>
+                {% for site_config_form in site_config_forms %}
+                <div class="tab-pane" id="site-config-{{ forloop.counter }}">
+                    <h2>{{ site_config_form.initial.site_name }}</h2>
+                    <form method='post' action='/backend/add_site_config'>{% csrf_token %}
+                        <table>
+                            {{  site_config_form.as_table }}
+                        </table>
+                        <input type="hidden" name="site_config_action" value="update"/>
+                        <button class="btn btn-primary" type="submit" name="Submit" value="update_profile" data-complete-text="Saved!">Save</button>
+                    </form>
+                </div>
+                {% endfor %}
+            </div>
 
         </section>
         <div style="height:1000px;"></div>
     </div>
+    {% include_media 'bootstrap.js' %}
     <script type="text/javascript">
-        $("#navbar").scrollspy();
-        $(".btn").button();
-
 
         $("form").live('submit', function(evt){
             var submit_to = $(this).attr("action"),
@@ -104,6 +136,16 @@
                         }
                     }
                 })
+        });
+        $(document).ready(function(){
+           // $("#navbar").scrollspy();
+           // $(".btn").button();
+
+            $("#site-configs").tab()
+            $('#site-configs a').click(function (e) {
+                e.preventDefault();
+                $(this).tab('show');
+            })
         });
     </script>
 </body>

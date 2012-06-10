@@ -4,8 +4,8 @@ from django.shortcuts import render, render_to_response
 from django.contrib.auth.models import User
 from django.utils import simplejson
 from main.decorators import login_required
-from main.backend.forms import ProfileForm
-from main.models import UserProfile
+from main.backend.forms import ProfileForm, SiteConfigForm
+from main.models import SiteConfig
 
 __author__ = 'apredoi'
 
@@ -14,14 +14,25 @@ __author__ = 'apredoi'
 def backend(request):
     context = RequestContext(request)
     u = request.user
-    form = ProfileForm(initial={
+    profile_form = ProfileForm(initial={
         'username': u.username,
         'email': u.email,
         'first_name': u.first_name,
         'last_name': u.last_name,
-        'country': u.get_profile().country
+        #'country': u.get_profile().country
     })
-    return render(request, 'backend/home.html', {'form':form })
+
+    site_config_form_template = SiteConfigForm()
+    site_configs = SiteConfig.objects.filter(user=u)
+    site_config_forms = []
+
+    for site_config in site_configs:
+        site_config_forms.append(SiteConfigForm(instance=site_config))
+
+
+
+    return render(request, 'backend/home.html', {'profile_form':profile_form, 'site_config_forms': site_config_forms,
+                                                 'site_config_form_template': site_config_form_template})
 
 
 """ API """
@@ -56,7 +67,37 @@ def update_profile(request):
         u.save()
 
     else:
+        return HttpResponse(simplejson.dumps({'error': 'inval form'}), mimetype='application/json' )
+    return HttpResponse(simplejson.dumps({'status': 'ok'}), mimetype='application/json' )
 
-        return HttpResponse(simplejson.dumps({'error': 'validation', 'message': form.errors}), mimetype='application/json' )
+@login_required
+def add_site_config(request):
+    if request.method == 'POST':
+        instance = None
+        if request.POST['site_config_action'] == 'update':
+            instance = SiteConfig.objects.get(user=request.user, api_key=request.POST['api_key'], api_secret=request.POST['api_secret'])
+        form = SiteConfigForm(request.POST,instance=instance) if instance else SiteConfigForm(request.POST)
+        if form.is_valid():
+            site_config = form.save(commit=False)
+            site_config.user = request.user
+            site_config.save()
+        else:
+            return HttpResponse(simplejson.dumps({'error': 'inval form'}), mimetype='application/json' )
+
+    return HttpResponse(simplejson.dumps({'status': 'ok'}), mimetype='application/json' )
+
+@login_required
+def add_site_config(request):
+    if request.method == 'POST':
+        instance = None
+        if request.POST['site_config_action'] == 'update':
+            instance = SiteConfig.objects.get(user=request.user, api_key=request.POST['api_key'], api_secret=request.POST['api_secret'])
+        form = SiteConfigForm(request.POST,instance=instance) if instance else SiteConfigForm(request.POST)
+        if form.is_valid():
+            site_config = form.save(commit=False)
+            site_config.user = request.user
+            site_config.save()
+        else:
+            return HttpResponse(simplejson.dumps({'error': 'inval form'}), mimetype='application/json' )
 
     return HttpResponse(simplejson.dumps({'status': 'ok'}), mimetype='application/json' )

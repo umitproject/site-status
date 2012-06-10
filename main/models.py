@@ -123,6 +123,7 @@ class SiteConfig(models.Model):
     schedule_warning_time = models.IntegerField(default=7)
     api_key = models.CharField(max_length=100, null=True, blank=True)
     api_secret = models.CharField(max_length=100, null=True, blank=True)
+    user = models.ForeignKey(User)
     
     @staticmethod
     def get_from_domain(domain):

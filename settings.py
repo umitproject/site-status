@@ -103,7 +103,7 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'main.middleware.SubdomainMiddleware',
-    'main.middleware.SiteConfigMiddleware',
+#    'main.middleware.SiteConfigMiddleware',
     )
 
 TEMPLATE_CONTEXT_PROCESSORS = (
@@ -111,7 +111,7 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     'django.core.context_processors.request',
     'django.core.context_processors.media',
     'django.contrib.messages.context_processors.messages',
-    'main.context_processors.get_settings',
+  #  'main.context_processors.get_settings',
     )
 
 TEMPLATE_LOADERS = (
@@ -185,21 +185,22 @@ MEDIA_BUNDLES = (
      'css/typography.css'
         ),
     ('root.css',
-        'css/root.css'),
+     'css/root.css'),
     ('main.js',
      'js/jquery.js',
      'js/main.js',
      'js/modernizr.js'
         ),
     ('bootstrap.js',
-        'bootstrap/js/bootstrap.js',
-        'bootstrap/js/bootstrap-dropdown.js',
-        'bootstrap/js/bootstrap-scrollspy.js',
-        'bootstrap/js/bootstrap-button.js'
+     'bootstrap/js/bootstrap.js',
+     'bootstrap/js/bootstrap-tab.js',
+     'bootstrap/js/bootstrap-dropdown.js',
+     'bootstrap/js/bootstrap-scrollspy.js',
+     'bootstrap/js/bootstrap-button.js',
         ),
     ('bootstrap.css',
-        'bootstrap/css/bootstrap-responsive.css',
-        'bootstrap/css/bootstrap.css',)
+     'bootstrap/css/bootstrap-responsive.css',
+     'bootstrap/css/bootstrap.css',)
     )
 
 ROOT_MEDIA_FILTERS = {
