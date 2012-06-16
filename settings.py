@@ -22,7 +22,6 @@
 # Initialize App Engine and import the default settings (DB backend, etc.).
 # If you want to use a different backend you have to remove all occurences
 # of "djangoappengine" from this file.
-from djangoappengine.settings_base import *
 
 import logging
 import os
@@ -30,14 +29,15 @@ import sys
 
 from os.path import join, dirname
 
-sys.path.insert(0, join(dirname(__file__), 'djangoappengine', 'lib'))
 sys.path.insert(0, join(dirname(__file__), 'lib'))
 
-
+"""
 # Activate django-dbindexer for the default database
 DATABASES['native'] = DATABASES['default']
 DATABASES['default'] = {'ENGINE': 'dbindexer', 'TARGET': 'native',
                         'HIGH_REPLICATION': True}
+"""
+
 AUTOLOAD_SITECONF = 'indexes'
 
 SECRET_KEY = 'igaeofugq8fghrilbfrl3kh4h8ogdsdy1ohr;dpfgo87109ru;aokdhf;k'
@@ -46,7 +46,8 @@ DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
 ENVIRONMENT = os.environ.get('SERVER_SOFTWARE', 'GAETest')
-GAE = True
+
+GAE = False
 PRODUCTION = True
 TEST = False
 
@@ -80,13 +81,11 @@ INSTALLED_APPS = (
     'dbindexer',
     'mediagenerator',
     'main',
-    'status_cron',
-    'status_api',
+    #TODO: add these back
+    #'status_cron',
+    #'status_api',
     'status_notification',
     'permission_backend_nonrel',
-
-    # djangoappengine should come last, so it can override a few manage.py commands
-    'djangoappengine',
     )
 
 
@@ -134,6 +133,7 @@ LOGIN_URL = '/accounts/login/'
 CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.memcached.MemcachedCache',
+        'LOCATION': '127.0.0.1:11211',
         'TIMEOUT': 0,
         }
 }
@@ -220,15 +220,12 @@ AUTH_PROFILE_MODULE = 'main.UserProfile'
 ACCOUNT_ACTIVATION_DAYS = 30
 LOGIN_REDIRECT_URL = '/'
 
-EMAIL_BACKEND = 'appengineemail.EmailBackend'
+#EMAIL_BACKEND = 'appengineemail.EmailBackend'
 #'django.core.mail.backends.console.EmailBackend'
 
-if on_production_server:
-    DEFAULT_FROM_EMAIL = 'noreply@umit-site-status.appspotmail.com'
-else:
-    # local
-    EMAIL_HOST = 'localhost'
-    EMAIL_PORT = 25
+DEFAULT_FROM_EMAIL = 'noreply@umit-site-status.appspotmail.com'
+EMAIL_HOST = 'localhost'
+EMAIL_PORT = 25
 
 USE_I18N = True
 
