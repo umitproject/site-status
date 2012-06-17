@@ -31,18 +31,20 @@ from os.path import join, dirname
 
 sys.path.insert(0, join(dirname(__file__), 'lib'))
 
-"""
 # Activate django-dbindexer for the default database
-DATABASES['native'] = DATABASES['default']
-DATABASES['default'] = {'ENGINE': 'dbindexer', 'TARGET': 'native',
-                        'HIGH_REPLICATION': True}
-"""
-
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'OPTIONS': {
+            'read_default_file': '/Users/apredoi/work/gsoc2012/site-status/db.cnf',
+        },
+    },
+}
 AUTOLOAD_SITECONF = 'indexes'
 
 SECRET_KEY = 'igaeofugq8fghrilbfrl3kh4h8ogdsdy1ohr;dpfgo87109ru;aokdhf;k'
 
-DEBUG = True
+DEBUG = False
 TEMPLATE_DEBUG = DEBUG
 
 ENVIRONMENT = os.environ.get('SERVER_SOFTWARE', 'GAETest')
@@ -85,7 +87,7 @@ INSTALLED_APPS = (
     #'status_cron',
     #'status_api',
     'status_notification',
-    'permission_backend_nonrel',
+    #'permission_backend_nonrel',
     )
 
 
@@ -209,6 +211,7 @@ ROOT_MEDIA_FILTERS = {
     }
 
 YUICOMPRESSOR_PATH = os.path.join(os.path.dirname(__file__), 'yuicompressor-2.4.7.jar')
+print YUICOMPRESSOR_PATH
 
 
 INTERNAL_IPS = ('127.0.0.1', 'localhost',)
