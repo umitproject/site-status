@@ -44,13 +44,13 @@ AUTOLOAD_SITECONF = 'indexes'
 
 SECRET_KEY = 'igaeofugq8fghrilbfrl3kh4h8ogdsdy1ohr;dpfgo87109ru;aokdhf;k'
 
-DEBUG = False
+DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
 ENVIRONMENT = os.environ.get('SERVER_SOFTWARE', 'GAETest')
 
 GAE = False
-PRODUCTION = True
+PRODUCTION = False
 TEST = False
 
 if ENVIRONMENT == '':
@@ -86,7 +86,7 @@ INSTALLED_APPS = (
     #TODO: add these back
     #'status_cron',
     #'status_api',
-    'status_notification',
+    #'status_notification',
     #'permission_backend_nonrel',
     )
 
@@ -222,6 +222,9 @@ LOGGING_OUTPUT_ENABLED = True
 AUTH_PROFILE_MODULE = 'main.UserProfile'
 ACCOUNT_ACTIVATION_DAYS = 30
 LOGIN_REDIRECT_URL = '/'
+
+########
+# EMAIL
 
 #EMAIL_BACKEND = 'appengineemail.EmailBackend'
 #'django.core.mail.backends.console.EmailBackend'
