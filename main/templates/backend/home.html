@@ -61,12 +61,14 @@
                     <a href="#add-site-config" data-toggle="tab"><i class="icon-plus"></i> Add</a>
                 </li>
                 {% for site_config_form in site_config_forms %}
-                    <li><a href="#site-config-{{  forloop.counter }}" data-toggle="tab">{{ site_config_form.initial.site_name }}</a></li>
+                    <li data-form-id="{{ site_config_form.instance.pk }}">
+                        <a href="#site-config-{{  site_config_form.instance.pk }}" data-toggle="tab">{{ site_config_form.initial.site_name }}</a>
+                    </li>
                 {% endfor %}
             </ul>
 
 
-            <div class="tab-content">
+            <div class="tab-content" id="site-config-forms">
                 <div class="tab-pane active" id="add-site-config">
                     <h2>Add a new Site Config</h2>
                     <form method="post" action='/backend/add_site_config'>{% csrf_token %}
@@ -74,18 +76,20 @@
                             {{ site_config_form_template.as_table }}
                         </table>
                         <input type="hidden" name="site_config_action" value="add"/>
-                        <button class="btn btn-primary" type="submit" name="Submit" value="update_profile" data-complete-text="Saved!">Save</button>
+                        <button class="btn btn-primary" type="submit" name="Submit" value="add_site_config" data-complete-text="Saved!">Save</button>
                     </form>
                 </div>
                 {% for site_config_form in site_config_forms %}
-                <div class="tab-pane" id="site-config-{{ forloop.counter }}">
+                <div class="tab-pane" id="site-config-{{ site_config_form.instance.pk }}" data-form-id="{{ site_config_form.instance.pk }}">
                     <h2>{{ site_config_form.initial.site_name }}</h2>
                     <form method='post' action='/backend/add_site_config'>{% csrf_token %}
                         <table>
                             {{  site_config_form.as_table }}
                         </table>
+                        <input type="hidden" name="site_config_id" value="{{ site_config_form.instance.pk }}" />
                         <input type="hidden" name="site_config_action" value="update"/>
-                        <button class="btn btn-primary" type="submit" name="Submit" value="update_profile" data-complete-text="Saved!">Save</button>
+                        <button class="btn btn-primary site-config-update" type="submit" name="Submit" value="edit_site_config" data-complete-text="Saved!">Save</button>
+                        <button class="btn btn-danger site-config-delete" type="submit" name="Submit" value="delete_site_config" data-complete-text="Deleted!">Delete</button>
                     </form>
                 </div>
                 {% endfor %}
@@ -120,8 +124,7 @@
 
             $.post(submit_to,data,
                 function(response){
-                    console.log($submit_button);
-                    console.log(response);
+                    console.log(response)
                     $submit_button.button("complete");
 
                     setTimeout(function() {
@@ -135,17 +138,51 @@
                             $input.parent().before("<p>"+ response.message[key] +"</p>");
                         }
                     }
+                    if (response.hasOwnProperty("action") && response.hasOwnProperty("status") &&response.status == "ok") {
+                        if (response.action == "delete") {
+                            $('[data-form-id="'+ response.id +'"]').remove();
+                            $("#site-configs li>a:first").tab('show')
+                        }
+                        if (response.action == "add") {
+                            $("#site-config-forms").append(
+                                    $("<div>").addClass("tab-pane")
+                                            .attr("id", "site-config-" + response.id)
+                                            .append(
+                                            $("<form>").append(
+                                                    $("<table>").append(
+                                                            response.item
+                                                    )
+                                            ).append()
+                                    )
+                            )
+                            $("#site-configs").append(
+                                    $("<li>").append(
+                                            $("<a>").attr("href","#site-config-"+ response.id)
+                                                    .attr("data-toggle", "tab")
+                                                    .text("new config")
+                                    )
+                            )
+                        }
+                    }
                 })
         });
         $(document).ready(function(){
            // $("#navbar").scrollspy();
            // $(".btn").button();
 
-            $("#site-configs").tab()
+            $("#site-configs").tab();
             $('#site-configs a').click(function (e) {
                 e.preventDefault();
                 $(this).tab('show');
-            })
+            });
+
+            $(".btn.site-config-delete").click(function(event){
+                $(this).closest('form').find('input[name="site_config_action"]').val('delete')
+            });
+
+            $(".btn.site-config-update").click(function(event){
+                $(this).closest('form').find('input[name="site_config_action"]').val('update')
+            });
         });
     </script>
 </body>
