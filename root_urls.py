@@ -34,11 +34,13 @@ urlpatterns = patterns('',
 
     ######
     # API
-    url(r'^api/', include('status_api.urls')),
+    # TODO: ADD THESE BACK
+    #url(r'^api/', include('status_api.urls')),
 
     #######
     # Cron
-    url(r'^cron/', include('status_cron.urls')),
+    # TODO: ADD THESE BACK
+    #url(r'^cron/', include('status_cron.urls')),
 
     ######################
     # Notification System
