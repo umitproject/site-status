@@ -2,7 +2,9 @@ __author__ = 'apredoi'
 from django.conf.urls.defaults import *
 from django.contrib import admin
 from registration import *
+import django_cron
 
+django_cron.autodiscover()
 
 from main.feeds import LastModuleStatuses
 

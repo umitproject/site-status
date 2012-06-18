@@ -71,6 +71,9 @@ TEST_REMOTE_HTTP_HOST = "http://localhost:8000"
 
 logging.info("Environment: '%s'" % ENVIRONMENT)
 
+# check for crons every
+CRON_POLLING_FREQUENCY = 10 #seconds
+
 INSTALLED_APPS = (
     'django.contrib.admin',
     'django.contrib.contenttypes',
@@ -78,13 +81,14 @@ INSTALLED_APPS = (
     'django.contrib.auth',
     'django.contrib.sessions',
     'registration',
+    'django_cron',
     'djangotoolbox',
     'autoload',
     'dbindexer',
     'mediagenerator',
     'main',
     #TODO: add these back
-    #'status_cron',
+    'status_cron',
     #'status_api',
     #'status_notification',
     #'permission_backend_nonrel',
@@ -104,7 +108,7 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'main.middleware.SubdomainMiddleware',
-#    'main.middleware.SiteConfigMiddleware',
+    'main.middleware.SiteConfigMiddleware',
     )
 
 TEMPLATE_CONTEXT_PROCESSORS = (
@@ -215,24 +219,21 @@ ROOT_MEDIA_FILTERS = {
     }
 
 YUICOMPRESSOR_PATH = os.path.join(os.path.dirname(__file__), 'yuicompressor-2.4.7.jar')
-print YUICOMPRESSOR_PATH
 
 
 INTERNAL_IPS = ('127.0.0.1', 'localhost',)
 LOGGING_OUTPUT_ENABLED = True
 
-
-# add support to user profile
+###############
+# USER PROFILE
 AUTH_PROFILE_MODULE = 'main.UserProfile'
 ACCOUNT_ACTIVATION_DAYS = 30
 LOGIN_REDIRECT_URL = '/'
 
 ########
 # EMAIL
-
 #EMAIL_BACKEND = 'appengineemail.EmailBackend'
 #'django.core.mail.backends.console.EmailBackend'
-
 DEFAULT_FROM_EMAIL = 'noreply@umit-site-status.appspotmail.com'
 EMAIL_HOST = 'localhost'
 EMAIL_PORT = 25

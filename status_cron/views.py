@@ -30,10 +30,6 @@ from django.http import HttpResponse, Http404
 from django.conf import settings
 
 # Appengine TASKS
-from google.appengine.api import taskqueue
-
-from google.appengine.api import urlfetch
-
 from main.models import *
 from main.memcache import memcache
 from main.decorators import staff_member_required
@@ -47,7 +43,9 @@ CHECK_NOTIFICATION_KEY = 'check_notification_%s'
 @staff_member_required
 def check_passive_hosts(request):
     modules = Module.objects.filter(module_type='passive')
-    
+
+    # TODO: this should do something
+    """
     for module in modules:
         if memcache.get(CHECK_HOST_KEY % module.id, False):
             # This means that we still have a processing task for this host
@@ -68,7 +66,7 @@ def check_passive_hosts(request):
         except taskqueue.TaskAlreadyExistsError, e:
             logging.info('Task is still running for module %s: %s' % \
                  (module.name,'/cron/check_passive_hosts_task/%s' % module.id))
-    
+    """
     return HttpResponse("OK")
 
 @staff_member_required
@@ -79,7 +77,8 @@ def check_notifications(request):
     timeframe.
     """
     notifications = Notification.objects.filter(sent_at=None, send=True).order_by('-created_at')
-    
+    # TODO : this should do something
+    """
     for notification in notifications:
         # Create the notification queue
         not_key = CHECK_NOTIFICATION_KEY % notification.id
@@ -103,7 +102,7 @@ def check_notifications(request):
         except taskqueue.TaskAlreadyExistsError, e:
             logging.info('Task is still running for module %s: %s' % \
                  (module.name,'/cron/create_notification_queue/%s' % notification.id))
-    
+    """
     return HttpResponse("OK")
 
 @staff_member_required

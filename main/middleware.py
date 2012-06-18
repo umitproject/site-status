@@ -60,18 +60,22 @@ class SiteConfigMiddleware(object):
                 if site_config:
                     request.site_config = site_config
                 else:
-                    site_config = SiteConfig()
-                    site_config.site_name = domain
-                    scheme = 'https://' if request.is_secure() else 'http://'
-                    site_config.main_site_url = scheme + domain
-                    site_config.save()
-                    
-                    status_domain = StatusSiteDomain()
-                    status_domain.status_url = domain
-                    status_domain.site_config = site_config
-                    status_domain.save()
-                    
-                    request.site_config = site_config
+
+#                    site_config = SiteConfig()
+#                    site_config.site_name = domain
+#                    scheme = 'https://' if request.is_secure() else 'http://'
+#                    site_config.main_site_url = scheme + domain
+#                    site_config.save()
+#
+#                    status_domain = StatusSiteDomain()
+#                    status_domain.status_url = domain
+#                    status_domain.site_config = site_config
+#                    status_domain.save()
+#
+#                    request.site_config = site_config
+
+                    #TODO: work this out
+                    request.site_config = None
             
             aggregation = cache.get(DOMAIN_AGGREGATION_CACHE_KEY % domain, False)
             if aggregation:
@@ -102,8 +106,10 @@ class SubdomainMiddleware(object):
         request.subdomain = None
 
         if matches:
-            request.subdomain = matches.group('subdomain')
-            request.urlconf = 'urls'
+            subdomain = matches.group('subdomain')
+            if subdomain:
+                request.subdomain = subdomain
+                request.urlconf = 'urls'
 
         else:
             warnings.warn('Unable to get subdomain from %s.' % request.get_host(), UserWarning)

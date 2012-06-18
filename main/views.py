@@ -43,8 +43,9 @@ def root_home(request, msg=None):
     return render(request, 'main/root_home.html', context)
 
 def home(request, msg=None):
-    modules = Module.objects.filter(site_config=request.site_config)
-    show_days = Module.show_days(request.site_config)
+    site_config = request.site_config
+    modules = Module.objects.filter(site_config=site_config)
+    show_days = Module.show_days(site_config)
     last_incident = request.aggregation.last_incident
     current_availability = request.aggregation.percentage_uptime
     scheduled_maintenances = ScheduledMaintenance.objects.\
