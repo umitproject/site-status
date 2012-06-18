@@ -116,29 +116,29 @@ def add_site_config(request):
 def add_module(request):
     if request.method == 'POST':
         object_key=None
-    try:
-        object_key = request.POST['module_id']
-    except MultiValueDictKeyError:
-        pass
-    instance = None
-    action = request.POST['module_action']
-    if action in ('update', 'delete'):
-        instance = Module.objects.get(name=request.name, pk=object_key)
+        try:
+            object_key = request.POST['module_id']
+        except MultiValueDictKeyError:
+            pass
+        instance = None
+        action = request.POST['module_action']
+        if action in ('update', 'delete'):
+            instance = Module.objects.get(pk=object_key)
 
-    if instance and action == 'delete':
-        instance.delete()
-        return HttpResponse('{"action":"delete", "status":"ok", "id":"'+ object_key +'"}', mimetype='application/json')
+        if instance and action == 'delete':
+            instance.delete()
+            return HttpResponse('{"action":"delete", "status":"ok", "id":"'+ object_key +'"}', mimetype='application/json')
 
-    form = ModuleForm(request.POST,instance=instance) if instance else ModuleForm(request.POST)
-    if form.is_valid():
-        module = form.save(commit=False)
-        """module.user = request.user"""
-        module.save()
-    else:
-        return HttpResponse(simplejson.dumps({'error': 'inval form'}), mimetype='application/json'
-        )
-    return HttpResponse('{"action":"' + action + '","status": "ok", "id":"'+ str(form.instance.pk) +'", '
-                                                                                                    '"item":"'+ form.as_table().replace('"','\\"').replace('\n','').replace('\r','') +'"}',
-        mimetype='application/json')
+        form = ModuleForm(request.POST,instance=instance) if instance else ModuleForm(request.POST)
+        if form.is_valid():
+            module = form.save(commit=False)
+            module.save()
+        else:
+            return HttpResponse(simplejson.dumps({'error': 'inval form'}), mimetype='application/json'
+            )
+
+        return HttpResponse('{"action":"' + action + '","status": "ok", "id":"'+ str(form.instance.pk) +'", '
+                        '"item":"'+ form.as_table().replace('"','\\"').replace('\n','').replace('\r','') +'"}',
+                        mimetype='application/json')
 
     return HttpResponse('{"status": "ok"}', mimetype='application/json')

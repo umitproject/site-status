@@ -112,7 +112,7 @@ class SubdomainMiddleware(object):
                 request.urlconf = 'urls'
 
         else:
-            warnings.warn('Unable to get subdomain from %s.' % request.get_host(), UserWarning)
+            warnings.warn('Unable to get subdomain from %s using %s.' % (request.get_host(), re.escape(domain)), UserWarning)
 
         # Continue processing the request as normal.
         return None

@@ -173,8 +173,6 @@
 
             $.post(submit_to,data,
                 function(response){
-                    console.log($submit_button);
-                    console.log(response);
                     $submit_button.button("complete");
 
                     setTimeout(function() {
@@ -194,11 +192,32 @@
            // $("#navbar").scrollspy();
            // $(".btn").button();
 
-            $("#site-configs").tab()
+            $("#site-configs").tab();
             $('#site-configs a').click(function (e) {
                 e.preventDefault();
                 $(this).tab('show');
-            })
+            });
+            $("#modules").tab();
+            $('#modules a').click(function (e) {
+                e.preventDefault();
+                $(this).tab('show');
+            });
+
+            $(".module-delete").click(function(e){
+                $('input[name="module_action"]').val('delete')
+            });
+
+            $(".module-update").click(function(e){
+                $('input[name="module_action"]').val('update')
+            });
+
+            $(".site-config-delete").click(function(e){
+                $('input[name="site_config_action"]').val('delete')
+            });
+
+            $(".site-config-update").click(function(e){
+                $('input[name="site_config_action"]').val('update')
+            });
         });
     </script>
 </body>
