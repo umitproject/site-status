@@ -2,13 +2,13 @@
 {% load i18n %}
 {% load status_tags %}
 {% load user_tags %}
-{% load get_range %}
 <!DOCTYPE HTML>
 <html>
 <head>
     <title></title>
     {% include_media 'main.js' %}
     {% include_media 'bootstrap.css' %}
+    {% include_media 'jquery-ui.css' %}
     <style>
         body, section {
             padding-top: 40px;
@@ -23,6 +23,9 @@
                     <ul class="nav pull-left">
                         <li>
                             <a href="#profile"><i class="icon-white icon-user"></i> My Profile</a>
+                        </li>
+                        <li>
+                            <a href="#site_configs_monitor"><i class="icon-white icon-list-alt"></i> Site Configs</a>
                         </li>
                         <li>
                             <a href="#monitors"><i class="icon-white icon-eye-open"></i> Monitors</a>
@@ -52,9 +55,9 @@
                     <button class="btn btn-primary" type="submit" name="Submit" value="update_profile" data-complete-text="Saved!">Save</button>
                 </form>
         </section>
-        <section id="monitors">
+        <section id="site_configs_monitor">
             <div class="page-header">
-                <h1>My Monitors</h1>
+                <h1>My Site Configs</h1>
             </div>
             <ul class="nav nav-tabs" data-tabs="tabs" id="site-configs">
                 <li class="active">
@@ -66,7 +69,6 @@
                     </li>
                 {% endfor %}
             </ul>
-
 
             <div class="tab-content" id="site-config-forms">
                 <div class="tab-pane active" id="add-site-config">
@@ -81,6 +83,7 @@
                 </div>
                 {% for site_config_form in site_config_forms %}
                 <div class="tab-pane" id="site-config-{{ site_config_form.instance.pk }}" data-form-id="{{ site_config_form.instance.pk }}">
+
                     <h2>{{ site_config_form.initial.site_name }}</h2>
                     <form method='post' action='/backend/add_site_config'>{% csrf_token %}
                         <table>
@@ -94,13 +97,58 @@
                 </div>
                 {% endfor %}
             </div>
+        </section>
 
+        <section id="monitors">
+            <div class="page-header">
+                <h1>My Monitors</h1>
+            </div>
+            <ul class="nav nav-tabs" data-tabs="tabs" id="modules">
+                <li class="active">
+                    <a href="#add-module" data-toggle="tab"><i class="icon-plus"></i> Add</a>
+                </li>
+                {% for module_form in module_forms %}
+                    <li data-form-id="{{ module_form.instance.pk }}">
+                        <a href="#module-{{  module_form.instance.pk }}" data-toggle="tab">{{ module_form.initial.name }}</a>
+                    </li>
+                {% endfor %}
+            </ul>
+
+            <div class="tab-content" id="module-forms">
+                <div class="tab-pane active" id="add-module">
+                    <h2>Add a new Module</h2>
+                    <form method="post" action='/backend/add_module'>{% csrf_token %}
+                        <table>
+                            {{ module_form_template.as_table }}
+                        </table>
+                        <input type="hidden" name="module_action" value="add"/>
+                        <button class="btn btn-primary" type="submit" name="Submit" value="add_module" data-complete-text="Saved!">Save</button>
+                    </form>
+                </div>
+                {% for module_form in module_forms %}
+                    <div class="tab-pane" id="module-{{ module_form.instance.pk }}" data-form-id="{{ module_form.instance.pk }}">
+
+                        <h2>{{ module_form.initial.name }}</h2>
+                        <form method='post' action='/backend/add_module'>{% csrf_token %}
+                            <table>
+                                {{  module_form.as_table }}
+                            </table>
+                            <input type="hidden" name="module_id" value="{{ module_form.instance.pk }}" />
+                            <input type="hidden" name="module_action" value="update"/>
+                            <button class="btn btn-primary module-update" type="submit" name="Submit" value="edit_module" data-complete-text="Saved!">Save</button>
+                            <button class="btn btn-danger module-delete" type="submit" name="Submit" value="delete_module" data-complete-text="Deleted!">Delete</button>
+                        </form>
+                    </div>
+                {% endfor %}
+            </div>
         </section>
         <div style="height:1000px;"></div>
     </div>
     {% include_media 'bootstrap.js' %}
     <script type="text/javascript">
-
+        $(function() {
+            $( ".datepicker" ).datepicker();
+        });
         $("form").live('submit', function(evt){
             var submit_to = $(this).attr("action"),
                 $this = $(this),
@@ -109,9 +157,10 @@
 
             function get_form_object($form) {
                 var data = {};
-                $form.find('input').each(function(){
-                    var $this = $(this);
-                    data[$this.attr('name')] = $this.val();
+                $form.serializeArray().map(function(e){
+                    if (e.hasOwnProperty('name') && e.hasOwnProperty('value')) {
+                        data[e.name] = e.value;
+                    }
                 });
                 return data;
             }
@@ -124,7 +173,8 @@
 
             $.post(submit_to,data,
                 function(response){
-                    console.log(response)
+                    console.log($submit_button);
+                    console.log(response);
                     $submit_button.button("complete");
 
                     setTimeout(function() {
@@ -138,51 +188,17 @@
                             $input.parent().before("<p>"+ response.message[key] +"</p>");
                         }
                     }
-                    if (response.hasOwnProperty("action") && response.hasOwnProperty("status") &&response.status == "ok") {
-                        if (response.action == "delete") {
-                            $('[data-form-id="'+ response.id +'"]').remove();
-                            $("#site-configs li>a:first").tab('show')
-                        }
-                        if (response.action == "add") {
-                            $("#site-config-forms").append(
-                                    $("<div>").addClass("tab-pane")
-                                            .attr("id", "site-config-" + response.id)
-                                            .append(
-                                            $("<form>").append(
-                                                    $("<table>").append(
-                                                            response.item
-                                                    )
-                                            ).append()
-                                    )
-                            )
-                            $("#site-configs").append(
-                                    $("<li>").append(
-                                            $("<a>").attr("href","#site-config-"+ response.id)
-                                                    .attr("data-toggle", "tab")
-                                                    .text("new config")
-                                    )
-                            )
-                        }
-                    }
                 })
         });
         $(document).ready(function(){
            // $("#navbar").scrollspy();
            // $(".btn").button();
 
-            $("#site-configs").tab();
+            $("#site-configs").tab()
             $('#site-configs a').click(function (e) {
                 e.preventDefault();
                 $(this).tab('show');
-            });
-
-            $(".btn.site-config-delete").click(function(event){
-                $(this).closest('form').find('input[name="site_config_action"]').val('delete')
-            });
-
-            $(".btn.site-config-update").click(function(event){
-                $(this).closest('form').find('input[name="site_config_action"]').val('update')
-            });
+            })
         });
     </script>
 </body>

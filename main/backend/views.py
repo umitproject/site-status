@@ -5,16 +5,16 @@ from django.contrib.auth.models import User
 from django.utils import simplejson
 from django.utils.datastructures import MultiValueDictKeyError
 from main.decorators import login_required
-from main.backend.forms import ProfileForm, SiteConfigForm
-from main.models import SiteConfig
+from main.backend.forms import ProfileForm, SiteConfigForm, ModuleForm
+from main.models import SiteConfig, Module, UserProfile
 
 __author__ = 'apredoi'
 
 
-@login_required
 def backend(request):
     context = RequestContext(request)
     u = request.user
+
     profile_form = ProfileForm(initial={
         'username': u.username,
         'email': u.email,
@@ -23,6 +23,7 @@ def backend(request):
         #'country': u.get_profile().country
     })
 
+
     site_config_form_template = SiteConfigForm()
     site_configs = SiteConfig.objects.filter(user=u)
     site_config_forms = []
@@ -30,10 +31,18 @@ def backend(request):
     for site_config in site_configs:
         site_config_forms.append(SiteConfigForm(instance=site_config))
 
+    module_form_template = ModuleForm()
+    modules = Module.objects.filter(site_config__user=u)
+    module_forms = []
+
+    for module in modules:
+        module_forms.append(ModuleForm(instance=module))
 
 
     return render(request, 'backend/home.html', {'profile_form':profile_form, 'site_config_forms': site_config_forms,
-                                                 'site_config_form_template': site_config_form_template})
+                                                 'site_config_form_template': site_config_form_template,
+                                                 'module_forms' : module_forms,
+                                                 'module_form_template' : module_form_template})
 
 
 """ API """
@@ -99,5 +108,37 @@ def add_site_config(request):
         return HttpResponse('{"action":"' + action + '","status": "ok", "id":"'+ str(form.instance.pk) +'", '
                                 '"item":"'+ form.as_table().replace('"','\\"').replace('\n','').replace('\r','') +'"}',
             mimetype='application/json')
+
+    return HttpResponse('{"status": "ok"}', mimetype='application/json')
+
+
+@login_required
+def add_module(request):
+    if request.method == 'POST':
+        object_key=None
+    try:
+        object_key = request.POST['module_id']
+    except MultiValueDictKeyError:
+        pass
+    instance = None
+    action = request.POST['module_action']
+    if action in ('update', 'delete'):
+        instance = Module.objects.get(name=request.name, pk=object_key)
+
+    if instance and action == 'delete':
+        instance.delete()
+        return HttpResponse('{"action":"delete", "status":"ok", "id":"'+ object_key +'"}', mimetype='application/json')
+
+    form = ModuleForm(request.POST,instance=instance) if instance else ModuleForm(request.POST)
+    if form.is_valid():
+        module = form.save(commit=False)
+        """module.user = request.user"""
+        module.save()
+    else:
+        return HttpResponse(simplejson.dumps({'error': 'inval form'}), mimetype='application/json'
+        )
+    return HttpResponse('{"action":"' + action + '","status": "ok", "id":"'+ str(form.instance.pk) +'", '
+                                                                                                    '"item":"'+ form.as_table().replace('"','\\"').replace('\n','').replace('\r','') +'"}',
+        mimetype='application/json')
 
     return HttpResponse('{"status": "ok"}', mimetype='application/json')

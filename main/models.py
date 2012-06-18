@@ -714,14 +714,14 @@ post_save.connect(module_event_post_save, sender=ModuleEvent)
 class Module(models.Model):
     monitoring_since = models.DateTimeField(null=True, blank=True, default=None)
     updated_at = models.DateTimeField(null=True, blank=True, default=None)
-    name = models.CharField(max_length=50)
-    description = models.TextField()
+    name = models.CharField(max_length=50, default='')
+    description = models.TextField(default=' ', null=True, blank=True)
     total_downtime = models.FloatField(default=0.0)
-    module_type = models.CharField(max_length=15, choices=MODULE_TYPES) # two initial types: passive and active. In passive, status site pings the url to see if it returns 200. In the active mode, the server sends message to status site to inform its status
+    module_type = models.CharField(max_length=15, choices=MODULE_TYPES, default=MODULE_TYPES[0]) # two initial types: passive and active. In passive, status site pings the url to see if it returns 200. In the active mode, the server sends message to status site to inform its status
     host = models.CharField(max_length=500)
     url = models.CharField(max_length=1000)
-    status = models.CharField(max_length=30, choices=STATUS) # current_status
-    tags = models.TextField(default="", blank=True, null=True)
+    status = models.CharField(max_length=30, choices=STATUS, default=STATUS[3]) # current_status
+    tags = models.TextField(default=' ', blank=True, null=True)
     site_config = models.ForeignKey('main.SiteConfig', null=True)
     
     @property

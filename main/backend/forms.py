@@ -1,8 +1,10 @@
+import datetime
 from django import forms
+from django.contrib.admin import widgets
 from django.core import validators
 from django.contrib.auth.models import User
 from django.utils.translation import ugettext_lazy as _
-from main.models import SiteConfig, UserProfile
+from main.models import SiteConfig, UserProfile, Module
 
 
 class ProfileForm(forms.ModelForm):
@@ -51,3 +53,11 @@ class SiteConfigForm(forms.ModelForm):
     class Meta:
         model = SiteConfig
         exclude = ('user','twitter_account')
+
+class ModuleForm(forms.ModelForm):
+    monitoring_since = forms.DateField(widget=forms.DateInput(attrs=dict({'class': 'datepicker'})))
+    updated_at = forms.DateField(widget=forms.DateInput(attrs=dict({'class':'disabled', 'readonly':'readonly', 'disabled':'disabled' })), required=False)
+#    status = forms.CharField(widget=forms.TextInput(attrs=dict({'class':'disabled', 'readonly':'readonly', 'disabled':'disabled' })), required=False)
+    class Meta:
+        model = Module
+
