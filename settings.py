@@ -184,12 +184,13 @@ MEDIA_BUNDLES = (
     ('main.css',
      'css/reset.css',
      'css/style.css',
-     'css/typography.css'
+     'css/typography.css',
         ),
     ('root.css',
      'css/root.css'),
     ('main.js',
      'js/jquery.js',
+     'js/jquery-ui.js',
      'js/main.js',
      'js/modernizr.js'
         ),
@@ -201,8 +202,11 @@ MEDIA_BUNDLES = (
      'bootstrap/js/bootstrap-button.js',
         ),
     ('bootstrap.css',
-     'bootstrap/css/bootstrap-responsive.css',
-     'bootstrap/css/bootstrap.css',)
+        'bootstrap/css/bootstrap-responsive.css',
+        'bootstrap/css/bootstrap.css',),
+    ('jquery-ui.css',
+        'css/jquery-ui.css'
+        ,)
     )
 
 ROOT_MEDIA_FILTERS = {
