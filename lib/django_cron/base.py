@@ -37,90 +37,110 @@ import models
 polling_frequency = getattr(settings, "CRON_POLLING_FREQUENCY", 300)
 
 class Job(object):
-	# 86400 seconds == 24 hours
-	run_every = 86400
+    # 86400 seconds == 24 hours
+    run_every = 86400
 
-	def run(self, *args, **kwargs):  
-		self.job()
-		cron_done.send(sender=self, *args, **kwargs)
-		
-	def job(self):
-		"""
-		Should be overridden (this way is cleaner, but the old way - overriding run() - will still work)
-		"""
-		pass
+    def run(self, *args, **kwargs):  
+        self.job()
+        cron_done.send(sender=self, *args, **kwargs)
+        
+    def job(self):
+        """
+        Should be overridden (this way is cleaner, but the old way - overriding run() - will still work)
+        """
+        pass
 
 class CronScheduler(object):
-	def register(self, job_class, *args, **kwargs):
-		"""
-		Register the given Job with the scheduler class
-		"""
-		
-		job_instance = job_class()
-		
-		if not isinstance(job_instance, Job):
-			raise TypeError("You can only register a Job not a %r" % job_class)
+    def register(self, job_class, *args, **kwargs):
+        """
+        Register the given Job with the scheduler class
+        """
+        
+        job_instance = job_class()
+        
+        if not isinstance(job_instance, Job):
+            raise TypeError("You can only register a Job not a %r" % job_class)
 
-		job, created = models.Job.objects.get_or_create(name=str(job_instance.__class__))
-		if created:
-			job.instance = cPickle.dumps(job_instance)
-		job.args = cPickle.dumps(args)
-		job.kwargs = cPickle.dumps(kwargs)
-		job.run_frequency = job_instance.run_every
-		job.save()
+        job, created = models.Job.objects.get_or_create(name=str(job_instance.__class__))
+        if created:
+            job.instance = cPickle.dumps(job_instance)
+        job.args = cPickle.dumps(args)
+        job.kwargs = cPickle.dumps(kwargs)
+        job.run_frequency = job_instance.run_every
+        job.save()
 
-	def execute(self):
-		"""
-		Queue all Jobs for execution
-		"""
-		status, created = models.Cron.objects.get_or_create(pk=1)
-		
-		# This is important for 2 reasons:
-		#     1. It keeps us for running more than one instance of the
-		#        same job at a time
-		#     2. It reduces the number of polling threads because they
-		#        get killed off if they happen to check while another
-		#        one is already executing a job (only occurs with
-		#		 multi-threaded servers)
-		if status.executing:
-			return
+    def run_jobs(self):
+        jobs = models.Job.objects.all()
+        for job in jobs:
+            if job.queued:
+                inst = cPickle.loads(str(job.instance))
+                args = cPickle.loads(str(job.args))
+                kwargs = cPickle.loads(str(job.kwargs))
 
-		status.executing = True
-		try:
-			status.save()
-		except:
-			# this will fail if you're debugging, so we want it
-			# to fail silently and start the timer again so we 
-			# can pick up where we left off once debugging is done
-			Timer(polling_frequency, self.execute).start()
-			return
-			
-		jobs = models.Job.objects.all()
-		for job in jobs:
-			if job.queued:
-				time_delta = datetime.now() - job.last_run
-				if (time_delta.seconds + 86400*time_delta.days) > job.run_frequency:
-					inst = cPickle.loads(str(job.instance))
-					args = cPickle.loads(str(job.args))
-					kwargs = cPickle.loads(str(job.kwargs))
-					
-					try:
-						inst.run(*args, **kwargs)
-						job.last_run = datetime.now()
-						job.save()
-						
-					except Exception:
-						# if the job throws an error, just remove it from
-						# the queue. That way we can find/fix the error and
-						# requeue the job manually
-						job.queued = False
-						job.save()
+                try:
+                    inst.run(*args, **kwargs)
+                    job.last_run = datetime.now()
+                    job.save()
 
-		status.executing = False
-		status.save()
-		
-		# Set up for this function to run again
-		Timer(polling_frequency, self.execute).start()
+                except Exception:
+                    # if the job throws an error, just remove it from
+                    # the queue. That way we can find/fix the error and
+                    # requeue the job manually
+                    job.queued = False
+                    job.save()
+
+    def execute(self):
+        """
+        Queue all Jobs for execution
+        """
+        status, created = models.Cron.objects.get_or_create(pk=1)
+        
+        # This is important for 2 reasons:
+        #     1. It keeps us for running more than one instance of the
+        #        same job at a time
+        #     2. It reduces the number of polling threads because they
+        #        get killed off if they happen to check while another
+        #        one is already executing a job (only occurs with
+        #         multi-threaded servers)
+        if status.executing:
+            return
+
+        status.executing = True
+        try:
+            status.save()
+        except:
+            # this will fail if you're debugging, so we want it
+            # to fail silently and start the timer again so we 
+            # can pick up where we left off once debugging is done
+            Timer(polling_frequency, self.execute).start()
+            return
+            
+        jobs = models.Job.objects.all()
+        for job in jobs:
+            if job.queued:
+                time_delta = datetime.now() - job.last_run
+                if (time_delta.seconds + 86400*time_delta.days) > job.run_frequency:
+                    inst = cPickle.loads(str(job.instance))
+                    args = cPickle.loads(str(job.args))
+                    kwargs = cPickle.loads(str(job.kwargs))
+                    
+                    try:
+                        inst.run(*args, **kwargs)
+                        job.last_run = datetime.now()
+                        job.save()
+                        
+                    except Exception:
+                        # if the job throws an error, just remove it from
+                        # the queue. That way we can find/fix the error and
+                        # requeue the job manually
+                        job.queued = False
+                        job.save()
+
+        status.executing = False
+        status.save()
+        
+        # Set up for this function to run again
+        Timer(polling_frequency, self.execute).start()
 
 
 cronScheduler = CronScheduler()

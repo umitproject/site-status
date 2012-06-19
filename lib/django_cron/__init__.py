@@ -60,4 +60,4 @@ def autodiscover():
 		__import__("%s.cron" % app)
 		
 	# Step 4: once we find all the cron jobs, start the cronScheduler
-	cronScheduler.execute()
+	#cronScheduler.execute() #we will execute this manually
