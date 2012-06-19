@@ -22,6 +22,7 @@
 				<form action="/subscribe" method="POST">
 			{% endif %}
 		{% endif %}
+                {% csrf_token %}
 				{{ form.as_p }}
 				<input type="submit" value="{% trans "Submit" %}"/>
 		</form>
