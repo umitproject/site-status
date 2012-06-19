@@ -102,12 +102,14 @@ MIDDLEWARE_CLASSES = (
     # Media middleware needs to come first
     'mediagenerator.middleware.MediaMiddleware',
 
+
+    'main.middleware.SubdomainMiddleware',
+
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
-    'main.middleware.SubdomainMiddleware',
     'main.middleware.SiteConfigMiddleware',
     )
 
