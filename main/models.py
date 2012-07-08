@@ -92,8 +92,10 @@ def percentage(value, total):
     if total:
         perc = round((Decimal(value) * Decimal(100)) / Decimal(total), 2)
         if perc > Decimal(100):
-            return Decimal(100)
-    return Decimal(100)
+            return 100
+        return perc
+
+    return 100
 
 class StatusSiteDomain(models.Model):
     status_url = models.CharField(max_length=255, unique=True,
@@ -447,11 +449,11 @@ class AggregatedStatus(models.Model):
     
     @property
     def percentage_uptime(self):
-        return percentage(100, self.percentage_downtime)
+        return 100 - self.percentage_downtime
     
     @property
     def percentage_downtime(self):
-        return percentage(self.total_downtime * 100.0, self.total_uptime) if self.total_uptime > 0 else 100.0
+        return percentage(self.total_downtime, self.total_uptime) if self.total_uptime > 0 else 100.0
 
     @property
     def incidents_data(self):
