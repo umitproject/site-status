@@ -1,0 +1,13 @@
+<div class="tab-pane" id="site-domain-{{ site_domain_form.instance.pk }}" data-form-id="{{ site_domain_form.instance.pk }}">
+
+    <h2>{{ site_domain_form.initial.status_url }}</h2>
+    <form method='post' action='/backend/add_site_domain'>{% csrf_token %}
+        <table>
+            {{  site_domain_form.as_table }}
+        </table>
+        <input type="hidden" name="site_domain_id" value="{{ site_domain_form.instance.pk }}" />
+        <input type="hidden" name="site_domain_action" value="update"/>
+        <button class="btn btn-primary site-domain-update" type="submit" name="Submit" value="edit_site_domain" data-complete-text="Saved!">Save</button>
+        <button class="btn btn-danger site-domain-delete" type="submit" name="Submit" value="delete_site_domain" data-complete-text="Deleted!">Delete</button>
+    </form>
+</div>

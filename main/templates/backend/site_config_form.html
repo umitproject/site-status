@@ -1,0 +1,13 @@
+<div class="tab-pane" id="site-config-{{ site_config_form.instance.pk }}" data-form-id="{{ site_config_form.instance.pk }}">
+
+    <h2>{{ site_config_form.initial.site_name }}</h2>
+    <form method='post' action='/backend/add_site_config'>{% csrf_token %}
+        <table>
+            {{  site_config_form.as_table }}
+        </table>
+        <input type="hidden" name="site_config_id" value="{{ site_config_form.instance.pk }}" />
+        <input type="hidden" name="site_config_action" value="update"/>
+        <button class="btn btn-primary site-config-update" type="submit" name="Submit" value="edit_site_config" data-complete-text="Saved!">Save</button>
+        <button class="btn btn-danger site-config-delete" type="submit" name="Submit" value="delete_site_config" data-complete-text="Deleted!">Delete</button>
+    </form>
+</div>
