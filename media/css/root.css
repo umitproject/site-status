@@ -13,6 +13,21 @@ body {
     min-height: 100%;
 }
 
+.chart-table {
+    border: 0;
+}
+
+.chart-table td {
+    padding: 5px;
+}
+
+#uptime_chart iframe, #incidents_chart iframe {
+    box-shadow: 0 0 5px #aaa;
+}
+
+.box {
+    margin-top: 15px;
+}
 
 #push-bottom {
     height: 150px;

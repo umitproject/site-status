@@ -6,13 +6,15 @@
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
 	<title>{% block title %}{% blocktrans %}{{ SITE_NAME }} Status{% endblocktrans %}{% endblock %}</title>
-	{% include_media 'main.css' %}
-	{% include_media 'main.js' %}
+    {% include_media 'main.js' %}
+    {% include_media 'root.css' %}
+    {% include_media 'bootstrap.js' %}
+    {% include_media 'bootstrap.css' %}
 
 	{% block extra_head %}{% endblock %}
 </head>
 <body id="body">
-    <div id="app">
+    <div class="container full-height" id="main-container">
         {% block google_analytics %}
             {% if GOOGLE_ANALYTICS_ID %}
                 <script type="text/javascript">
@@ -30,28 +32,23 @@
             {% endif %}
         {% endblock %}
 
+        <header id="top-header" class="jumbotron subhead">
         {% block top_div %}
-        <div id="top_div">
-            <div id="top_content">
-                <div id="logo">
-                    <h1>{{ SITE_NAME }}</h1>
-                    <h4>{% trans "Site Status" %}</h4>
-                </div>
-            </div>
-        </div>
+            <h1>{{ site_config.site_name }}</h1>
+            <p class="lead">{% trans "Site Status" %}</p>
+
         {% endblock %}
 
         {% block menu %}
-        <div class="menu">
-            <div class="menu_content">
-                <ul>
-                    <li><a href="{{ MAIN_SITE_URL }}">{{ SITE_NAME }}</a></li>
-                    <li><a href="/subscribe">{% trans "Be notified about our status" %}</a></li>
+            <div class="subnav">
+                <ul id="main-menu" class="nav nav-pills">
+                    <li><a href="/"><i class="icon-home"></i> Home</a></li>
+                    <li><a href="/subscribe"><i class="icon-flag"></i>{% trans "Subscribe" %}</a></li>
                 </ul>
             </div>
-        </div>
         {% endblock %}
 
+        </header>
         {% block header_status %}
             {% include "main/parts/header_status.html" %}
         {% endblock %}
@@ -149,19 +146,16 @@
             </div>
         </div>
         {% endblock %}
-        <div id="push_bottom"></div>
+        <div id="push-bottom"></div>
     </div>
-    <div id="bottom">
+
+    <footer  id="bottom" class="container">
         <div id="bottom_content">
             <div class="callcenter">
                 <p class="call_us" style="color:#e44038;padding-left:30px;">{% trans "Suport 24/7:" %} </p>
-                <p class="call_us"><img src="{% media_url "img/phone.png" %}" alt="phone" />{{ CONTACT_PHONE }}</p>
-                <p class="call_us"><img src="{% media_url "img/email.png" %}" alt="email" />{{ CONTACT_EMAIL }}</p>
-            </div>
-            <div id="menu_bottom_list">
-                <div class="menu_bottom" ><a href="{{ MAIN_SITE_URL }}">{{ SITE_NAME }}</a></div>
-                <div class="menu_bottom" ><a href="/subscribe">{% trans "Be notified about our status" %}</a></div>
+                <p class="call_us"><i class="icon-signal"></i>{{ CONTACT_PHONE }}</p>
+                <p class="call_us"><i class="icon-envelope"></i>{{ CONTACT_EMAIL }}</p>
             </div>
         </div>
-    </div>
+    </footer>
 </html>

@@ -14,12 +14,15 @@
 {% block first_content %}
 <div class="box">
 	<div class="text_box">
-		<p class="title">{% trans "Site Status" %}</p>
-		<table>
-			<tr>
-				<td>Module</td>
-				{% last_days_header "7" %}
-			</tr>
+		<h3>{% trans "Site Status" %}</h3>
+		<table class="table table-condensed">
+			<thead>
+                <tr>
+                    <th>Module</th>
+                    {% last_days_header "7" %}
+                </tr>
+            </thead>
+            <tbody>
 			{% for module in modules %}
 			<tr>
 				<td><a href='{{ module.url }}'>{{ module.name }}</a></td>
@@ -33,6 +36,7 @@
 				<td><img src='{% media_url module.status_img %}' alt='{% verbose_status module.status %}'/></td>
 			</tr>
 			{% endfor %}
+            </tbody>
 		</table>
 		<div class="more"><a href="" ></a></div>
 	</div>

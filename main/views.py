@@ -54,6 +54,9 @@ def home(request, msg=None):
     
     incidents_data = json.dumps(request.aggregation.incidents_data)
     uptime_data = json.dumps(request.aggregation.uptime_data)
+    SHOW_LAST_INCIDENT = True
+    SHOW_INCIDENTS = True
+    SHOW_UPTIME = True
     
     context = locals()
     if msg is not None:
