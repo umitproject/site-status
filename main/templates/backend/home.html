@@ -13,6 +13,14 @@
         body, section {
             padding-top: 40px;
         }
+        .error {
+            font-weight: 700;
+            color: #B94A48;
+        }
+        .input-error {
+            color:#B94A48;
+            border-color: #B94A48;
+        }
     </style>
 </head>
 <body data-spy="scroll" data-target=".navbar-fixed-top">
@@ -29,6 +37,9 @@
                         </li>
                         <li>
                             <a href="#monitors"><i class="icon-white icon-eye-open"></i> Monitors</a>
+                        </li>
+                        <li>
+                        <a href="#status-site-domains"><i class="icon-white icon-globe"></i> Site Domains</a>
                         </li>
                     </ul>
                     <ul class="nav pull-right">
@@ -78,23 +89,11 @@
                             {{ site_config_form_template.as_table }}
                         </table>
                         <input type="hidden" name="site_config_action" value="add"/>
-                        <button class="btn btn-primary" type="submit" name="Submit" value="add_site_config" data-complete-text="Saved!">Save</button>
+                        <button class="btn btn-primary site-config-add" type="submit" name="Submit" value="add_site_config" data-complete-text="Saved!">Save</button>
                     </form>
                 </div>
                 {% for site_config_form in site_config_forms %}
-                <div class="tab-pane" id="site-config-{{ site_config_form.instance.pk }}" data-form-id="{{ site_config_form.instance.pk }}">
-
-                    <h2>{{ site_config_form.initial.site_name }}</h2>
-                    <form method='post' action='/backend/add_site_config'>{% csrf_token %}
-                        <table>
-                            {{  site_config_form.as_table }}
-                        </table>
-                        <input type="hidden" name="site_config_id" value="{{ site_config_form.instance.pk }}" />
-                        <input type="hidden" name="site_config_action" value="update"/>
-                        <button class="btn btn-primary site-config-update" type="submit" name="Submit" value="edit_site_config" data-complete-text="Saved!">Save</button>
-                        <button class="btn btn-danger site-config-delete" type="submit" name="Submit" value="delete_site_config" data-complete-text="Deleted!">Delete</button>
-                    </form>
-                </div>
+                    {% include 'backend/site_config_form.html' %}
                 {% endfor %}
             </div>
         </section>
@@ -126,25 +125,55 @@
                     </form>
                 </div>
                 {% for module_form in module_forms %}
-                    <div class="tab-pane" id="module-{{ module_form.instance.pk }}" data-form-id="{{ module_form.instance.pk }}">
+                    {% include 'backend/module_form.html' %}
+                {% endfor %}
+            </div>
+        </section>
+        <section id="status-site-domains">
+            <div class="page-header">
+                <h1>Status Site Domains</h1>
+            </div>
+            <ul class="nav nav-tabs" data-tabs="tabs" id="site-domains">
+                <li class="active">
+                    <a href="#add-site-domain" data-toggle="tab"><i class="icon-plus"></i> Add</a>
+                </li>
+                {% for site_domain_form in site_domain_forms %}
+                    <li data-form-id="{{ site_domain_form.instance.pk }}">
+                        <a href="#site-domain-{{  site_domain_form.instance.pk }}" data-toggle="tab">{{ site_domain_form.initial.status_url }}</a>
+                    </li>
+                {% endfor %}
+            </ul>
 
-                        <h2>{{ module_form.initial.name }}</h2>
-                        <form method='post' action='/backend/add_module'>{% csrf_token %}
-                            <table>
-                                {{  module_form.as_table }}
-                            </table>
-                            <input type="hidden" name="module_id" value="{{ module_form.instance.pk }}" />
-                            <input type="hidden" name="module_action" value="update"/>
-                            <button class="btn btn-primary module-update" type="submit" name="Submit" value="edit_module" data-complete-text="Saved!">Save</button>
-                            <button class="btn btn-danger module-delete" type="submit" name="Submit" value="delete_module" data-complete-text="Deleted!">Delete</button>
-                        </form>
-                    </div>
+            <div class="tab-content" id="site-domain-forms">
+                <div class="tab-pane active" id="add-site-domain">
+                    <h2>Add a new Site Domain</h2>
+                    <form method="post" action='/backend/add_site_domain'>{% csrf_token %}
+                        <table>
+                            {{ site_domain_form_template.as_table }}
+                        </table>
+                        <input type="hidden" name="site_domain_action" value="add"/>
+                        <button class="btn btn-primary" type="submit" name="Submit" value="add_site_domain" data-complete-text="Saved!">Save</button>
+                    </form>
+                </div>
+                {% for site_domain_form in site_domain_forms %}
+                    {%  include 'backend/site_domain_form.html' %}
                 {% endfor %}
             </div>
         </section>
         <div style="height:1000px;"></div>
     </div>
     {% include_media 'bootstrap.js' %}
+    <script type="text/template" id="site_domain_form_template">
+        {{ site_domain_form_template.as_table }}
+    </script>
+
+    <script type="text/template" id="module_form_template">
+        {{ module_form_template.as_table }}
+    </script>
+
+    <script type="text/template" id="site_config_form_template">
+        {{ site_config_form_template.as_table }}
+    </script>
     <script type="text/javascript">
         $(function() {
             $( ".datepicker" ).datepicker();
@@ -171,6 +200,105 @@
 
             evt.preventDefault();
 
+            handlers = {
+                'site_config': function(response) {
+                    if(response.hasOwnProperty('action') && response.hasOwnProperty('status') && response.status === 'ok') {
+                        if(response.action === 'delete') {
+                            $("#site-configs a:first").click();
+                            $("#site-configs").find('li[data-form-id="'+ response.id +'"]').remove();
+                            $("#site-configs").tab();
+                            $("#site-config-"+response.id).remove();
+                        }
+                        if(response.action === 'add') {
+                            $("#site-configs").append(
+                                $("<li/>").attr('data-form-id', response.id)
+                                          .html(
+                                            $("<a/>").attr("href", "#site-config-" + response.id)
+                                                     .attr("data-toggle", "tab")
+                                                     .html(response.name)
+                                )
+                            );
+                            $("#site-configs").tab();
+                            $("#site-config-forms").append(
+                                $("<div/>").addClass('tab-pane')
+                                           .attr('id', 'site-config-' + response.id)
+                                           .attr('data-form-id', response.id)
+                                           .html(
+                                                $("<h2/>").html(response.name))
+                                           .append(response.item)
+                            );
+                            $("#add-site-config table").html($("#site_config_form_template").html())
+                        }
+                    }
+                },
+                'site_domain': function (response) {
+                    if(response.hasOwnProperty('action') && response.hasOwnProperty('status') &&
+                            response.status === 'ok') {
+                        if (response.action === 'delete') {
+                            $("#site-domains a:first").click();
+                            $("#site-domains").find('li[data-form-id="'+ response.id +'"]').remove();
+                            $("#site-domains").tab();
+                            $("#site-domain-"+response.id).remove();
+                        }
+                        if(response.action === 'add') {
+                            $("#site-domains").append(
+                                    $("<li/>").attr('data-form-id', response.id)
+                                            .html(
+                                            $("<a/>").attr("href", "#site-domain-" + response.id)
+                                                    .attr("data-toggle", "tab")
+                                                    .html(response.name)
+                                            )
+                            );
+                            $("#site-domains").tab();
+                            $("#site-domain-forms").append(
+                                    $("<div/>").addClass('tab-pane')
+                                            .attr('id', 'site-domain-' + response.id)
+                                            .attr('data-form-id', response.id)
+                                            .html(
+                                            $("<h2/>").html(response.name))
+                                            .append(response.item)
+                            );
+                            $("#add-site-domain table").html($("#site_domain_form_template").html())
+                        }
+                    }
+                },
+                'module': function(response) {
+                    if(response.hasOwnProperty('action') && response.hasOwnProperty('status') &&
+                            response.status === 'ok') {
+                        if (response.action === 'delete') {
+                            $("#modules a:first").click();
+                            $("#modules").find('li[data-form-id="'+ response.id +'"]').remove();
+                            $("#modules").tab();
+                            $("#module-"+response.id).remove();
+                        }
+                        if(response.action === 'add') {
+                            $("#modules").append(
+                                    $("<li/>").attr('data-form-id', response.id)
+                                            .html(
+                                            $("<a/>").attr("href", "#module-" + response.id)
+                                                    .attr("data-toggle", "tab")
+                                                    .html(response.name)
+                                    )
+                            );
+                            $("#modules").tab();
+                            $("#module-forms").append(
+                                    $("<div/>").addClass('tab-pane')
+                                            .attr('id', 'module-' + response.id)
+                                            .attr('data-form-id', response.id)
+                                            .html(
+                                            $("<h2/>").html(response.name))
+                                            .append(response.item)
+                            );
+                            $("#add-module table").html($("#module_form_template").html())
+                        }
+                    }
+                }
+            };
+
+            //clear errors before submit
+            $this.find('.input-error').removeClass('input-error');
+            $this.find('.error').remove();
+
             $.post(submit_to,data,
                 function(response){
                     $submit_button.button("complete");
@@ -179,13 +307,20 @@
                         $submit_button.button("reset");
                     }, 2000);
 
-                    if (response.hasOwnProperty('error') &&
-                            response.hasOwnProperty('message')) {
-                        for (var key in response.message) {
-                            var $input = $this.find('input[name="'+key +'"]');
-                            $input.parent().before("<p>"+ response.message[key] +"</p>");
+                    if (response.hasOwnProperty('target') &&
+                        typeof handlers[response.target] === 'function') {
+                        handlers[response.target](response);
+                    }
+                    if (response.hasOwnProperty('error')) {
+                        for (var key in response.error) {
+                            if (response.error.hasOwnProperty(key)) {
+                                var $input = $this.find('*[name="'+key +'"]');
+                                $input.addClass('input-error').after("<p class='error'>"+ response.error[key] +"</p>");
+                            }
                         }
                     }
+
+                    $(".datepicker").datepicker();
                 })
         });
         $(document).ready(function(){
@@ -203,20 +338,34 @@
                 $(this).tab('show');
             });
 
-            $(".module-delete").click(function(e){
+            $("#site-domains").tab();
+            $('#site-domains a').click(function (e) {
+                e.preventDefault();
+                $(this).tab('show');
+            });
+
+            $(".module-delete").live("click", function(e){
                 $('input[name="module_action"]').val('delete')
             });
 
-            $(".module-update").click(function(e){
+            $(".module-update").live("click", function(e){
                 $('input[name="module_action"]').val('update')
             });
 
-            $(".site-config-delete").click(function(e){
+            $(".site-config-delete").live("click", function(e){
                 $('input[name="site_config_action"]').val('delete')
             });
 
-            $(".site-config-update").click(function(e){
+            $(".site-config-update").live("click", function(e){
                 $('input[name="site_config_action"]').val('update')
+            });
+
+            $(".site-domain-delete").live("click", function(e){
+                $('input[name="site_domain_action"]').val('delete')
+            });
+
+            $(".site-domain-update").live("click", function(e){
+                $('input[name="site_domain_action"]').val('update')
             });
         });
     </script>

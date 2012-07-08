@@ -4,7 +4,7 @@ from django.contrib.admin import widgets
 from django.core import validators
 from django.contrib.auth.models import User
 from django.utils.translation import ugettext_lazy as _
-from main.models import SiteConfig, UserProfile, Module
+from main.models import SiteConfig, UserProfile, Module, StatusSiteDomain
 
 
 class ProfileForm(forms.ModelForm):
@@ -61,3 +61,6 @@ class ModuleForm(forms.ModelForm):
     class Meta:
         model = Module
 
+class StatusSiteDomainForm(forms.ModelForm):
+    class Meta:
+        model = StatusSiteDomain

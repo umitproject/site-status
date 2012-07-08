@@ -8,4 +8,5 @@ urlpatterns = patterns('',
     url('^update_profile$', 'main.backend.views.update_profile', name='update_profile'),
     url('^add_site_config', 'main.backend.views.add_site_config', name='add_site_config'),
     url('^add_module', 'main.backend.views.add_module', name='add_module'),
+    url('^add_site_domain', 'main.backend.views.add_site_domain', name='add_site_domain'),
 )
