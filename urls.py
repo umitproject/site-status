@@ -20,11 +20,8 @@
 ##
 
 from django.conf.urls.defaults import *
-from django.contrib import admin
 
 from main.feeds import LastModuleStatuses
-
-admin.autodiscover()
 
 handler500 = 'djangotoolbox.errorviews.server_error'
 
@@ -63,5 +60,4 @@ urlpatterns = patterns('',
     ########
     # ADMIN
     url(r'^clean_cache/', 'main.views.clean_cache', name='clean_cache'),
-    url(r'^admin/', include(admin.site.urls)),
 )
