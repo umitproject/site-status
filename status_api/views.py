@@ -23,6 +23,8 @@ import urllib2
 
 from django.http import HttpResponse, Http404
 from django.utils import simplejson as json
+from django.views.decorators.csrf import csrf_exempt
+
 
 from main.models import *
 
@@ -31,54 +33,77 @@ from status_api.decorators import authenticate_api_request
 def __build_response(**kwargs):
     return HttpResponse(json.dumps(kwargs))
 
+def __known_status(status):
+    for s in STATUS:
+        if status in s:
+            return True
+    return False
+
+@csrf_exempt
 @authenticate_api_request
 def report_status(request):
     status = request.POST['module_status']
+
+    # check if the sent status is a known one
+    if not __known_status(status):
+        status = "unknown"
+
     new = False
     
     module = request.module
     module.updated_at = datetime.datetime.now()
     module.save()
-        
+
+    start = datetime.datetime.now()
     event = ModuleEvent.objects.filter(module=module, back_at=None)
-    if status != 'online':
-        if not event:
-            event = ModuleEvent()
-            event.down_at = datetime.datetime.now()
-            event.status = status
-            event.module = module
-            event.save()
-            new = True
-    else:
-        event.back_at = datetime.datetime.now()
-        event.save()
+
+    if not event:
+        ev = ModuleEvent()
+        ev.module = module
+        new = True
+        event = [ev,]
+
+    for ev in event:
+        if status != 'on-line':
+            ev.down_at = start
+            ev.status = status
+        else:
+            ev.back_at = start
+            ev.down_at = start
+        ev.save()
     
     return __build_response(response='OK',
                             new=new)
 
+@csrf_exempt
 @authenticate_api_request
 def check_status(request):
     return __build_response(response='OK',
                             module=request.module.id,
                             status=request.module.status)
 
+@csrf_exempt
+@authenticate_api_request
 def check_downtime(request):
     return __build_response(response='OK',
                             module=request.module.id,
                             downtime=request.module.total_downtime)
 
+@csrf_exempt
 @authenticate_api_request
 def check_incidents(request):
     return __build_response(response='OK',
                             module=request.module.id,
                             incidents=module.last_incidents)
 
+@csrf_exempt
 @authenticate_api_request
 def check_uptime(request):
     return __build_response(response='OK',
                             module=request.module.id,
                             incidents=module.last_uptime)
 
+@csrf_exempt
 @authenticate_api_request
 def check_availability(request):
     return __build_response(response='OK',
