@@ -25,6 +25,7 @@ from decimal import *
 import uuid
 from types import StringTypes
 import itertools
+from django.core import validators
 from django.contrib.auth.models import User
 
 from django.db import models
@@ -95,7 +96,8 @@ def percentage(value, total):
     return Decimal(100)
 
 class StatusSiteDomain(models.Model):
-    status_url = models.CharField(max_length=500)
+    status_url = models.CharField(max_length=255, unique=True,
+                                    validators=[validators.URLValidator()])
     site_config = models.ForeignKey('main.SiteConfig')
     
     def __unicode__(self):
@@ -103,7 +105,7 @@ class StatusSiteDomain(models.Model):
 
 class SiteConfig(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
-    site_name = models.CharField(max_length=200, default="")
+    site_name = models.CharField(max_length=200)
     main_site_url = models.CharField(max_length=500, null=True, blank=True, default="")
     contact_phone = models.CharField(max_length=50, null=True, blank=True, default="")
     contact_email = models.EmailField(null=True, blank=True, default="")
@@ -719,7 +721,9 @@ class Module(models.Model):
     total_downtime = models.FloatField(default=0.0)
     module_type = models.CharField(max_length=15, choices=MODULE_TYPES, default=MODULE_TYPES[0]) # two initial types: passive and active. In passive, status site pings the url to see if it returns 200. In the active mode, the server sends message to status site to inform its status
     host = models.CharField(max_length=500)
-    url = models.CharField(max_length=1000)
+    url = models.CharField(max_length=1000,
+                            validators=[validators.URLValidator()],
+                            error_messages={'url': _('Invalid URL')},)
     status = models.CharField(max_length=30, choices=STATUS, default=STATUS[3]) # current_status
     tags = models.TextField(default=' ', blank=True, null=True)
     site_config = models.ForeignKey('main.SiteConfig', null=True)
