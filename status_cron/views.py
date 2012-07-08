@@ -25,6 +25,7 @@ import logging
 import uuid
 import traceback
 import itertools
+from django.core.mail import send_mail, EmailMessage
 
 from django.http import HttpResponse, Http404
 from django.conf import settings
@@ -33,7 +34,6 @@ from django.conf import settings
 from main.models import *
 from main.memcache import memcache
 from main.decorators import staff_member_required
-from main.utils import send_mail
 
 ################
 # Memcache Keys
@@ -77,32 +77,9 @@ def check_notifications(request):
     timeframe.
     """
     notifications = Notification.objects.filter(sent_at=None, send=True).order_by('-created_at')
-    # TODO : this should do something
-    """
     for notification in notifications:
-        # Create the notification queue
-        not_key = CHECK_NOTIFICATION_KEY % notification.id
-        if memcache.get(not_key, False):
-            # This means that we still have a processing task for this host
-            # TODO: Check if the amount of retries is too high, and if it is
-            #       then create an event to sinalize that there is an issue
-            #       with this host.
-            logging.critical('Task %s is still processing...' %
-                                (CHECK_NOTIFICATION_KEY % notification.id))
-            continue
-        
-        try:
-            task_name = 'check_notification_%s_%s' % (notification.id, uuid.uuid4())
-            task = taskqueue.add(url='/cron/send_notification_task/%s' % notification.id,
-                                 name= task_name, queue_name='cron')
-            if task is None:
-                logging.critical("!!!! TASK IS NONE! %s " % task_name)
-            memcache.set(not_key, task)
-            
-        except taskqueue.TaskAlreadyExistsError, e:
-            logging.info('Task is still running for module %s: %s' % \
-                 (module.name,'/cron/create_notification_queue/%s' % notification.id))
-    """
+        send_notification_task(request, notification.id)
+
     return HttpResponse("OK")
 
 @staff_member_required
@@ -111,15 +88,15 @@ def send_notification_task(request, notification_id):
     """
     notification = Notification.objects.get(pk=notification_id)
     notification.build_email_data()
-    
-    sent = send_mail(notification.site_config.notification_sender,
-                     notification.site_config.notification_to,
-                     bcc=notification.list_emails,
-                     reply_to=notification.site_config.notification_reply_to,
-                     subject=notification.subject,
-                     body=notification.body,
-                     html=notification.html)
-    
+
+    email = EmailMessage(subject=notification.subject,
+                         body=notification.body,
+                         to=[notification.site_config.notification_to,],
+                         bcc=notification.list_emails,
+                         headers = {'Reply-To': notification.site_config.notification_reply_to})
+
+    sent = email.send()
+
     notification.sent_at = datetime.datetime.now()
     notification.save()
     

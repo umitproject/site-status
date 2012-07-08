@@ -16,4 +16,11 @@ class CheckPassiveHosts(Job):
             check_passive_hosts_task(HttpRequest(), module.id)
 
 
+class CheckNotifications(Job):
+    run_every = 120 #seconds
+
+    def job(self):
+        check_notifications(HttpRequest())
+
 cronScheduler.register(CheckPassiveHosts)
+cronScheduler.register(CheckNotifications)
