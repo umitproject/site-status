@@ -61,6 +61,7 @@ class ModuleForm(forms.ModelForm):
 
     monitoring_since = forms.DateField(widget=forms.DateInput(attrs=dict({'class': 'datepicker'})))
     updated_at = forms.DateField(widget=forms.DateInput(attrs=dict({'class':'disabled', 'readonly':'readonly', 'disabled':'disabled' })), required=False)
+    id = forms.CharField(widget=forms.TextInput(attrs=dict({'class':'disabled', 'readonly':'readonly', 'disabled':'disabled' })), required=False)
 #    status = forms.CharField(widget=forms.TextInput(attrs=dict({'class':'disabled', 'readonly':'readonly', 'disabled':'disabled' })), required=False)
     class Meta:
         model = Module
