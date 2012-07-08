@@ -32,20 +32,20 @@ def backend(request):
     for site_config in site_configs:
         site_config_forms.append(SiteConfigForm(instance=site_config))
 
-    module_form_template = ModuleForm()
+    module_form_template = ModuleForm(u)
     modules = Module.objects.filter(site_config__user=u)
     module_forms = []
 
     for module in modules:
-        module_forms.append(ModuleForm(instance=module))
+        module_forms.append(ModuleForm(u,instance=module))
 
 
-    site_domain_form_template = StatusSiteDomainForm()
+    site_domain_form_template = StatusSiteDomainForm(u)
     site_domains = StatusSiteDomain.objects.filter(site_config__user=u)
     site_domain_forms = []
 
     for site_domain in site_domains:
-        site_domain_forms.append(StatusSiteDomainForm(instance=site_domain))
+        site_domain_forms.append(StatusSiteDomainForm(u,instance=site_domain))
 
     return render(request, 'backend/home.html', {'profile_form':profile_form, 'site_config_forms': site_config_forms,
                                                  'site_config_form_template': site_config_form_template,
@@ -155,7 +155,7 @@ def add_module(request):
             response_obj['action'] = 'delete'
             return HttpResponse(simplejson.dumps(response_obj), mimetype='application/json')
 
-        form = ModuleForm(request.POST,instance=instance) if instance else ModuleForm(request.POST)
+        form = ModuleForm(request.user,request.POST,instance=instance) if instance else ModuleForm(request.user,request.POST)
         if form.is_valid():
             module = form.save(commit=False)
             module.save()
@@ -197,7 +197,7 @@ def add_site_domain(request):
                 response_obj['status'] = "error"
             return HttpResponse(simplejson.dumps(response_obj), mimetype='application/json')
 
-        form = StatusSiteDomainForm(request.POST,instance=instance) if instance else StatusSiteDomainForm(request.POST)
+        form = StatusSiteDomainForm(request.user,request.POST,instance=instance) if instance else StatusSiteDomainForm(request.user,request.POST)
         if form.is_valid():
             site_domain = form.save(commit=False)
             site_domain.save()

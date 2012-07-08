@@ -55,6 +55,10 @@ class SiteConfigForm(forms.ModelForm):
         exclude = ('user','twitter_account')
 
 class ModuleForm(forms.ModelForm):
+    def __init__(self, user, *args, **kw):
+        super(forms.ModelForm, self).__init__(*args, **kw)
+        self.fields['site_config'] = forms.ChoiceField(choices=[ (o.id, str(o) ) for o in SiteConfig.objects.filter(user=user)])
+
     monitoring_since = forms.DateField(widget=forms.DateInput(attrs=dict({'class': 'datepicker'})))
     updated_at = forms.DateField(widget=forms.DateInput(attrs=dict({'class':'disabled', 'readonly':'readonly', 'disabled':'disabled' })), required=False)
 #    status = forms.CharField(widget=forms.TextInput(attrs=dict({'class':'disabled', 'readonly':'readonly', 'disabled':'disabled' })), required=False)
@@ -62,5 +66,9 @@ class ModuleForm(forms.ModelForm):
         model = Module
 
 class StatusSiteDomainForm(forms.ModelForm):
+    def __init__(self, user, *args, **kw):
+        super(forms.ModelForm, self).__init__(*args, **kw)
+        self.fields['site_config'] = forms.ChoiceField(choices=[ (o.id, str(o) ) for o in SiteConfig.objects.filter(user=user)])
+
     class Meta:
         model = StatusSiteDomain
