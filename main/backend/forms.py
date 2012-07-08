@@ -57,7 +57,7 @@ class SiteConfigForm(forms.ModelForm):
 class ModuleForm(forms.ModelForm):
     def __init__(self, user, *args, **kw):
         super(forms.ModelForm, self).__init__(*args, **kw)
-        self.fields['site_config'].choices = [ (o, str(o) ) for o in SiteConfig.objects.filter(user=user)]
+        self.fields['site_config'].choices = [ (o.pk, str(o) ) for o in SiteConfig.objects.filter(user=user)]
 
     monitoring_since = forms.DateField(widget=forms.DateInput(attrs=dict({'class': 'datepicker'})))
     updated_at = forms.DateField(widget=forms.DateInput(attrs=dict({'class':'disabled', 'readonly':'readonly', 'disabled':'disabled' })), required=False)
