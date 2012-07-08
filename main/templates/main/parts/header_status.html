@@ -22,7 +22,7 @@
 		                      			  height: '70%'},
 		                      colors: ['red'],
 		                      legend: 'none',
-		                      axisTitlesPosition: 'none',
+		                      axisTitlesPosition: 'none'
 		                     });
 		  }
 		  google.setOnLoadCallback(drawIncidentsChart);
@@ -55,11 +55,8 @@
 {% endif %}
 
 <div id="video">
-	<div id="status_header">
-			<div class='status_header_block'>
-				<p class='status_header_title'>{% trans "Availability" %}</p>
-				<p class='status_header_value'>{{ current_availability }} %</p>
-			</div>
+	<div id="get-started">
+			<h2>{% trans "Availability - " %}{{ current_availability }} %</h2>
 			
 			{% if SHOW_LAST_INCIDENT %}
 				<div class='status_header_block'>
@@ -67,21 +64,30 @@
 					<p class='status_header_value'>{{ last_incident.verbose_html|safe }}</p>
 				</div>
 			{% endif %}
-			
-			{% if SHOW_INCIDENTS %}
-				<div class='status_header_block'>
-					<p class='status_header_title'>{% trans "Incidents" %}</span>
-					<div id='incidents_chart'></div>
-				</div>
-			{% endif %}
-			
-			{% if SHOW_UPTIME %}
-				<div class='status_header_block'>
-					<p class='status_header_title'>{% trans "Uptime" %}</span>
-					<div id='uptime_chart'></div>
-				</div>
-			{% endif %}
-			
+			<table class="chart-table">
+
+                <thead>
+                {% if SHOW_INCIDENTS %}
+                        <th>{% trans "Incidents" %}</th>
+                {% endif %}
+
+                {% if SHOW_UPTIME %}
+                        <th>{% trans "Uptime" %}</th>
+                {% endif %}
+                </thead>
+                <tbody>
+                    <td>
+                        {% if SHOW_INCIDENTS %}
+                            <div id='incidents_chart'></div>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if SHOW_UPTIME %}
+                            <div id='uptime_chart'></div>
+                        {% endif %}
+                    </td>
+                </tbody>
+            </table>
 			{% if msg %}
 				<p class="msg">{{ msg }}</p>
 			{% endif %}

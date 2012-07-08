@@ -33,15 +33,15 @@ def last_days_header(context, days):
     header = []
     today = datetime.date.today()
     for day in xrange(days):
-        header.append(today.strftime("<td>%x</td>"))
+        header.append(today.strftime("<th>%x</th>"))
         today = today - datetime.timedelta(days=1)
     header.reverse()
     
     if len(header) > 0:
-        header[-1] = "<td>Today</td>"
+        header[-1] = "<th>Today</th>"
     else:
-        header.append("<td>Today</td>")
-    header.append("<td>Now</td>")
+        header.append("<th>Today</th>")
+    header.append("<th>Now</th>")
     return "\n".join(header)
 last_days_header.is_safe = True
 
