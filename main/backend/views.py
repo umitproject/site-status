@@ -1,3 +1,4 @@
+from datetime import datetime
 from django.template.loader import render_to_string
 from django.http import HttpResponse
 from django.template.context import RequestContext
@@ -7,22 +8,20 @@ from django.utils import simplejson
 from django.utils.datastructures import MultiValueDictKeyError
 from main.decorators import login_required
 from main.backend.forms import ProfileForm, SiteConfigForm, ModuleForm, StatusSiteDomainForm
-from main.models import SiteConfig, Module, UserProfile, StatusSiteDomain
+from main.models import SiteConfig, Module, UserProfile, StatusSiteDomain, STATUS
 
 __author__ = 'apredoi'
 
-
+@login_required
 def backend(request):
     context = RequestContext(request)
     u = request.user
+    u_profile = UserProfile.objects.get_or_create(user = request.user)[0]
 
-    profile_form = ProfileForm(initial={
-        'username': u.username,
-        'email': u.email,
-        'first_name': u.first_name,
-        'last_name': u.last_name,
-        #'country': u.get_profile().country
-    })
+    initial_data = u.__dict__
+    initial_data.update(u_profile.__dict__)
+
+    profile_form = ProfileForm(initial=initial_data)
 
 
     site_config_form_template = SiteConfigForm()
@@ -64,9 +63,6 @@ def update_profile(request):
     if form.is_valid():
         u = request.user
         u_profile = UserProfile.objects.get_or_create(user = request.user)[0]
-        if u.username != form.data.get('username'):
-            response_obj['error'] = 'Invalid username'
-            return HttpResponse(simplejson.dumps(response_obj), mimetype='application/json' )
         if form.data.get('first_name'):
             u.first_name = form.data.get('first_name')
         if form.data.get('last_name'):
@@ -126,7 +122,8 @@ def add_site_config(request):
             response_obj['item'] = render_to_string("backend/site_config_form.html", dict(site_config_form=form))
             return HttpResponse(simplejson.dumps(response_obj), mimetype='application/json'
             )
-        response_obj['item'] = render_to_string("backend/site_config_form.html", dict(site_config_form=form))
+        response_obj['item'] = render_to_string("backend/site_config_form.html",
+                                                            dict(site_config_form=SiteConfigForm(instance=site_config)))
         response_obj['name'] = site_config.site_name
         return HttpResponse(simplejson.dumps(response_obj), mimetype='application/json')
 
@@ -145,6 +142,7 @@ def add_module(request):
             response_obj['action'] = 'add'
         instance = None
         action = request.POST['module_action']
+
         if action in ('update', 'delete') and object_key is not None:
             instance = Module.objects.get(pk=object_key)
             response_obj['id'] = object_key
@@ -158,14 +156,22 @@ def add_module(request):
         form = ModuleForm(request.user,request.POST,instance=instance) if instance else ModuleForm(request.user,request.POST)
         if form.is_valid():
             module = form.save(commit=False)
+            #add
+            if not instance:
+                module.monitoring_since = datetime.now()
+                module.status = "unknown"
+                module.total_downtime = "0.0"
+
             module.save()
+            instance = module
             response_obj['id'] = module.pk
         else:
             response_obj['status'] = 'error'
             response_obj['error'] = form.errors
             return HttpResponse(simplejson.dumps(response_obj), mimetype='application/json'
             )
-        response_obj['item'] = render_to_string("backend/module_form.html", dict(module_form=form))
+        response_obj['item'] = render_to_string("backend/module_form.html",
+                                    dict(module_form=ModuleForm(request.user,instance=instance)))
         response_obj['name'] = module.name
         return HttpResponse(simplejson.dumps(response_obj), mimetype='application/json')
 

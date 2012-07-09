@@ -58,11 +58,14 @@ class ModuleForm(forms.ModelForm):
     def __init__(self, user, *args, **kw):
         super(forms.ModelForm, self).__init__(*args, **kw)
         self.fields['site_config'].choices = [ (o.pk, str(o) ) for o in SiteConfig.objects.filter(user=user)]
+        self.fields.keyOrder = ['name','description','module_type', 'host', 'url', 'site_config', 'tags', 'status', 'monitoring_since', 'updated_at',
+                                'total_downtime', 'id']
 
-    monitoring_since = forms.DateField(widget=forms.DateInput(attrs=dict({'class': 'datepicker'})))
+    monitoring_since = forms.DateField(widget=forms.DateInput(attrs=dict({'class':'disabled', 'readonly':'readonly', 'disabled':'disabled'})), required=False)
     updated_at = forms.DateField(widget=forms.DateInput(attrs=dict({'class':'disabled', 'readonly':'readonly', 'disabled':'disabled' })), required=False)
     id = forms.CharField(widget=forms.TextInput(attrs=dict({'class':'disabled', 'readonly':'readonly', 'disabled':'disabled' })), required=False)
-#    status = forms.CharField(widget=forms.TextInput(attrs=dict({'class':'disabled', 'readonly':'readonly', 'disabled':'disabled' })), required=False)
+    status = forms.CharField(widget=forms.TextInput(attrs=dict({'class':'disabled', 'readonly':'readonly', 'disabled':'disabled' })), required=False)
+    total_downtime = forms.CharField(widget=forms.TextInput(attrs=dict({'class':'disabled', 'readonly':'readonly', 'disabled':'disabled' })), required=False)
     class Meta:
         model = Module
 

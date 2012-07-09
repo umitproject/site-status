@@ -228,6 +228,8 @@
                                            .append(response.item)
                             );
                             $("#add-site-config table").html($("#site_config_form_template").html())
+                            $("#status-site-domains").load("/backend #status-site-domains")
+                            $("#monitors").load("/backend #monitors")
                         }
                     }
                 },
