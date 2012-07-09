@@ -98,8 +98,7 @@ def percentage(value, total):
     return 100
 
 class StatusSiteDomain(models.Model):
-    status_url = models.CharField(max_length=255, unique=True,
-                                    validators=[validators.URLValidator()])
+    status_url = models.CharField(max_length=255, unique=True)
     site_config = models.ForeignKey('main.SiteConfig')
     
     def __unicode__(self):
