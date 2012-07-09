@@ -37,7 +37,7 @@ urlpatterns = patterns('',
     ######
     # API
     # TODO: ADD THESE BACK
-    #url(r'^api/', include('status_api.urls')),
+    url(r'^api/', include('status_api.urls')),
 
     #######
     # Cron

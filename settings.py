@@ -89,7 +89,7 @@ INSTALLED_APPS = (
     'main',
     #TODO: add these back
     'status_cron',
-    #'status_api',
+    'status_api',
     #'status_notification',
     #'permission_backend_nonrel',
     )
