@@ -27,6 +27,7 @@ import logging
 
 import agent
 from agent import settings
+from agent.settings import DISABLED
 
 FREQUENCY = settings.FREQUENCY
 if FREQUENCY < 1:

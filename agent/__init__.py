@@ -31,7 +31,7 @@ from agent import settings
 def call(method, **kwargs):
     url =  '%s/%s' % (settings.API_URL, method)
     kwargs.update(dict(module_api=settings.API_KEY,
-                       module_secret=settings.API_KEY,
+                       module_secret=settings.API_SECRET,
                        module_id=settings.MODULE_ID))
     response = urllib2.urlopen(url, urlencode(kwargs))
     
