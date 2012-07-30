@@ -26,7 +26,7 @@ def celery_task():
     request = HttpRequest()
     request.META['HTTP_X_CELERY_CRON'] = 'true'
     for module in modules:
-        check_passive_hosts_task.delay(HttpRequest(), module.id)
+        check_passive_hosts_task.delay(request, module.id)
 
 
 #class CheckNotifications(Job):
