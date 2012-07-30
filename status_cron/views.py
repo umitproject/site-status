@@ -115,7 +115,7 @@ def check_notifications_task(request, one_time, notification_queue_id):
     """
     pass
 
-@celery.task()
+@celery.task(ignore_result=True)
 @staff_member_required
 def check_passive_hosts_task(request, module_key):
     logger.debug("begin checking")
