@@ -42,6 +42,9 @@ DATABASES = {
 }
 AUTOLOAD_SITECONF = 'indexes'
 
+import djcelery
+djcelery.setup_loader()
+
 SECRET_KEY = 'igaeofugq8fghrilbfrl3kh4h8ogdsdy1ohr;dpfgo87109ru;aokdhf;k'
 
 DEBUG = True
@@ -81,7 +84,7 @@ INSTALLED_APPS = (
     'django.contrib.auth',
     'django.contrib.sessions',
     'registration',
-    'django_cron',
+    #'django_cron',
     'djangotoolbox',
     'autoload',
     'dbindexer',
@@ -90,9 +93,15 @@ INSTALLED_APPS = (
     #TODO: add these back
     'status_cron',
     'status_api',
+    'djcelery'
     #'status_notification',
     #'permission_backend_nonrel',
     )
+
+CELERY_IMPORTS = (
+    'status_cron.cron',
+    'status_cron.views'
+)
 
 
 MIDDLEWARE_CLASSES = (

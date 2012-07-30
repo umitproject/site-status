@@ -40,6 +40,12 @@ from main.decorators import staff_member_required
 CHECK_HOST_KEY = 'check_passive_host_%s'
 CHECK_NOTIFICATION_KEY = 'check_notification_%s'
 
+from djcelery import celery
+
+
+
+logger = logging.getLogger("rotating_logger")
+
 @staff_member_required
 def check_passive_hosts(request):
     modules = Module.objects.filter(module_type='passive')
@@ -109,32 +115,26 @@ def check_notifications_task(request, one_time, notification_queue_id):
     """
     pass
 
-def _get_status_code(module):
-    if settings.GAE:
-        result = urlfetch.fetch(module.url,
-                                follow_redirects=True,
-                                allow_truncated=True,
-                                deadline=60)
-        return result.status_code
-    result = urllib2.urlopen(module.url)
-    return result.getcode()
-
+@celery.task()
 @staff_member_required
 def check_passive_hosts_task(request, module_key):
+    logger.debug("begin checking")
+    print "running task"
     module = Module.objects.get(id=module_key)
     events = ModuleEvent.objects.filter(module=module).filter(back_at=None)
-    
+
     start = datetime.datetime.now()
-    
+
     try:
         status_code = _get_status_code(module)
         end = datetime.datetime.now()
-        
+
         total_time = end - start
         if total_time.seconds > 3:
-            # TODO: Turn this into a notification
-            logging.warning('Spent %s seconds checking %s' % (total_time.seconds, module.name))
-        
+        # TODO: Turn this into a notification
+        #            logging.warning('Spent %s seconds checking %s' % (total_time.seconds, module.name))
+            logger.debug('Spent %s seconds checking %s' % (total_time.seconds, module.name))
+
         if status_code == 200:
             # This case is for when a module's status is set by hand and no event is created.
             if module.status != 'on-line' and not events:
@@ -145,13 +145,13 @@ def check_passive_hosts_task(request, module_key):
                 event.module = module
                 event.site_config = module.site_config
                 event.save()
-            
-            now = datetime.datetime.now() 
+
+            now = datetime.datetime.now()
             for event in events:
                 event.back_at = now
                 event.save()
-                logging.info("Site is back online %s" % module.name)
-    
+                logger.info("Site is back online %s" % module.name)
+
     except urllib2.HTTPError, e:
         details = '''%s %s
 %s
@@ -160,7 +160,7 @@ def check_passive_hosts_task(request, module_key):
 ---
 Events: %s''' % ("urlfetch.HTTPError", module.name, e,
                  traceback.extract_stack(), events)
-        
+
         if not events:
             event = ModuleEvent()
             event.down_at = start
@@ -169,7 +169,7 @@ Events: %s''' % ("urlfetch.HTTPError", module.name, e,
             event.details = details
             event.site_config = module.site_config
             event.save()
-    
+
     except urllib2.URLError, e:
         details = '''%s %s
 %s
@@ -178,7 +178,7 @@ Events: %s''' % ("urlfetch.HTTPError", module.name, e,
 ---
 Events: %s''' % ("urllib2.URLError", module.name, e,
                  traceback.extract_stack(), events)
-        
+
         logging.critical("Events: %s" % events)
         if not events:
             event = ModuleEvent()
@@ -188,7 +188,7 @@ Events: %s''' % ("urllib2.URLError", module.name, e,
             event.details = details
             event.site_config = module.site_config
             event.save()
-    
+
     except urlfetch.InvalidURLError, e:
         details = '''%s %s
 %s
@@ -206,7 +206,7 @@ Events: %s''' % ("urlfetch.InavlidURLError", module.name, e,
             event.details = details
             event.site_config = module.site_config
             event.save()
-    
+
     except urlfetch.DownloadError, e:
         details = '''%s %s
 %s
@@ -224,7 +224,7 @@ Events: %s''' % ("urlfetch.DownloadError", module.name, e,
             event.details = details
             event.site_config = module.site_config
             event.save()
-    
+
     except urlfetch.ResponseTooLargeError, e:
         details = '''%s %s
 %s
@@ -242,7 +242,7 @@ Events: %s''' % ("urlfetch.ResponseTooLargeError", module.name, e,
             event.details = str(e)
             event.site_config = module.site_config
             event.save()
-    
+
     except urlfetch.Error, e:
         details = '''%s %s
 %s
@@ -260,7 +260,7 @@ Events: %s''' % ("urlfetch.Error", module.name, e,
             event.details = details
             event.site_config = module.site_config
             event.save()
-    
+
     except Exception, e:
         details = '''%s %s
 %s
@@ -269,7 +269,7 @@ Events: %s''' % ("urlfetch.Error", module.name, e,
 ---
 Events: %s''' % ("Exception", module.name, e,
                  traceback.extract_stack(), events)
-        
+
         if not events:
             event = ModuleEvent()
             event.down_at = start
@@ -278,9 +278,19 @@ Events: %s''' % ("Exception", module.name, e,
             event.details = details
             event.site_config = module.site_config
             event.save()
-    
+
     memcache.delete(CHECK_HOST_KEY % module.id)
     return HttpResponse("OK")
+
+def _get_status_code(module):
+    if settings.GAE:
+        result = urlfetch.fetch(module.url,
+                                follow_redirects=True,
+                                allow_truncated=True,
+                                deadline=60)
+        return result.status_code
+    result = urllib2.urlopen(module.url)
+    return result.getcode()
 
 @staff_member_required
 def aggregate_daily_status(request):
