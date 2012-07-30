@@ -23,6 +23,8 @@ from main.models import Module
 def celery_task():
     modules = Module.objects.filter(module_type='passive')
     print "running check passive hosts cron"
+    request = HttpRequest()
+    request.META['HTTP_X_CELERY_CRON'] = 'true'
     for module in modules:
         check_passive_hosts_task.delay(HttpRequest(), module.id)
 
