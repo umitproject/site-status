@@ -37,6 +37,8 @@ from django.utils.translation import ugettext_lazy as _
 from main.memcache import memcache
 from main.utils import pretty_date
 
+from dbextra.fields import ListField
+
 ##########
 # CHOICES
 STATUS = (
@@ -728,6 +730,7 @@ class Module(models.Model):
     status = models.CharField(max_length=30, choices=STATUS, default=STATUS[3]) # current_status
     tags = models.TextField(default=' ', blank=True, null=True)
     site_config = models.ForeignKey('main.SiteConfig', null=True)
+    logs = ListField()
     
     @property
     def list_tags(self):

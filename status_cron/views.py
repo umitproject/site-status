@@ -40,21 +40,19 @@ from main.decorators import staff_member_required
 # Memcache Keys
 CHECK_HOST_KEY = 'check_passive_host_%s'
 CHECK_NOTIFICATION_KEY = 'check_notification_%s'
-MONITOR_LOG_SEPARATOR = ' '
 
 from djcelery import celery
 
 from logging.handlers import TimedRotatingFileHandler
 from settings import LOGGING,MONITOR_LOG_PATH
 import os
+from dbextra.utils import ModuleListFieldHandler
+MONITOR_LOG_SEPARATOR = ' '
 
 
 def get_monitor_log(module_id):
     logger = logging.getLogger("rotating_logger")
-    log_handler = TimedRotatingFileHandler(os.path.join(MONITOR_LOG_PATH, ('monitor%d.log'%module_id)),
-        LOGGING['handlers']['rotating_file']['when'],
-        LOGGING['handlers']['rotating_file']['interval'],
-        LOGGING['handlers']['rotating_file']['backupCount'])
+    log_handler = ModuleListFieldHandler(module_id)
     logger.addHandler(log_handler)
     return logger
 

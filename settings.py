@@ -286,8 +286,9 @@ LOGGING = {
     'loggers': {
         # other loggers
         'rotating_logger': {
-            'handlers': ['rotating_file'],
+            'handlers': [], #could be rotating_file
             'level': 'DEBUG',
         }
     }
 }
+
