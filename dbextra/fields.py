@@ -25,8 +25,8 @@ import cStringIO, StringIO
 
 from django.db import models
 
-from south.modelsinspector import add_introspection_rules
-add_introspection_rules([], ["^dbextra\.fields\.ListField"])
+#from south.modelsinspector import add_introspection_rules
+#add_introspection_rules([], ["^dbextra\.fields\.ListField"])
 
 class ListField(models.TextField):
     description = "A ListField is actually a TextField with comma-separated " \

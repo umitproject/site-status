@@ -273,15 +273,15 @@ LOGGING = {
         }
     },
     'handlers': {
-        'rotating_file': {
-                'level' : 'DEBUG',
-                'formatter' : 'verbose', # from the django doc example
-                'class' : 'logging.handlers.TimedRotatingFileHandler',
-                'filename' :   os.path.join(MONITOR_LOG_PATH, 'monitor.log'),
-                'when' : 'midnight',
-                'interval' : 1,
-                'backupCount' : 7,
-                }
+#        'rotating_file': {
+#                'level' : 'DEBUG',
+#                'formatter' : 'verbose', # from the django doc example
+#                'class' : 'logging.handlers.TimedRotatingFileHandler',
+#                'filename' :   os.path.join(MONITOR_LOG_PATH, 'monitor.log'),
+#                'when' : 'midnight',
+#                'interval' : 1,
+#                'backupCount' : 7,
+#                }
         },
     'loggers': {
         # other loggers
