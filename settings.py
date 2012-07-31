@@ -262,4 +262,32 @@ ACCOUNT_ACTIVATION_DAYS = 2
 MAX_NETLIST_RESPONSE = 10
 MAX_AGENTSLIST_RESPONSE = 5
 
-
+###################
+# MONITORS LOGGING
+MONITOR_LOG_PATH = os.path.join(os.path.dirname(__file__), 'logs')
+LOGGING = {
+    'version': 1,
+    'formatters': {
+        'verbose': {
+            'format': '%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s'
+        }
+    },
+    'handlers': {
+        'rotating_file': {
+                'level' : 'DEBUG',
+                'formatter' : 'verbose', # from the django doc example
+                'class' : 'logging.handlers.TimedRotatingFileHandler',
+                'filename' :   os.path.join(MONITOR_LOG_PATH, 'monitor.log'),
+                'when' : 'midnight',
+                'interval' : 1,
+                'backupCount' : 7,
+                }
+        },
+    'loggers': {
+        # other loggers
+        'rotating_logger': {
+            'handlers': ['rotating_file'],
+            'level': 'DEBUG',
+        }
+    }
+}

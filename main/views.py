@@ -23,6 +23,9 @@ import random
 import datetime
 import urllib2
 import logging
+import re
+from settings import MONITOR_LOG_PATH
+import os
 
 from django.shortcuts import render, render_to_response, get_object_or_404, redirect
 from django.http import HttpResponse, Http404
@@ -285,5 +288,22 @@ def hard_reset(request):
     
     memcache.flush_all()
     
-    return home(request, 'Flush cache FAILED') 
-    
+    return home(request, 'Flush cache FAILED')
+
+@login_required
+def log(request, log_name):
+    try:
+        u = request.user
+        match = re.match('^monitor(\d+).log(.(\d+-\d+-\d+))?$',log_name)
+        if match:
+            module_id = int(match.group(1))
+            module = Module.objects.get(pk=module_id)
+            if module.site_config.user.username == u.username:
+                fsock = open(os.path.join(MONITOR_LOG_PATH, log_name))
+                response = HttpResponse(fsock, mimetype='text/plain')
+                response['Cache-Control'] = 'no-cache'
+                return response
+    except Exception,e:
+        raise Http404
+    raise Http404
+

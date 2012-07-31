@@ -18,6 +18,7 @@
 ## You should have received a copy of the GNU Affero General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ##
+from logging.handlers import TimedRotatingFileHandler
 
 import urllib2
 import datetime
@@ -39,55 +40,35 @@ from main.decorators import staff_member_required
 # Memcache Keys
 CHECK_HOST_KEY = 'check_passive_host_%s'
 CHECK_NOTIFICATION_KEY = 'check_notification_%s'
+MONITOR_LOG_SEPARATOR = ' '
 
 from djcelery import celery
 
+from logging.handlers import TimedRotatingFileHandler
+from settings import LOGGING,MONITOR_LOG_PATH
+import os
 
 
-logger = logging.getLogger("rotating_logger")
+def get_monitor_log(module_id):
+    logger = logging.getLogger("rotating_logger")
+    log_handler = TimedRotatingFileHandler(os.path.join(MONITOR_LOG_PATH, ('monitor%d.log'%module_id)),
+        LOGGING['handlers']['rotating_file']['when'],
+        LOGGING['handlers']['rotating_file']['interval'],
+        LOGGING['handlers']['rotating_file']['backupCount'])
+    logger.addHandler(log_handler)
+    return logger
 
-@staff_member_required
-def check_passive_hosts(request):
-    modules = Module.objects.filter(module_type='passive')
+def debug(logger, msg=""):
+    debug_tokens = (str(datetime.datetime.now()), )
+    if isinstance(msg, tuple):
+        debug_tokens += msg
+    else:
+        debug_tokens += (msg, )
+    logger.debug(MONITOR_LOG_SEPARATOR.join(debug_tokens))
 
-    # TODO: this should do something
-    """
-    for module in modules:
-        if memcache.get(CHECK_HOST_KEY % module.id, False):
-            # This means that we still have a processing task for this host
-            # TODO: Check if the amount of retries is too high, and if it is
-            #       then create an event to sinalize that there is an issue
-            #       with this host.
-            logging.critical('Task %s is still processing...' % (CHECK_HOST_KEY % module.id))
-            continue
-        
-        try:
-            task_name = 'check_passive_host_%s_%s' % ("-".join(module.name.split(" ")).lower(), uuid.uuid4())
-            task = taskqueue.add(url='/cron/check_passive_hosts_task/%s' % module.id,
-                          name= task_name, queue_name='cron')
-            memcache.set(CHECK_HOST_KEY % module.id, task)
-            
-            logging.info('Scheduled task %s' % task_name)
-            
-        except taskqueue.TaskAlreadyExistsError, e:
-            logging.info('Task is still running for module %s: %s' % \
-                 (module.name,'/cron/check_passive_hosts_task/%s' % module.id))
-    """
-    return HttpResponse("OK")
 
-@staff_member_required
-def check_notifications(request):
-    """This method calls out the tasks to send notifications.
-    Since it is a cron called view, there is a timeout, so we might want to
-    make sure we never get more notifications than we can handle within that
-    timeframe.
-    """
-    notifications = Notification.objects.filter(sent_at=None, send=True).order_by('-created_at')
-    for notification in notifications:
-        send_notification_task(request, notification.id)
 
-    return HttpResponse("OK")
-
+@celery.task
 @staff_member_required
 def send_notification_task(request, notification_id):
     """This task will send out the notifications
@@ -118,8 +99,10 @@ def check_notifications_task(request, one_time, notification_queue_id):
 @celery.task(ignore_result=True)
 @staff_member_required
 def check_passive_hosts_task(request, module_key):
-    logger.debug("begin checking")
-    print "running task"
+    logger = get_monitor_log(module_key)
+    debug(logger, ("begin",))
+
+
     module = Module.objects.get(id=module_key)
     events = ModuleEvent.objects.filter(module=module).filter(back_at=None)
 
@@ -130,10 +113,12 @@ def check_passive_hosts_task(request, module_key):
         end = datetime.datetime.now()
 
         total_time = end - start
+
+        debug(logger, ("end", str(total_time.total_seconds()),))
         if total_time.seconds > 3:
         # TODO: Turn this into a notification
         #            logging.warning('Spent %s seconds checking %s' % (total_time.seconds, module.name))
-            logger.debug('Spent %s seconds checking %s' % (total_time.seconds, module.name))
+            logger.warn('Spent %s seconds checking %s' % (total_time.seconds, module.name))
 
         if status_code == 200:
             # This case is for when a module's status is set by hand and no event is created.
@@ -161,6 +146,8 @@ def check_passive_hosts_task(request, module_key):
 Events: %s''' % ("urlfetch.HTTPError", module.name, e,
                  traceback.extract_stack(), events)
 
+        debug(logger, "http_error")
+
         if not events:
             event = ModuleEvent()
             event.down_at = start
@@ -179,6 +166,7 @@ Events: %s''' % ("urlfetch.HTTPError", module.name, e,
 Events: %s''' % ("urllib2.URLError", module.name, e,
                  traceback.extract_stack(), events)
 
+        debug(logger, "url_error")
         logging.critical("Events: %s" % events)
         if not events:
             event = ModuleEvent()
@@ -198,6 +186,7 @@ Events: %s''' % ("urllib2.URLError", module.name, e,
 Events: %s''' % ("urlfetch.InavlidURLError", module.name, e,
                  traceback.extract_stack(), events)
 
+        debug(logger, "invalid_url_error")
         if not events:
             event = ModuleEvent()
             event.down_at = start
@@ -216,6 +205,7 @@ Events: %s''' % ("urlfetch.InavlidURLError", module.name, e,
 Events: %s''' % ("urlfetch.DownloadError", module.name, e,
                  traceback.extract_stack(), events)
 
+        debug(logger, "download_error")
         if not events:
             event = ModuleEvent()
             event.down_at = start
@@ -234,6 +224,7 @@ Events: %s''' % ("urlfetch.DownloadError", module.name, e,
 Events: %s''' % ("urlfetch.ResponseTooLargeError", module.name, e,
                  traceback.extract_stack(), events)
 
+        debug(logger, "response_too_large_error")
         if not events:
             event = ModuleEvent()
             event.down_at = start
@@ -252,6 +243,8 @@ Events: %s''' % ("urlfetch.ResponseTooLargeError", module.name, e,
 Events: %s''' % ("urlfetch.Error", module.name, e,
                  traceback.extract_stack(), events)
 
+        debug(logger, "http_check_error")
+
         if not events:
             event = ModuleEvent()
             event.down_at = start
@@ -269,7 +262,7 @@ Events: %s''' % ("urlfetch.Error", module.name, e,
 ---
 Events: %s''' % ("Exception", module.name, e,
                  traceback.extract_stack(), events)
-
+        debug(logger, "monitor_error")
         if not events:
             event = ModuleEvent()
             event.down_at = start

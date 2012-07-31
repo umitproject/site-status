@@ -1,6 +1,10 @@
 <div class="tab-pane" id="module-{{ module_form.instance.pk }}" data-form-id="{{ module_form.instance.pk }}">
 
-    <h2>{{ module.initial.name }}</h2>
+    <h2>{{ module_form.initial.name }}</h2>
+
+    <div class="module-log" style="float:right; ">
+        <a href="/log/monitor{{ module_form.instance.pk }}.log">View logfile</a>
+    </div>
     <form method='post' action='/backend/add_module'>{% csrf_token %}
         <table>
             {{  module_form.as_table }}

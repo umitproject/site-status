@@ -30,6 +30,10 @@ urlpatterns = patterns('',
     url('^event/(?P<event_id>\d+)/?$', 'main.views.event', name='event'),
 
 
+    #LOG OUTPUT
+    url('^log/(?P<log_name>monitor(\d+)\.log(\.(\d+-\d+-\d+))?)/?$', 'main.views.log', name='module_log_viewer'),
+
+
     ########
     # FEEDS
     url(r'^feeds/(?P<module_id>\d+)/?$', LastModuleStatuses(), name='feeds'),
@@ -42,7 +46,7 @@ urlpatterns = patterns('',
     #######
     # Cron
     # TODO: ADD THESE BACK
-    #url(r'^cron/', include('status_cron.urls')),
+    url(r'^cron/', include('status_cron.urls')),
 
     ######################
     # Notification System
