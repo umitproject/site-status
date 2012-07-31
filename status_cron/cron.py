@@ -20,13 +20,25 @@ from main.models import Module
 #            check_passive_hosts_task(HttpRequest(), module.id)
 
 @periodic_task(run_every=crontab(hour="*", minute="*/1", day_of_week="*"))
-def celery_task():
+def check_passive_monitors():
     modules = Module.objects.filter(module_type='passive')
-    print "running check passive hosts cron"
+
     request = HttpRequest()
     request.META['HTTP_X_CELERY_CRON'] = 'true'
+
     for module in modules:
         check_passive_hosts_task.delay(request, module.id)
+
+
+@periodic_task(run_every=crontab(hour="*", minute="*/5", day_of_week="*"))
+def send_notifications():
+    notifications = Notification.objects.filter(sent_at=None, send=True).order_by('-created_at')
+
+    request = HttpRequest()
+    request.META['HTTP_X_CELERY_CRON'] = 'true'
+
+    for notification in notifications:
+        send_notification_task.delay(request, notification.id)
 
 
 #class CheckNotifications(Job):
