@@ -299,8 +299,7 @@ def log(request, log_name):
             module_id = int(match.group(1))
             module = Module.objects.get(pk=module_id)
             if module.site_config.user.username == u.username:
-                fsock = open(os.path.join(MONITOR_LOG_PATH, log_name))
-                response = HttpResponse(fsock, mimetype='text/plain')
+                response = HttpResponse(module.logs, mimetype='text/plain')
                 response['Cache-Control'] = 'no-cache'
                 return response
     except Exception,e:
