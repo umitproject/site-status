@@ -66,7 +66,7 @@ def debug(logger, msg=""):
 
 
 
-@celery.task
+@celery.task(ignore_result=True)
 @staff_member_required
 def send_notification_task(request, notification_id):
     """This task will send out the notifications
