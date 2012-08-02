@@ -1,9 +1,9 @@
 {% load i18n %}
 {% if event %}
-	<p class="title">{% blocktrans %}Subscribe to Event - {{ event.verbose }}{% endblocktrans %}</p>
+	<p class="title">{% blocktrans with event.verbose as event_verbose %}Subscribe to Event - {{ event_verbose }}{% endblocktrans %}</p>
 {% else %}
 	{% if module %}
-		<p class="title">{% blocktrans %}Subscribe to Module {{ module.name }}{% endblocktrans %}</p>
+		<p class="title">{% blocktrans with module.name as module_name %}Subscribe to Module {{ module_name }}{% endblocktrans %}</p>
 	{% else %}
 		<p class="title">{% trans "Subscribe" %}</p>
 	{% endif %}
