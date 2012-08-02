@@ -27,10 +27,10 @@ def check_passive_monitors():
     request.META['HTTP_X_CELERY_CRON'] = 'true'
 
     for module in modules:
-        check_passive_hosts_task.delay(request, module.id)
+        check_passive_hosts_task.apply_async((request, module.id))
 
 
-@periodic_task(run_every=crontab(hour="*", minute="*/5", day_of_week="*"))
+@periodic_task(run_every=crontab(hour="*", minute="*/1", day_of_week="*"))
 def send_notifications():
     notifications = Notification.objects.filter(sent_at=None, send=True).order_by('-created_at')
 
@@ -38,7 +38,7 @@ def send_notifications():
     request.META['HTTP_X_CELERY_CRON'] = 'true'
 
     for notification in notifications:
-        send_notification_task.delay(request, notification.id)
+        send_notification_task.apply_async((request, notification.id))
 
 
 #class CheckNotifications(Job):

@@ -42,6 +42,7 @@ CHECK_HOST_KEY = 'check_passive_host_%s'
 CHECK_NOTIFICATION_KEY = 'check_notification_%s'
 
 from djcelery import celery
+from celery.exceptions import SoftTimeLimitExceeded
 
 from logging.handlers import TimedRotatingFileHandler
 from settings import LOGGING,MONITOR_LOG_PATH
@@ -94,7 +95,19 @@ def check_notifications_task(request, one_time, notification_queue_id):
     """
     pass
 
-@celery.task(ignore_result=True)
+
+def _create_new_event(module, status, down_at, back_at=None, details=""):
+    event = ModuleEvent()
+    event.down_at = down_at
+    event.back_at = back_at
+    event.status = status
+    event.module = module
+    event.details = details
+    event.site_config = module.site_config
+    event.save()
+
+
+@celery.task(ignore_result=True, soft_timeout=50)
 @staff_member_required
 def check_passive_hosts_task(request, module_key):
     logger = get_monitor_log(module_key)
@@ -116,24 +129,33 @@ def check_passive_hosts_task(request, module_key):
         if total_time.seconds > 3:
         # TODO: Turn this into a notification
         #            logging.warning('Spent %s seconds checking %s' % (total_time.seconds, module.name))
-            logger.warn('Spent %s seconds checking %s' % (total_time.seconds, module.name))
+            debug(logger,'Spent %s seconds checking %s' % (total_time.seconds, module.name))
 
         if status_code == 200:
             # This case is for when a module's status is set by hand and no event is created.
             if module.status != 'on-line' and not events:
-                event = ModuleEvent()
-                event.down_at = start
-                event.back_at = start
-                event.status = "unknown"
-                event.module = module
-                event.site_config = module.site_config
-                event.save()
+                _create_new_event(module,"unknown", start, start)
 
             now = datetime.datetime.now()
             for event in events:
                 event.back_at = now
                 event.save()
-                logger.info("Site is back online %s" % module.name)
+                debug(logger,"Site is back online %s" % module.name)
+
+
+    except SoftTimeLimitExceeded, e:
+        details = '''%s %s
+%s
+---
+%s
+---
+Events: %s''' % ("urlfetch.HTTPError", module.name, e,
+                 traceback.extract_stack(), events)
+
+        debug(logger, "time_limit_exceeded")
+
+        if not events:
+            _create_new_event(module, "off-line", start, None, details)
 
     except urllib2.HTTPError, e:
         details = '''%s %s
@@ -147,13 +169,7 @@ Events: %s''' % ("urlfetch.HTTPError", module.name, e,
         debug(logger, "http_error")
 
         if not events:
-            event = ModuleEvent()
-            event.down_at = start
-            event.status = "unknown"
-            event.module = module
-            event.details = details
-            event.site_config = module.site_config
-            event.save()
+            _create_new_event(module, "unknown", start, None, details)
 
     except urllib2.URLError, e:
         details = '''%s %s
@@ -167,90 +183,7 @@ Events: %s''' % ("urllib2.URLError", module.name, e,
         debug(logger, "url_error")
         logging.critical("Events: %s" % events)
         if not events:
-            event = ModuleEvent()
-            event.down_at = start
-            event.status = "off-line"
-            event.module = module
-            event.details = details
-            event.site_config = module.site_config
-            event.save()
-
-    except urlfetch.InvalidURLError, e:
-        details = '''%s %s
-%s
----
-%s
----
-Events: %s''' % ("urlfetch.InavlidURLError", module.name, e,
-                 traceback.extract_stack(), events)
-
-        debug(logger, "invalid_url_error")
-        if not events:
-            event = ModuleEvent()
-            event.down_at = start
-            event.status = "unknown"
-            event.module = module
-            event.details = details
-            event.site_config = module.site_config
-            event.save()
-
-    except urlfetch.DownloadError, e:
-        details = '''%s %s
-%s
----
-%s
----
-Events: %s''' % ("urlfetch.DownloadError", module.name, e,
-                 traceback.extract_stack(), events)
-
-        debug(logger, "download_error")
-        if not events:
-            event = ModuleEvent()
-            event.down_at = start
-            event.status = "unknown"
-            event.module = module
-            event.details = details
-            event.site_config = module.site_config
-            event.save()
-
-    except urlfetch.ResponseTooLargeError, e:
-        details = '''%s %s
-%s
----
-%s
----
-Events: %s''' % ("urlfetch.ResponseTooLargeError", module.name, e,
-                 traceback.extract_stack(), events)
-
-        debug(logger, "response_too_large_error")
-        if not events:
-            event = ModuleEvent()
-            event.down_at = start
-            event.status = "unknown"
-            event.module = module
-            event.details = str(e)
-            event.site_config = module.site_config
-            event.save()
-
-    except urlfetch.Error, e:
-        details = '''%s %s
-%s
----
-%s
----
-Events: %s''' % ("urlfetch.Error", module.name, e,
-                 traceback.extract_stack(), events)
-
-        debug(logger, "http_check_error")
-
-        if not events:
-            event = ModuleEvent()
-            event.down_at = start
-            event.status = "unknown"
-            event.module = module
-            event.details = details
-            event.site_config = module.site_config
-            event.save()
+            _create_new_event(module, "off-line", start, None, details)
 
     except Exception, e:
         details = '''%s %s
@@ -262,13 +195,7 @@ Events: %s''' % ("Exception", module.name, e,
                  traceback.extract_stack(), events)
         debug(logger, "monitor_error")
         if not events:
-            event = ModuleEvent()
-            event.down_at = start
-            event.status = "unknown"
-            event.module = module
-            event.details = details
-            event.site_config = module.site_config
-            event.save()
+            _create_new_event(module, "unknown", start, None, details)
 
     memcache.delete(CHECK_HOST_KEY % module.id)
     return HttpResponse("OK")
