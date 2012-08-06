@@ -3,7 +3,7 @@
 {% load i18n %}
 {% load status_tags %}
 
-{% block title %}{% blocktrans %}{{ SITE_NAME }} Status{% endblocktrans %}{% endblock %}
+{% block title %}{% blocktrans with site_config.site_name as site-name%}{{ site-name }} Status{% endblocktrans %}{% endblock %}
 
 {% block extra_head %}{% endblock %}
 
