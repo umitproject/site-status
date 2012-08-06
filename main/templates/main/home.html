@@ -20,6 +20,7 @@
                 <tr>
                     <th>Module</th>
                     {% last_days_header "7" %}
+                    <th>Subscribe</th>
                 </tr>
             </thead>
             <tbody>
@@ -34,11 +35,36 @@
 				</td>
 				{% endfor %}
 				<td><img src='{% media_url module.status_img %}' alt='{% verbose_status module.status %}'/></td>
+                <td><a href='/subscribe/module/{{ module.pk }}' title='{% blocktrans with module.name as module_name %} Subscribe to module {{ module_name }} {% endblocktrans %}'><i class="icon-envelope"></i></a></td>
 			</tr>
 			{% endfor %}
             </tbody>
 		</table>
-		<div class="more"><a href="" ></a></div>
+        <h3>{% trans "Events list" %}</h3>
+        <table class="table table-condensed">
+            <thead>
+                <tr>
+                    <th>{% blocktrans %}Module{% endblocktrans %}</th>
+                    <th>Status</th>
+                    <th>Down from</th>
+                    <th>Back at</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for event in events %}
+                <tr>
+                    <td><a href='{{ event.module.url }}'>{{ event.module.name }}</a></td>
+                    <td><img src='{% media_url event.status_img %}' alt='{% verbose_status event.status %}' title='{% verbose_status event.status %}'/></td>
+                    <td>{{ event.down_at }}</td>
+                    {% if not event.back_at %}
+                        <td><a href='/subscribe/event/{{ event.pk }}' title='{% blocktrans %}Subscribe to this event.{% endblocktrans %}'><i class="icon-envelope"></i></a></td>
+                    {% else %}
+                        <td>{{ event.back_at }}</td>
+                    {% endif %}
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
 	</div>
 </div>
 {% if scheduled_maintenances or twitter_account %}
@@ -50,7 +76,7 @@
 {% if twitter_account %}
 <div class="box">
 	<div class="text_box">
-		<p class="title">{% blocktrans %}{{ SITE_NAME }} on Twitter{% endblocktrans %}</p>
+		<p class="title">{% blocktrans with SITE_NAME as site-name%}{{ site-name }} on Twitter{% endblocktrans %}</p>
 		<script src="http://widgets.twimg.com/j/2/widget.js"></script>
 		<script>
 		new TWTR.Widget({
