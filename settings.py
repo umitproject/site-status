@@ -103,6 +103,8 @@ CELERY_IMPORTS = (
     'status_cron.views'
 )
 
+CELERYD_TASK_SOFT_TIME_LIMIT = 50 #seconds; prevents workers from overlapping
+
 
 MIDDLEWARE_CLASSES = (
     # This loads the index definitions, so it has to come first
