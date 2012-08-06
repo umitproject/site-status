@@ -54,7 +54,7 @@ def home(request, msg=None):
     scheduled_maintenances = ScheduledMaintenance.objects.\
                                 filter(site_config=request.site_config,
                                        scheduled_to__lte=request.site_config.schedule_warning_up_to)
-    events = ModuleEvent.objects.filter(site_config=site_config)
+    events = ModuleEvent.objects.filter(site_config=site_config, back_at__lte=(datetime.datetime.now()-datetime.timedelta(days=7)) )
 
     incidents_data = json.dumps(request.aggregation.incidents_data)
     uptime_data = json.dumps(request.aggregation.uptime_data)
