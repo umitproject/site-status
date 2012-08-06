@@ -31,6 +31,8 @@ from django.core.mail import send_mail, EmailMessage
 from django.http import HttpResponse, Http404
 from django.conf import settings
 
+from nmap import PortScanner
+
 # Appengine TASKS
 from main.models import *
 from main.memcache import memcache
@@ -45,7 +47,7 @@ from djcelery import celery
 from celery.exceptions import SoftTimeLimitExceeded
 
 from logging.handlers import TimedRotatingFileHandler
-from settings import LOGGING,MONITOR_LOG_PATH
+from settings import NMAP_ARGS
 import os
 from dbextra.utils import ModuleListFieldHandler
 MONITOR_LOG_SEPARATOR = ' '
@@ -107,9 +109,9 @@ def _create_new_event(module, status, down_at, back_at=None, details=""):
     event.save()
 
 
-@celery.task(ignore_result=True, soft_timeout=50)
+@celery.task(ignore_result=True, soft_timeout=1)
 @staff_member_required
-def check_passive_hosts_task(request, module_key):
+def check_passive_url_task(request, module_key):
     logger = get_monitor_log(module_key)
     debug(logger, ("begin",))
 
@@ -198,6 +200,53 @@ Events: %s''' % ("Exception", module.name, e,
             _create_new_event(module, "unknown", start, None, details)
 
     memcache.delete(CHECK_HOST_KEY % module.id)
+    return HttpResponse("OK")
+
+
+@celery.task(ignore_result=True, soft_timeout=50)
+@staff_member_required
+def check_passive_port_task(request, module_key):
+    logger = get_monitor_log(module_key)
+    debug(logger, ("begin",))
+
+    module = PortCheckerModule.objects.get(id=module_key)
+    events = ModuleEvent.objects.filter(module=module).filter(back_at=None)
+
+    portscanner = PortScanner()
+    result = None
+    try:
+        portscanner.scan(arguments = NMAP_ARGS, ports=str(module.check_port), hosts=module.host.encode('ascii','ignore'))
+
+        now = datetime.datetime.now()
+
+        host = portscanner.all_hosts()[0]
+        if 'open' == portscanner[host]['tcp'][module.check_port]['state']:
+            debug(logger, "Port open")
+            for event in events:
+                event.back_at = now
+                event.save()
+                debug(logger,"Site is back online %s" % module.name)
+        else:
+            if not events:
+                _create_new_event(module, "unknown", start, None, "Port is closed")
+
+    except KeyError, e:
+        pass
+
+    except Exception, e:
+        details = '''%s %s
+%s
+---
+%s
+---
+Events: %s''' % ("Exception", module.name, e,
+                 traceback.extract_stack(), events)
+        debug(logger, "monitor_error" + details)
+        if not events:
+            _create_new_event(module, "unknown", start, None, details)
+
+
+    debug(logger, "end")
     return HttpResponse("OK")
 
 def _get_status_code(module):

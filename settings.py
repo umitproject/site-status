@@ -294,3 +294,4 @@ LOGGING = {
     }
 }
 
+NMAP_ARGS = "-Pn -T3 --max-retries=3"

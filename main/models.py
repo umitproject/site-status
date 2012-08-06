@@ -65,6 +65,17 @@ NOTIFICATION_TYPES = (
                       ('scheduling', _('Scheduling')),
                       )
 
+PORT_CHECK_OPTIONS = (
+    ('80', _('HTTP: 80')),
+    ('443', _('HTTPS: 443')),
+    ('22', _('SSH/SFTP: 22')),
+    ('21', _('FTP: 20')),
+    ('25', _('SMTP: 25')),
+    ('3306', _('MYSQL: 3306')),
+    ('110', _('POP3: 110')),
+    ('143', _('IMAP: 143'))
+)
+
 ################
 # MEMCACHE KEYS
 MODULE_TODAY_STATUS_KEY = 'module_today_status_%s'
@@ -715,7 +726,6 @@ def module_event_post_save(sender, instance, created, **kwargs):
 
 post_save.connect(module_event_post_save, sender=ModuleEvent)
 
-
 class Module(models.Model):
     monitoring_since = models.DateTimeField(null=True, blank=True, default=None)
     updated_at = models.DateTimeField(null=True, blank=True, default=None)
@@ -731,16 +741,16 @@ class Module(models.Model):
     tags = models.TextField(default=' ', blank=True, null=True)
     site_config = models.ForeignKey('main.SiteConfig', null=True)
     logs = ListField()
-    
+
     @property
     def list_tags(self):
         return [tag.strip() for tag in self.tags.split(',')]
-    
+
     @staticmethod
     def show_days(site_config, days=None):
         modules = Module.objects.filter(site_config=site_config)
         show_days = site_config.show_days
-        
+
         if days is not None:
             show_days = days
 
@@ -749,39 +759,39 @@ class Module(models.Model):
             if mod_len < show_days:
                 show_days = mod_len
         return show_days
-    
+
     @property
     def status_img(self):
         return 'img/%s.gif' % self.status
-    
+
     @property
     def total_uptime(self):
         return (timedelta_seconds(datetime.datetime.now() - \
                  self.monitoring_since) / 60) - self.total_downtime
-    
+
     @property
     def percentage_uptime(self):
         return (self.total_uptime()/100) * self.total_downtime
-    
+
     @property
     def percentage_downtime(self):
         return 100.0 - self.percentage_uptime
-    
+
     @property
     def last_7_days(self):
         day = datetime.datetime.now()
         return [self.get_day_status(day - datetime.timedelta(days=d)) for d in xrange(6, -1, -1)]
-    
+
     @property
     def today_status(self):
         return self.get_day_status(datetime.datetime.now())
-    
+
     def get_day_status(self, day):
         day_status = memcache.get(MODULE_DAY_STATUS_KEY % (day.month, day.day, self.id), False)
-        
+
         if day_status:
             return day_status
-        
+
         day_status = DailyModuleStatus.objects.\
                         filter(module=self).\
                         filter(created_at__gte=datetime.datetime(\
@@ -793,7 +803,7 @@ class Module(models.Model):
         if day_status:
             memcache.set(MODULE_DAY_STATUS_KEY % (day.month, day.day, self.id), day_status[0])
             return day_status[0]
-        
+
         day_status = DailyModuleStatus()
         day_status.created_at = day
         day_status.updated_at = day
@@ -802,10 +812,10 @@ class Module(models.Model):
         day_status.status = self.status
         day_status.site_config = self.site_config
         day_status.save()
-        
+
         memcache.set(MODULE_DAY_STATUS_KEY % (day.month, day.day, self.id), day_status)
         return day_status
-    
+
     def authenticate(self, api, secret):
         if self.site_config.api_key == api and \
             self.site_config.api_secret == secret:
@@ -814,6 +824,18 @@ class Module(models.Model):
 
     def __unicode__(self):
         return "%s - %s - %s" % (self.name, self.module_type, self.host)
+
+
+class UrlCheckerModule(Module):
+    expected_status = models.IntegerField(default=200)
+    search_keyword = models.CharField(max_length=30, null=True, blank=True, default=None)
+
+
+class ActiveModule(Module):
+    pass
+
+class PortCheckerModule(Module):
+    check_port = models.IntegerField(null=True, blank=True, default=None, choices=PORT_CHECK_OPTIONS)
 
 class ScheduledMaintenance(models.Model):
     created_at = models.DateTimeField(null=True, blank=True, default=None)
