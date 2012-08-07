@@ -56,7 +56,8 @@ STATUS = (
           )
 
 MODULE_TYPES = (
-                ('passive', _('Passive')),
+                ('url_check', _('URL Check')),
+                ('port_check', _('Port Check')),
                 ('active', _('Active')),
                 )
 
@@ -68,14 +69,14 @@ NOTIFICATION_TYPES = (
                       )
 
 PORT_CHECK_OPTIONS = (
-    ('80', _('HTTP: 80')),
-    ('443', _('HTTPS: 443')),
-    ('22', _('SSH/SFTP: 22')),
-    ('21', _('FTP: 20')),
-    ('25', _('SMTP: 25')),
-    ('3306', _('MYSQL: 3306')),
-    ('110', _('POP3: 110')),
-    ('143', _('IMAP: 143'))
+    (80, _('HTTP: 80')),
+    (443, _('HTTPS: 443')),
+    (22, _('SSH/SFTP: 22')),
+    (21, _('FTP: 20')),
+    (25, _('SMTP: 25')),
+    (3306, _('MYSQL: 3306')),
+    (110, _('POP3: 110')),
+    (143, _('IMAP: 143'))
 )
 
 ################
@@ -737,7 +738,7 @@ class Module(models.Model):
     name = models.CharField(max_length=50, default='')
     description = models.TextField(default=' ', null=True, blank=True)
     total_downtime = models.FloatField(default=0.0)
-    module_type = models.CharField(max_length=15, choices=MODULE_TYPES, default=MODULE_TYPES[0]) # two initial types: passive and active. In passive, status site pings the url to see if it returns 200. In the active mode, the server sends message to status site to inform its status
+    module_type = models.CharField(max_length=15, choices=MODULE_TYPES, default=MODULE_TYPES[0]) # two initial types: passive and active. In passive, status site pings the url/port to see if it returns 200. In the active mode, the server sends message to status site to inform its status
     host = models.CharField(max_length=500)
     url = models.CharField(max_length=1000,
                             validators=[validators.URLValidator()],
@@ -746,6 +747,21 @@ class Module(models.Model):
     tags = models.TextField(default=' ', blank=True, null=True)
     site_config = models.ForeignKey('main.SiteConfig', null=True)
     logs = ListField()
+
+    #url checker
+    expected_status = models.IntegerField(default=200, null=True, blank=True)
+    search_keyword = models.CharField(max_length=30, null=True, blank=True, default=None)
+
+    #port checker
+    check_port = models.IntegerField(null=True, blank=True, default=None, choices=PORT_CHECK_OPTIONS)
+
+    @property
+    def is_url_checker(self):
+        return self.module_type == 'url_check'
+
+    @property
+    def is_port_checker(self):
+        return self.module_type == 'port_check'
 
     @property
     def list_tags(self):
@@ -830,17 +846,6 @@ class Module(models.Model):
     def __unicode__(self):
         return "%s - %s - %s" % (self.name, self.module_type, self.host)
 
-
-class UrlCheckerModule(Module):
-    expected_status = models.IntegerField(default=200)
-    search_keyword = models.CharField(max_length=30, null=True, blank=True, default=None)
-
-
-class ActiveModule(Module):
-    pass
-
-class PortCheckerModule(Module):
-    check_port = models.IntegerField(null=True, blank=True, default=None, choices=PORT_CHECK_OPTIONS)
 
 class ScheduledMaintenance(models.Model):
     created_at = models.DateTimeField(null=True, blank=True, default=None)
