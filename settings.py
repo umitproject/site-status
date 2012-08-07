@@ -180,6 +180,7 @@ COURRIER_STATUS_CAMPAIGN_KEY = ""
 DEFAULT_NOTIFICATION_SENDER = "notification@umitproject.org"
 DEFAULT_NOTIFICATION_TO = "notification@umitproject.org"
 DEFAULT_NOTIFICATION_REPLY_TO = "notification@umitproject.org"
+DEFAULT_NOTIFICATION_DEBOUNCE_TIMER = 300 #seconds
 
 #################
 # MEDIA SETTINGS

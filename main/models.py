@@ -41,6 +41,8 @@ from dbextra.fields import ListField
 
 ##########
 # CHOICES
+from settings import DEFAULT_NOTIFICATION_DEBOUNCE_TIMER
+
 STATUS = (
           ('on-line', _('On-line')),
           ('off-line', _('Off-line')),
@@ -310,17 +312,20 @@ class Notification(models.Model):
     
     def _notify_emails(self, notification_type, one_time, target_id):
         notify = None
+        now = datetime.datetime.now()
         if one_time:
             notify = NotifyOnEvent.objects.filter(one_time=one_time,
                                                   notification_type=notification_type,
                                                   target_id=target_id,
                                                   last_notified=None,
-                                                  site_config=self.site_config)
+                                                  site_config=self.site_config,
+                                                  last_notified__lte=now-datetime.timedelta(seconds=DEFAULT_NOTIFICATION_DEBOUNCE_TIMER))
         else:
             notify = NotifyOnEvent.objects.filter(one_time=one_time,
                                                   notification_type=notification_type,
                                                   target_id=target_id,
-                                                  site_config=self.site_config)
+                                                  site_config=self.site_config,
+                                                  last_notified__lte=now-datetime.timedelta(seconds=DEFAULT_NOTIFICATION_DEBOUNCE_TIMER))
             
         if notify:
             notify = notify[0]
