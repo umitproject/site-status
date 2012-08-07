@@ -156,6 +156,7 @@ def add_module(request):
         form = ModuleForm(request.user,request.POST,instance=instance) if instance else ModuleForm(request.user,request.POST)
         if form.is_valid():
             module = form.save(commit=False)
+            module.updated_at = datetime.now()
             #add
             if not instance:
                 module.monitoring_since = datetime.now()
