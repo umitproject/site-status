@@ -372,6 +372,27 @@
             $(".site-domain-update").live("click", function(e){
                 $('input[name="site_domain_action"]').val('update')
             });
+
+            $('select[name="module_type"]').live("change", function(e){
+                var that = $(this),
+                    parent_form = that.closest('form');
+                switch (that.val()) {
+                    case 'url_check':
+                        parent_form.find(".expected_status").closest('tr').removeClass('hidden');
+                        parent_form.find(".search_keyword").closest('tr').removeClass('hidden');
+                        parent_form.find(".check_port").closest('tr').addClass('hidden');
+                        break;
+                    case 'port_check':
+                        parent_form.find(".expected_status").closest('tr').addClass('hidden');
+                        parent_form.find(".search_keyword").closest('tr').addClass('hidden');
+                        parent_form.find(".check_port").closest('tr').removeClass('hidden');
+                    break;
+                    default:
+                        parent_form.find(".expected_status").closest('tr').addClass('hidden');
+                        parent_form.find(".search_keyword").closest('tr').addClass('hidden');
+                        parent_form.find(".check_port").closest('tr').addClass('hidden');
+                }
+            }).change();
         });
     </script>
 </body>

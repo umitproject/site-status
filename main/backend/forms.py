@@ -4,7 +4,7 @@ from django.contrib.admin import widgets
 from django.core import validators
 from django.contrib.auth.models import User
 from django.utils.translation import ugettext_lazy as _
-from main.models import SiteConfig, UserProfile, Module, StatusSiteDomain
+from main.models import SiteConfig, UserProfile, Module, StatusSiteDomain, PORT_CHECK_OPTIONS
 
 
 class ProfileForm(forms.ModelForm):
@@ -56,16 +56,29 @@ class SiteConfigForm(forms.ModelForm):
 
 class ModuleForm(forms.ModelForm):
     def __init__(self, user, *args, **kw):
+        existing = False
+        if kw.has_key('instance'):
+            existing = True
         super(forms.ModelForm, self).__init__(*args, **kw)
-        self.fields['site_config'].choices = [ (o.pk, str(o) ) for o in SiteConfig.objects.filter(user=user)]
-        self.fields.keyOrder = ['name','description','module_type', 'host', 'url', 'site_config', 'tags', 'status', 'monitoring_since', 'updated_at',
-                                'total_downtime', 'id']
+        self.fields.keyOrder = ['module_type','name','description', 'host', 'url', 'site_config', 'tags', 'expected_status', 'search_keyword', 'check_port']
 
-    monitoring_since = forms.DateField(widget=forms.DateInput(attrs=dict({'class':'disabled', 'readonly':'readonly', 'disabled':'disabled'})), required=False)
-    updated_at = forms.DateField(widget=forms.DateInput(attrs=dict({'class':'disabled', 'readonly':'readonly', 'disabled':'disabled' })), required=False)
-    id = forms.CharField(widget=forms.TextInput(attrs=dict({'class':'disabled', 'readonly':'readonly', 'disabled':'disabled' })), required=False)
+        self.fields['site_config'].choices = [ (o.pk, str(o) ) for o in SiteConfig.objects.filter(user=user)]
+        """
+        if not existing:
+            self.fields.keyOrder += ['expected_status', 'search_keyword', 'check_port']
+        elif self.instance.is_url_checker:
+            self.fields.keyOrder += ['expected_status', 'search_keyword']
+        elif self.instance.is_port_checker:
+            self.fields.keyOrder += ['check_port']
+        """
+
+    check_port = forms.ChoiceField(choices=PORT_CHECK_OPTIONS, required=False, widget=forms.Select(attrs=dict({'class':'check_port'})))
+    expected_status = forms.IntegerField(initial=200, required=False, widget=forms.TextInput(attrs=dict({'class':'expected_status'})))
+    search_keyword = forms.CharField(required=False, widget=forms.TextInput(attrs=dict({'class':'search_keyword'})))
+
     status = forms.CharField(widget=forms.TextInput(attrs=dict({'class':'disabled', 'readonly':'readonly', 'disabled':'disabled' })), required=False)
-    total_downtime = forms.CharField(widget=forms.TextInput(attrs=dict({'class':'disabled', 'readonly':'readonly', 'disabled':'disabled' })), required=False)
+
+
     class Meta:
         model = Module
 
