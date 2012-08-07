@@ -792,7 +792,7 @@ class Module(models.Model):
 
     @property
     def percentage_uptime(self):
-        return (self.total_uptime()/100) * self.total_downtime
+        return (self.total_uptime/(self.total_downtime + self.total_uptime))*100
 
     @property
     def percentage_downtime(self):
