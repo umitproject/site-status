@@ -5,7 +5,7 @@
     <div class="module-log" style="float:right; ">
         <a href="/log/monitor{{ module_form.instance.pk }}.log">View logfile</a>
     </div>
-    <form method='post' action='/backend/add_module'>{% csrf_token %}
+    <form method='post' action='/backend/add_module' class="span4">{% csrf_token %}
         <table>
             {{  module_form.as_table }}
         </table>
@@ -14,4 +14,27 @@
         <button class="btn btn-primary module-update" type="submit" name="Submit" value="edit_module" data-complete-text="Saved!">Save</button>
         <button class="btn btn-danger module-delete" type="submit" name="Submit" value="delete_module" data-complete-text="Deleted!">Delete</button>
     </form>
+    <div class="module_info span4 well">
+        <table class="table table-condensed">
+            <thead>
+                <tr>
+                    <th colspan="2">Details</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Status:</td><td>{{ module_form.instance.status }}</td>
+                </tr>
+                <tr>
+                    <td>Total uptime:</td><td>{{ module_form.instance.percentage_uptime|floatformat:2 }}%</td>
+                </tr>
+                <tr>
+                    <td>Monitoring since:</td><td>{{ module_form.instance.monitoring_since }}</td>
+                </tr>
+                <tr>
+                    <td>Updated at:</td><td>{{ module_form.instance.updated_at }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
 </div>
