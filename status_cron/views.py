@@ -133,7 +133,7 @@ def check_passive_url_task(request, module_key):
         #            logging.warning('Spent %s seconds checking %s' % (total_time.seconds, module.name))
             debug(logger,'Spent %s seconds checking %s' % (total_time.seconds, module.name))
 
-        if status_code == 200:
+        if (module.expected_status and status_code == module.expected_status) or status_code == 200:
             # This case is for when a module's status is set by hand and no event is created.
             if module.status != 'on-line' and not events:
                 _create_new_event(module,"unknown", start, start)
