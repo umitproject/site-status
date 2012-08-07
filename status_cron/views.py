@@ -46,13 +46,12 @@ CHECK_NOTIFICATION_KEY = 'check_notification_%s'
 from djcelery import celery
 from celery.exceptions import SoftTimeLimitExceeded
 
-from logging.handlers import TimedRotatingFileHandler
 from settings import NMAP_ARGS
 import os
 from dbextra.utils import ModuleListFieldHandler
 MONITOR_LOG_SEPARATOR = ' '
 
-
+# TODO: keep log in memory and only perform a save once
 def get_monitor_log(module_id):
     logger = logging.getLogger("rotating_logger")
     log_handler = ModuleListFieldHandler(module_id)
@@ -66,7 +65,6 @@ def debug(logger, msg=""):
     else:
         debug_tokens += (msg, )
     logger.debug(MONITOR_LOG_SEPARATOR.join(debug_tokens))
-
 
 
 @celery.task(ignore_result=True)
@@ -198,8 +196,8 @@ Events: %s''' % ("Exception", module.name, e,
         debug(logger, "monitor_error")
         if not events:
             _create_new_event(module, "unknown", start, None, details)
-
-    memcache.delete(CHECK_HOST_KEY % module.id)
+    finally:
+        memcache.delete(CHECK_HOST_KEY % module.id)
     return HttpResponse("OK")
 
 
@@ -209,12 +207,14 @@ def check_passive_port_task(request, module_key):
     logger = get_monitor_log(module_key)
     debug(logger, ("begin",))
 
-    module = PortCheckerModule.objects.get(id=module_key)
+    module = Module.objects.get(id=module_key)
     events = ModuleEvent.objects.filter(module=module).filter(back_at=None)
 
     portscanner = PortScanner()
     result = None
     try:
+        if not module.check_port:
+            raise Exception("Improperly configured")
         portscanner.scan(arguments = NMAP_ARGS, ports=str(module.check_port), hosts=module.host.encode('ascii','ignore'))
 
         now = datetime.datetime.now()
@@ -228,7 +228,7 @@ def check_passive_port_task(request, module_key):
                 debug(logger,"Site is back online %s" % module.name)
         else:
             if not events:
-                _create_new_event(module, "unknown", start, None, "Port is closed")
+                _create_new_event(module, "off-line", now, None, "Port is closed")
 
     except KeyError, e:
         pass
@@ -242,10 +242,13 @@ def check_passive_port_task(request, module_key):
 Events: %s''' % ("Exception", module.name, e,
                  traceback.extract_stack(), events)
         debug(logger, "monitor_error" + details)
+        start = datetime.datetime.now()
         if not events:
             _create_new_event(module, "unknown", start, None, details)
 
 
+    finally:
+        memcache.delete(CHECK_HOST_KEY % module.id)
     debug(logger, "end")
     return HttpResponse("OK")
 
