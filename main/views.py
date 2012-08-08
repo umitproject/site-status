@@ -74,8 +74,9 @@ def event(request, event_id):
     
     context = locals()
     return render(request, 'main/event.html', context)
-    
 
+#############################
+# SUBSCRIPTION RELATED VIEWS
 def subscribe(request, event_id=None, module_id=None):
     """Possible behaviors:
     
@@ -154,6 +155,87 @@ def subscribe(request, event_id=None, module_id=None):
     
     context = locals()
     return render(request, 'main/subscribe.html', context)
+
+def manage_subscriptions(request,uuid=None):
+    if uuid is not None:
+        subscriber = get_object_or_404(Subscriber, unique_identifier=uuid)
+        subscriber_settings = SubscriberSettings(instance=subscriber)
+        subscriptions = subscriber.list_subscriptions
+        unsubscribe_formset = UnsubscribeFormFactory(initial=[dict({'uuid':subscriber.unique_identifier, 'subscription_id':s.id}) for s in subscriptions])
+        unsubscribe_all_form = UnsubscribeAllForm(initial=dict({'uuid':subscriber.unique_identifier}))
+
+
+        i=0 #this just feels wrong
+        for form in unsubscribe_formset:
+            form.instance = subscriptions[i]
+            i += 1
+        i=None
+    else:
+        if request.method == 'GET':
+            get_link_form = SubscribeForm()
+        elif request.method == 'POST':
+            get_link_form = SubscribeForm(request.POST)
+            if get_link_form.is_valid():
+                email = get_link_form.cleaned_data.get("email")
+                subscriber = Subscriber.objects.get(email=email,site_config=request.site_config)
+                if subscriber:
+                    url = "://%s%s"%(request.get_host(),subscriber.management_url)
+                    url = "https" + url if request.is_secure() else "http" + url
+                    email = EmailMessage(subject="Your subscription management link",
+                                         body="Please use this link to manage your subscription for %s:\n%s"%(subscriber.site_config.site_name,url),
+                                         to=(subscriber.email,))
+                    email.send()
+                    sent=True
+                    subscriber=None
+
+    context=locals()
+    return render(request, 'main/manage_subscription.html', context)
+
+def unsubscribe(request):
+    if request.method == 'POST':
+        subscriber = None
+        submitted_data = request.POST.copy()
+        unsubscribe_all = submitted_data.get("unsubscribe_all")
+        if unsubscribe_all:
+            form = UnsubscribeAllForm(request.POST)
+        else:
+            form = UnsubscribeFormFactory(submitted_data)
+        if form.is_valid():
+            if unsubscribe_all:
+                uuid = submitted_data.get("uuid")
+                subscriber = Subscriber.objects.get(unique_identifier = uuid)
+                subscriptions = subscriber.list_subscriptions
+                for subscription in subscriptions:
+                    subscriber.unsubscribe(subscription.notification_type, subscription.one_time, subscription.target_id)
+                subscriber.delete()
+                return redirect("/")
+            else:
+                for data in form.cleaned_data:
+                    uuid = data.get("uuid")
+                    subscription_id = data.get("subscription_id")
+
+                    subscriber = Subscriber.objects.get(unique_identifier = uuid)
+                    subscription = NotifyOnEvent.objects.get(id=subscription_id)
+                    subscriber.unsubscribe(subscription.notification_type, subscription.one_time, subscription.target_id)
+                    if not len(subscriber.list_subscriptions_ids):
+                        subscriber.delete()
+                        return redirect("/")
+                    else:
+                        return redirect(subscriber.management_url)
+
+    return redirect("manage_subscription")
+
+def subscriber_setting(request):
+    if request.method == 'POST':
+        uuid = request.POST.get("unique_identifier")
+        instance = Subscriber.objects.get(unique_identifier=uuid)
+        form = SubscriberSettings(request.POST,instance=instance)
+        if form.is_valid():
+            form.save()
+            return redirect(form.instance.management_url)
+
+    return redirect("/")
+
 
 ###############################################################################
 # ADMIN VIEWS                                                                 #

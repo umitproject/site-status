@@ -42,6 +42,7 @@ from dbextra.fields import ListField
 ##########
 # CHOICES
 from settings import DEFAULT_NOTIFICATION_DEBOUNCE_TIMER
+from django.core.urlresolvers import reverse
 
 STATUS = (
           ('on-line', _('On-line')),
@@ -182,18 +183,29 @@ class Subscriber(models.Model):
     originating_ips = models.TextField()
     unsubscribed_at = models.DateTimeField(null=True, blank=True, default=None)
     site_config = models.ForeignKey('main.SiteConfig', null=True)
+    debounce_timer = models.IntegerField(null=True, blank=True, default=None)
     
     @property
     def list_subscriptions_ids(self):
+        if not self.subscriptions:
+            return []
         return [int(s) for s in self.subscriptions.split(',') if s != '']
     
     @property
     def list_subscriptions(self):
+        if not self.subscriptions:
+            return []
         return [NotifyOnEvent.objects.get(pk=int(s)) for s in self.subscriptions.split(',')]
     
     @property
     def list_ips(self):
+        if not self.originating_ips:
+            return []
         return self.originating_ips.split(',')
+
+    @property
+    def management_url(self):
+        return reverse('manage_subscription', args=[self.unique_identifier,])
     
     def add_ip(self, ip):
         list_ips = self.list_ips
@@ -205,7 +217,7 @@ class Subscriber(models.Model):
     
     def add_subscription(self, notification_id):
         subs_ids = self.list_subscriptions_ids
-        if notification_id in subs_ids:
+        if notification_id not in subs_ids:
             subs_ids.append(notification_id)
             self.subscriptions = ','.join([str(id) for id in subs_ids])
             return True
@@ -250,10 +262,10 @@ class Subscriber(models.Model):
             notification = notification[0] 
         
         notification.add_email(self.email)
-        self.add_subscription(notification.id)
-        
-        self.save()
         notification.save()
+
+        self.add_subscription(notification.id)
+        self.save()
         
         return notification
     
@@ -283,6 +295,8 @@ class Notification(models.Model):
     
     @property
     def list_emails(self):
+        if not self.emails:
+            return []
         return [e for e in self.emails.split(',') if e]
     
     def build_email_data(self):
@@ -319,14 +333,12 @@ class Notification(models.Model):
                                                   notification_type=notification_type,
                                                   target_id=target_id,
                                                   last_notified=None,
-                                                  site_config=self.site_config,
-                                                  last_notified__lte=now-datetime.timedelta(seconds=DEFAULT_NOTIFICATION_DEBOUNCE_TIMER))
+                                                  site_config=self.site_config)
         else:
             notify = NotifyOnEvent.objects.filter(one_time=one_time,
                                                   notification_type=notification_type,
                                                   target_id=target_id,
-                                                  site_config=self.site_config,
-                                                  last_notified__lte=now-datetime.timedelta(seconds=DEFAULT_NOTIFICATION_DEBOUNCE_TIMER))
+                                                  site_config=self.site_config)
             
         if notify:
             notify = notify[0]
@@ -358,15 +370,22 @@ class Notification(models.Model):
             notifications.append(self._notify_emails(self.notification_type, True, self.target_id))
             notifications.append(self._notify_emails(self.notification_type, False, self.target_id))
 
-        notification_emails = [n.list_emails for n in notifications if n != []]
-        
+
         emails = []
-        for email in itertools.chain(*notification_emails):
-            if email not in emails:
-                emails.append(email)
-        
+        for n in notifications:
+            if not n:
+                continue
+            list_emails = n.list_emails
+            for email in list_emails:
+                if email not in emails:
+                    s = Subscriber.objects.get(email=email)
+                    # is not a subscriber (added through other ways) or is a subscriber that wasn't notified in a while
+                    if not s or (s and (not n.last_notified or n.last_notified < datetime.datetime.now() - datetime.timedelta(seconds=s.debounce_timer or DEFAULT_NOTIFICATION_DEBOUNCE_TIMER))):
+                        emails.append(email)
+
+
         self.emails = ','.join(emails)
-        
+
         now = datetime.datetime.now()
         for notification in notifications:
             if notification != []:
@@ -390,6 +409,8 @@ class NotifyOnEvent(models.Model):
     
     @property
     def list_emails(self):
+        if not self.emails:
+            return []
         return self.emails.split(',')
     
     def add_email(self, email):
@@ -407,10 +428,24 @@ class NotifyOnEvent(models.Model):
             self.emails = ','.join(list_emails)
             return True
         return False
-    
+
+    @property
+    def target_name(self):
+        if self.notification_type == "system":
+            return "ALL"
+        if self.notification_type == "module":
+            module = Module.objects.get(id=self.target_id)
+            if module:
+                return module.name
+        if self.notification_type == "event":
+            module_event = ModuleEvent.objects.get(id=self.target_id)
+            if module_event:
+                return module_event.module.name
+        return ""
+
     @staticmethod
     def can_unsubscribe(email, notification_type, one_time, target_id=None):
-        instance = NotifyOnEvent.objects.filter(notification_type=notification_type,
+        instance = NotifyOnEvent.objects.get(notification_type=notification_type,
                                                 one_time=one_time,
                                                 target_id=target_id,
                                                 site_config=self.site_config)
@@ -419,20 +454,21 @@ class NotifyOnEvent(models.Model):
         return False
     
     @staticmethod
-    def unsubscribe(email, notification_type, one_time, target_id=None):
-        instance = NotifyOnEvent.objects.filter(notification_type=notification_type,
+    def unsubscribe(email, notification_type, one_time, target_id=None, site_config=None):
+        instance = NotifyOnEvent.objects.get(notification_type=notification_type,
                                                 one_time=one_time,
                                                 target_id=target_id,
-                                                site_config=self.site_config)
+                                                site_config=site_config)
+
+
         list_emails = instance.list_emails
         if instance and email in list_emails:
-            
             # Removing the NotifyOnEvent id from subscriber's instance
-            subscriber = Subscriber.objects.get(email=email, site_config=self.site_config)
-            
+            subscriber = Subscriber.objects.get(email=email, site_config=site_config)
+
             subs_ids = subscriber.list_subscriptions_ids
             subs_ids.remove(instance.id)
-            subscriber.subscriptions = ','.join(subs_ids)
+            subscriber.subscriptions = ','.join([str(id) for id in subs_ids])
             subscriber.save()
             
             # Removing subscriber's email from NotifyOnEvent instance
@@ -440,7 +476,7 @@ class NotifyOnEvent(models.Model):
                 instance.delete()
             else:
                 list_emails.remove(email)
-                instance.emails = ','.join(list_emails)
+                instance.emails = ','.join([str(e) for e in list_emails])
                 instance.save()
             
             return True
@@ -765,6 +801,8 @@ class Module(models.Model):
 
     @property
     def list_tags(self):
+        if not self.tags:
+            return []
         return [tag.strip() for tag in self.tags.split(',')]
 
     @staticmethod

@@ -21,7 +21,8 @@
 
 from django import forms
 from django.utils.translation import ugettext_noop as _
-
+from django.forms.formsets import formset_factory
+from main.models import Subscriber
 
 class SubscribeForm(forms.Form):
     email = forms.EmailField(required=True, label=_("E-mail"))
@@ -30,3 +31,21 @@ class SubscribeOneTimeForm(SubscribeForm):
     one_time = forms.BooleanField(initial=False, required=False,
                                   label=_("I want to be notified only once, when system is available once again."),
                                   help_text=_("Leave this unchecked if you want to receive a notification whenever an incident occurs."))
+
+class UnsubscribeForm(forms.Form):
+    uuid = forms.CharField(label="",widget=forms.HiddenInput())
+    subscription_id = forms.IntegerField(label="",widget=forms.HiddenInput())
+
+UnsubscribeFormFactory = formset_factory(UnsubscribeForm,extra=0)
+
+class UnsubscribeAllForm(forms.Form):
+    uuid = forms.CharField(label="",widget=forms.HiddenInput())
+
+class SubscriberSettings(forms.ModelForm):
+    unique_identifier = forms.CharField(label="",widget=forms.HiddenInput())
+
+    def __init__(self, *args, **kw):
+        super(forms.ModelForm, self).__init__(*args, **kw)
+        self.fields.keyOrder = ['debounce_timer','unique_identifier']
+    class Meta:
+        model=Subscriber

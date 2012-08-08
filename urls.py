@@ -26,11 +26,13 @@ from main.feeds import LastModuleStatuses
 handler500 = 'djangotoolbox.errorviews.server_error'
 
 urlpatterns = patterns('',
-    url('^_ah/warmup$', 'djangoappengine.views.warmup'),
     url('^$', 'main.views.home', name='home'),
     url('^subscribe/event/(?P<event_id>\d+)/?$', 'main.views.subscribe', name='event_subscribe'),
     url('^subscribe/module/(?P<module_id>\d+)/?$', 'main.views.subscribe', name='module_subscribe'),
     url('^subscribe/?$', 'main.views.subscribe', name='system_subscribe'),
+    url('^subscribe/manage/(?P<uuid>[a-fA-F0-9\-]+)?$', 'main.views.manage_subscriptions', name='manage_subscription'),
+    url('^subscribe/settings/?$', 'main.views.subscriber_setting', name='subscriber_settings'),
+    url('^unsubscribe/?$', 'main.views.unsubscribe', name='unsubscribe'),
     url('^event/(?P<event_id>\d+)/?$', 'main.views.event', name='event'),
     
     ########

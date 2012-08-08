@@ -12,6 +12,7 @@
 <div class="description">
 	{% if saved %}
 		{% blocktrans %}You've successfuly subscribed to receive {% endblocktrans %}{% if one_time %}{% blocktrans %}a one time notification as soon as the system is back on line{% endblocktrans %}{% else %}{% blocktrans %}notifications whenever an incident happens with the system{% endblocktrans %}{% endif %}.
+        <a href="{% url manage_subscription %}">{% trans "Manage my subscription"%}</a>
 	{% else %}
 		{% if event %}
 			<form action="/subscribe/event/{{ event.id }}" method="POST">
@@ -26,5 +27,6 @@
 				{{ form.as_p }}
 				<input type="submit" value="{% trans "Submit" %}"/>
 		</form>
+        {% trans "I already have a subscription."%} <a href="{% url manage_subscription %}">{% trans "Manage my subscription"%}</a>.
 	{% endif %}
 </div>
