@@ -24,12 +24,6 @@ urlpatterns = patterns('',
     url(r'^hard_reset/', 'main.views.hard_reset', name='hard_reset'),
 
 
-    url('^subscribe/event/(?P<event_id>\d+)/?$', 'main.views.subscribe', name='event_subscribe'),
-    url('^subscribe/module/(?P<module_id>\d+)/?$', 'main.views.subscribe', name='module_subscribe'),
-    url('^subscribe/?$', 'main.views.subscribe', name='system_subscribe'),
-    url('^event/(?P<event_id>\d+)/?$', 'main.views.event', name='event'),
-
-
     #LOG OUTPUT
     url('^log/(?P<log_name>monitor(\d+)\.log(\.(\d+-\d+-\d+))?)/?$', 'main.views.log', name='module_log_viewer'),
 
