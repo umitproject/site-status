@@ -1,7 +1,7 @@
 <div class="tab-pane" id="site-config-{{ site_config_form.instance.pk }}" data-form-id="{{ site_config_form.instance.pk }}">
 
     <h2>{{ site_config_form.initial.site_name }}</h2>
-    <form method='post' action='/backend/add_site_config'>{% csrf_token %}
+    <form method='post' action='/backend/add_site_config' class="span4">{% csrf_token %}
         <table>
             {{  site_config_form.as_table }}
         </table>
@@ -10,4 +10,21 @@
         <button class="btn btn-primary site-config-update" type="submit" name="Submit" value="edit_site_config" data-complete-text="Saved!">Save</button>
         <button class="btn btn-danger site-config-delete" type="submit" name="Submit" value="delete_site_config" data-complete-text="Deleted!">Delete</button>
     </form>
+    <div class="module_info span7 well">
+    <table class="table table-condensed">
+        <thead>
+        <tr>
+            <th colspan="2">Details</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <td>Api Key:</td><td>{{ site_config_form.instance.api_key }}</td>
+        </tr>
+        <tr>
+            <td>Api Secret:</td><td>{{ site_config_form.instance.api_secret }}</td>
+        </tr>
+        </tbody>
+    </table>
+    </div>
 </div>

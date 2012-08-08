@@ -48,11 +48,9 @@ class ProfileForm(forms.ModelForm):
 
 
 class SiteConfigForm(forms.ModelForm):
-    api_key = forms.CharField(widget=forms.TextInput(attrs=dict({'class':'disabled', 'readonly':'readonly', 'disabled':'disabled' })), required=False)
-    api_secret = forms.CharField(widget=forms.TextInput(attrs=dict({'class':'disabled', 'readonly':'readonly', 'disabled':'disabled' })), required=False)
     class Meta:
         model = SiteConfig
-        exclude = ('user','twitter_account')
+        exclude = ('user','twitter_account','api_key','api_secret')
 
 class ModuleForm(forms.ModelForm):
     def __init__(self, user, *args, **kw):
@@ -63,14 +61,7 @@ class ModuleForm(forms.ModelForm):
         self.fields.keyOrder = ['module_type','name','description', 'host', 'url', 'site_config', 'tags', 'expected_status', 'search_keyword', 'check_port']
 
         self.fields['site_config'].choices = [ (o.pk, str(o) ) for o in SiteConfig.objects.filter(user=user)]
-        """
-        if not existing:
-            self.fields.keyOrder += ['expected_status', 'search_keyword', 'check_port']
-        elif self.instance.is_url_checker:
-            self.fields.keyOrder += ['expected_status', 'search_keyword']
-        elif self.instance.is_port_checker:
-            self.fields.keyOrder += ['check_port']
-        """
+
 
     check_port = forms.ChoiceField(choices=PORT_CHECK_OPTIONS, required=False, widget=forms.Select(attrs=dict({'class':'check_port'})))
     expected_status = forms.IntegerField(initial=200, required=False, widget=forms.TextInput(attrs=dict({'class':'expected_status'})))
