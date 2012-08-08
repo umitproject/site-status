@@ -62,7 +62,7 @@ def send_notifications():
             #this means that the check is already running
             logging.critical("Module id %s is already running"%notification.id)
             continue
-        memcache.set(passive_key,notification)
+        memcache.set(not_key,notification)
         send_notification_task.apply_async((request, notification.id))
 
 
