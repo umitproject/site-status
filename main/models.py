@@ -36,6 +36,7 @@ from django.utils.translation import ugettext_lazy as _
 
 from main.memcache import memcache
 from main.utils import pretty_date
+from settings import SUBSCRIBER_EDIT_EXPIRATION
 
 from dbextra.fields import ListField
 
@@ -184,7 +185,10 @@ class Subscriber(models.Model):
     unsubscribed_at = models.DateTimeField(null=True, blank=True, default=None)
     site_config = models.ForeignKey('main.SiteConfig', null=True)
     debounce_timer = models.IntegerField(null=True, blank=True, default=None)
-    
+    edit_token = models.CharField(max_length=36, blank=True, null=True, default='')
+    edit_token_expiration = models.DateTimeField(null=True, blank=True, default=None)
+
+
     @property
     def list_subscriptions_ids(self):
         if not self.subscriptions:
@@ -203,9 +207,26 @@ class Subscriber(models.Model):
             return []
         return self.originating_ips.split(',')
 
+
+    # always call this before editing the subscription
+    @property
+    def can_be_edited(self):
+        if self.edit_token and self.edit_token_expiration and datetime.datetime.now() < self.edit_token_expiration:
+            return True
+        if self.edit_token:
+            self.edit_token = None
+            self.save()
+        return False
+
+    def request_edit_token(self):
+        self.edit_token_expiration = datetime.datetime.now() + datetime.timedelta(seconds=SUBSCRIBER_EDIT_EXPIRATION)
+        self.edit_token = str(uuid.uuid4())
+        self.save()
+
+
     @property
     def management_url(self):
-        return reverse('manage_subscription', args=[self.unique_identifier,])
+        return reverse('manage_subscription', args=[self.edit_token,])
     
     def add_ip(self, ip):
         list_ips = self.list_ips
@@ -895,7 +916,24 @@ class ScheduledMaintenance(models.Model):
     message = models.TextField()
     module = models.ForeignKey('main.Module')
     site_config = models.ForeignKey('main.SiteConfig', null=True)
-    
+
+    @property
+    def estimated_end_time(self):
+        return self.scheduled_to + datetime.timedelta(seconds=self.time_estimate)
+
+    @property
+    def is_in_the_future(self):
+        return datetime.datetime.now() < self.scheduled_to
+
+    @property
+    def is_undergoing(self):
+        now = datetime.datetime.now()
+        return self.scheduled_to < now < self.estimated_end_time
+
+    @property
+    def is_done(self):
+        return datetime.datetime.now() > self.estimated_end_time
+
     @property
     def status_img(self):
         return status_img(self.status)

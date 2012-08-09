@@ -159,7 +159,9 @@ def subscribe(request, event_id=None, module_id=None):
 
 def manage_subscriptions(request,uuid=None):
     if uuid is not None:
-        subscriber = get_object_or_404(Subscriber, unique_identifier=uuid)
+        subscriber = get_object_or_404(Subscriber, edit_token=uuid)
+        if not subscriber.can_be_edited:
+            raise Http404()
         subscriber_settings = SubscriberSettings(instance=subscriber)
         subscriptions = subscriber.list_subscriptions
         unsubscribe_formset = UnsubscribeFormFactory(initial=[dict({'uuid':subscriber.unique_identifier, 'subscription_id':s.id}) for s in subscriptions])
@@ -180,6 +182,7 @@ def manage_subscriptions(request,uuid=None):
                 email = get_link_form.cleaned_data.get("email")
                 subscriber = Subscriber.objects.get(email=email,site_config=request.site_config)
                 if subscriber:
+                    subscriber.request_edit_token()
                     url = "://%s%s"%(request.get_host(),subscriber.management_url)
                     url = "https" + url if request.is_secure() else "http" + url
                     email = EmailMessage(subject="Your subscription management link",

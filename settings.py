@@ -295,3 +295,5 @@ LOGGING = {
 }
 
 NMAP_ARGS = "-Pn -T3 --max-retries=3"
+
+SUBSCRIBER_EDIT_EXPIRATION = 3600 #seconds
