@@ -4,7 +4,7 @@ from django.contrib.admin import widgets
 from django.core import validators
 from django.contrib.auth.models import User
 from django.utils.translation import ugettext_lazy as _
-from main.models import SiteConfig, UserProfile, Module, StatusSiteDomain, PORT_CHECK_OPTIONS
+from main.models import SiteConfig, UserProfile, Module, StatusSiteDomain, PORT_CHECK_OPTIONS, ScheduledMaintenance
 
 
 class ProfileForm(forms.ModelForm):
@@ -51,6 +51,28 @@ class SiteConfigForm(forms.ModelForm):
     class Meta:
         model = SiteConfig
         exclude = ('user','twitter_account','api_key','api_secret')
+
+class ScheduledMaintenanceForm(forms.ModelForm):
+    def __init__(self, user, *args, **kw):
+        super(forms.ModelForm, self).__init__(*args, **kw)
+        self.fields.keyOrder = ['scheduled_to','time_estimate','message', 'total_downtime', 'created_at', 'updated_at']
+    scheduled_to = forms.DateTimeField(required=True)
+    created_at = forms.DateTimeField(required=False)
+    updated_at = forms.DateTimeField(required=False)
+    total_downtime = forms.FloatField(widget=forms.TextInput(attrs=dict({'class':'disabled', 'readonly':'readonly', 'disabled':'disabled' })), required=False)
+
+    class Meta:
+        model = ScheduledMaintenance
+        exclude = ('module', 'site_config', 'status')
+
+class ScheduledMaintenanceTemplateForm(forms.ModelForm):
+    def __init__(self, user, *args, **kw):
+        super(forms.ModelForm, self).__init__(*args, **kw)
+        self.fields.keyOrder = ['scheduled_to','time_estimate','message']
+
+    class Meta:
+        model = ScheduledMaintenance
+        exclude = ('module', 'site_config', 'status', 'total_downtime', 'created_at', 'updated_at')
 
 class ModuleForm(forms.ModelForm):
     def __init__(self, user, *args, **kw):

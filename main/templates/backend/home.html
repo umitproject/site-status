@@ -130,6 +130,7 @@
                 {% for module_form in module_forms %}
                     {% include 'backend/module_form.html' %}
                 {% endfor %}
+                {% include 'backend/module_form_scripts.html' %}
             </div>
         </section>
         <section id="status-site-domains">
@@ -203,37 +204,12 @@
 
             evt.preventDefault();
 
-            handlers = {
+            var handlers = {
                 'site_config': function(response) {
                     if(response.hasOwnProperty('action') && response.hasOwnProperty('status') && response.status === 'ok') {
-                        if(response.action === 'delete') {
-                            $("#site-configs a:first").click();
-                            $("#site-configs").find('li[data-form-id="'+ response.id +'"]').remove();
-                            $("#site-configs").tab();
-                            $("#site-config-"+response.id).remove();
-                        }
-                        if(response.action === 'add') {
-                            $("#site-configs").append(
-                                $("<li/>").attr('data-form-id', response.id)
-                                          .html(
-                                            $("<a/>").attr("href", "#site-config-" + response.id)
-                                                     .attr("data-toggle", "tab")
-                                                     .html(response.name)
-                                )
-                            );
-                            $("#site-configs").tab();
-                            $("#site-config-forms").append(
-                                $("<div/>").addClass('tab-pane')
-                                           .attr('id', 'site-config-' + response.id)
-                                           .attr('data-form-id', response.id)
-                                           .html(
-                                                $("<h2/>").html(response.name))
-                                           .append(response.item)
-                            );
-                            $("#add-site-config table").html($("#site_config_form_template").html())
-                            $("#status-site-domains").load("/backend #status-site-domains")
-                            $("#monitors").load("/backend #monitors")
-                        }
+                            $("#site_configs_monitor").load("/backend/ #site_configs_monitor >*");
+                            $("#status-site-domains").load("/backend/ #status-site-domains >*");
+                            $("#monitors").load("/backend/ #monitors >*");
                     }
                 },
                 'site_domain': function (response) {
@@ -246,25 +222,14 @@
                             $("#site-domain-"+response.id).remove();
                         }
                         if(response.action === 'add') {
-                            $("#site-domains").append(
-                                    $("<li/>").attr('data-form-id', response.id)
-                                            .html(
-                                            $("<a/>").attr("href", "#site-domain-" + response.id)
-                                                    .attr("data-toggle", "tab")
-                                                    .html(response.name)
-                                            )
-                            );
-                            $("#site-domains").tab();
-                            $("#site-domain-forms").append(
-                                    $("<div/>").addClass('tab-pane')
-                                            .attr('id', 'site-domain-' + response.id)
-                                            .attr('data-form-id', response.id)
-                                            .html(
-                                            $("<h2/>").html(response.name))
-                                            .append(response.item)
-                            );
-                            $("#add-site-domain table").html($("#site_domain_form_template").html())
+                            $("#status-site-domains").load("/backend/ #status-site-domains >*")
                         }
+                    }
+                },
+                'maintenance': function(response) {
+                    if(response.hasOwnProperty('action') && response.hasOwnProperty('status') && response.status === 'ok') {
+                        var id = $this.closest('.tab-pane.active').attr('id');
+                        $this.closest('.maintenances').load("/backend #"+id+" .maintenances >*");
                     }
                 },
                 'module': function(response) {
@@ -277,24 +242,7 @@
                             $("#module-"+response.id).remove();
                         }
                         if(response.action === 'add') {
-                            $("#modules").append(
-                                    $("<li/>").attr('data-form-id', response.id)
-                                            .html(
-                                            $("<a/>").attr("href", "#module-" + response.id)
-                                                    .attr("data-toggle", "tab")
-                                                    .html(response.name)
-                                    )
-                            );
-                            $("#modules").tab();
-                            $("#module-forms").append(
-                                    $("<div/>").addClass('tab-pane')
-                                            .attr('id', 'module-' + response.id)
-                                            .attr('data-form-id', response.id)
-                                            .html(
-                                            $("<h2/>").html(response.name))
-                                            .append(response.item)
-                            );
-                            $("#add-module table").html($("#module_form_template").html())
+                            $("#monitors").load("/backend/ #monitors >*")
                         }
                     }
                 }

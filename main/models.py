@@ -916,7 +916,24 @@ class ScheduledMaintenance(models.Model):
     message = models.TextField()
     module = models.ForeignKey('main.Module')
     site_config = models.ForeignKey('main.SiteConfig', null=True)
-    
+
+    @property
+    def estimated_end_time(self):
+        return self.scheduled_to + datetime.timedelta(seconds=self.time_estimate)
+
+    @property
+    def is_in_the_future(self):
+        return datetime.datetime.now() < self.scheduled_to
+
+    @property
+    def is_undergoing(self):
+        now = datetime.datetime.now()
+        return self.scheduled_to < now < self.estimated_end_time
+
+    @property
+    def is_done(self):
+        return datetime.datetime.now() > self.estimated_end_time
+
     @property
     def status_img(self):
         return status_img(self.status)

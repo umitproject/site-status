@@ -7,8 +7,8 @@ from django.contrib.auth.models import User
 from django.utils import simplejson
 from django.utils.datastructures import MultiValueDictKeyError
 from main.decorators import login_required
-from main.backend.forms import ProfileForm, SiteConfigForm, ModuleForm, StatusSiteDomainForm
-from main.models import SiteConfig, Module, UserProfile, StatusSiteDomain, STATUS
+from main.backend.forms import ProfileForm, SiteConfigForm, ModuleForm, StatusSiteDomainForm, ScheduledMaintenanceForm, ScheduledMaintenanceTemplateForm
+from main.models import SiteConfig, Module, UserProfile, StatusSiteDomain, STATUS, ScheduledMaintenance
 
 __author__ = 'apredoi'
 
@@ -38,6 +38,8 @@ def backend(request):
     for module in modules:
         module_forms.append(ModuleForm(u,instance=module))
 
+    maintenance_form_template = ScheduledMaintenanceTemplateForm(u)
+    maintenances = ScheduledMaintenance.objects.filter(site_config__user=u)
 
     site_domain_form_template = StatusSiteDomainForm(u)
     site_domains = StatusSiteDomain.objects.filter(site_config__user=u)
@@ -46,12 +48,16 @@ def backend(request):
     for site_domain in site_domains:
         site_domain_forms.append(StatusSiteDomainForm(u,instance=site_domain))
 
-    return render(request, 'backend/home.html', {'profile_form':profile_form, 'site_config_forms': site_config_forms,
+    return render(request, 'backend/home.html', {'profile_form':profile_form,
+                                                 'site_config_forms': site_config_forms,
                                                  'site_config_form_template': site_config_form_template,
                                                  'module_forms' : module_forms,
                                                  'module_form_template' : module_form_template,
                                                  'site_domain_forms' : site_domain_forms,
-                                                 'site_domain_form_template' : site_domain_form_template})
+                                                 'site_domain_form_template' : site_domain_form_template,
+                                                 'maintenance_form_template' : maintenance_form_template,
+                                                 'maintenances' : maintenances,
+                                                 })
 
 
 """ API """
@@ -218,5 +224,90 @@ def add_site_domain(request):
         response_obj['name'] = site_domain.status_url
         response_obj['item'] = render_to_string("backend/site_domain_form.html", dict(site_domain_form=form))
         return HttpResponse(simplejson.dumps(response_obj), mimetype='application/json')
+
+    return HttpResponse(simplejson.dumps(response_obj), mimetype='application/json')
+
+@login_required
+def add_maintenance(request):
+    response_obj = {'status': 'ok', 'target': 'maintenance'}
+
+    if request.method == 'POST':
+        object_key=None
+
+        try:
+            object_key = request.POST['maintenance_id']
+        except MultiValueDictKeyError:
+            response_obj['action'] = 'add'
+
+        instance = None
+        action = request.POST['maintenance_action']
+        if action in ('update', 'delete'):
+            instance = ScheduledMaintenance.objects.get(pk=object_key)
+            response_obj['id'] = object_key
+            response_obj['action'] = 'update'
+
+        if instance and action == 'delete':
+            response_obj['action'] = 'delete'
+            try:
+                instance.delete()
+            except Exception,e:
+                response_obj['status'] = "error"
+            return HttpResponse(simplejson.dumps(response_obj), mimetype='application/json')
+
+        form = ScheduledMaintenanceForm(request.user,request.POST,instance=instance) if instance else ScheduledMaintenanceForm(request.user,request.POST)
+        if form.is_valid():
+            maintenance = form.save(commit=False)
+            #add
+            if not instance:
+                maintenance.created_at = datetime.now()
+                maintenance.status = "unknown"
+                maintenance.total_downtime = 0.0
+                maintenance.module = Module.objects.get(pk=request.POST['module_id'])
+                maintenance.site_config = SiteConfig.objects.get(pk=request.POST['site_config_id'])
+
+            maintenance.updated_at = datetime.now()
+            maintenance.save()
+            response_obj['id'] = maintenance.pk
+        else:
+            response_obj['status'] = 'error'
+            response_obj['error'] = form.errors
+            return HttpResponse(simplejson.dumps(response_obj), mimetype='application/json'
+            )
+
+        response_obj['name'] = 'maintenance'
+        response_obj['item'] = maintenance.pk
+        return HttpResponse(simplejson.dumps(response_obj), mimetype='application/json')
+
+    return HttpResponse(simplejson.dumps(response_obj), mimetype='application/json')
+
+
+@login_required
+def end_maintenance(request):
+    response_obj = {'status': 'ok', 'target': 'maintenance'}
+
+    if request.method == 'POST':
+        object_key = request.POST.get("maintenance_id")
+        if object_key:
+            maintenance = ScheduledMaintenance.objects.get(id=object_key,site_config__user=request.user)
+            if maintenance:
+                if maintenance.is_undergoing:
+                    maintenance.time_estimate = (datetime.now() - maintenance.scheduled_to).total_seconds()
+                    maintenance.save()
+                elif maintenance.is_in_the_future:
+                    maintenance.delete()
+    return HttpResponse(simplejson.dumps(response_obj), mimetype='application/json')
+
+
+@login_required
+def extend_maintenance(request):
+    response_obj = {'status': 'ok', 'target': 'maintenance'}
+
+    if request.method == 'POST':
+        object_key = request.POST.get("maintenance_id")
+        if object_key:
+            maintenance = ScheduledMaintenance.objects.get(id=object_key,site_config__user=request.user)
+            if maintenance:
+                maintenance.time_estimate += 600 # seconds
+                maintenance.save()
 
     return HttpResponse(simplejson.dumps(response_obj), mimetype='application/json')

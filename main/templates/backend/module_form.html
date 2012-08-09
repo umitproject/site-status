@@ -14,7 +14,7 @@
         <button class="btn btn-primary module-update" type="submit" name="Submit" value="edit_module" data-complete-text="Saved!">Save</button>
         <button class="btn btn-danger module-delete" type="submit" name="Submit" value="delete_module" data-complete-text="Deleted!">Delete</button>
     </form>
-    <div class="module_info span4 well">
+    <div class="module_info span7 well">
         <table class="table table-condensed">
             <thead>
                 <tr>
@@ -36,5 +36,87 @@
                 </tr>
             </tbody>
         </table>
+    </div>
+
+    <div class="span7 well maintenances">
+        <strong>Scheduled maintenances</strong><br/>
+        <form class="add-maintenance" method='post' action='/backend/add_maintenance'>
+            <table>
+                {{ maintenance_form_template.as_table }}
+            </table>
+            <input type="hidden" name="module_id" value="{{ module_form.instance.pk }}" />
+            <input type="hidden" name="site_config_id" value="{{ module_form.instance.site_config.pk }}" />
+            <input type="hidden" name="maintenance_action" value="add"/>
+
+            <button class="btn btn-primary" type="submit" name="Submit" value="add_maintenance" data-complete-text="Added!">Add</button>
+        </form>
+
+        <form class="hidden update-maintenance" method='post' action='/backend/add_maintenance'>
+            <table>
+                {{ maintenance_form_template.as_table }}
+            </table>
+
+            <input type="hidden" name="maintenance_id" value="{{ maintenance.pk }}" />
+
+            <input type="hidden" name="status" value="{{ maintenance.status }}" />
+            <input type="hidden" name="total_downtime" value="{{ maintenance.total_downtime }}" />
+            <input type="hidden" name="created_at" value="{{ maintenance.created_at }}" />
+            <input type="hidden" name="updated_at" value="{{ maintenance.updated_at }}" />
+            <input type="hidden" name="module_id" value="{{ module_form.instance.pk }}" />
+            <input type="hidden" name="site_config_id" value="{{ module_form.instance.site_config.pk }}" />
+            <input type="hidden" name="maintenance_action" value="update"/>
+            <button class="btn btn-primary" type="submit" name="Submit" value="update-maintenance" data-complete-text="Saved!">Save changes</button>
+            <button class="btn btn-danger cancel-update-maintenance" name="Submit" value="cancel-update-maintenance" data-complete-text="Canceled">Cancel</button>
+        </form>
+
+        <table class="table table-condensed">
+            <thead>
+            <tr>
+                <th>Scheduled to</th>
+                <th>Ends at</th>
+                <th>Message</th>
+                <th>Action</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for maintenance in maintenances %}
+                {% if maintenance.module == module_form.instance %}
+                    <tr>
+                        <td>{{ maintenance.scheduled_to|date:"Y-m-d H:i:s" }}</td>
+                        <td>{{ maintenance.estimated_end_time|date:"Y-m-d H:i:s" }}</td>
+                        <td>{{ maintenance.message }}</td>
+                        <td>
+                            <form class="edit-maintenance">
+                                <input type="hidden" name="maintenance_id" value="{{ maintenance.pk }}" />
+                                <input type="hidden" name="module" value="{{ maintenance.module }}" />
+                                <input type="hidden" name="total_downtime" value="{{ maintenance.total_downtime }}" />
+                                <input type="hidden" name="status" value="{{ maintenance.status }}" />
+                                <input type="hidden" name="site_config" value="{{ maintenance.site_config }}" />
+                                <input type="hidden" name="created_at" value="{{ maintenance.created_at }}" />
+                                <input type="hidden" name="updated_at" value="{{ maintenance.updated_at }}" />
+                                <input type="hidden" name="scheduled_to" value="{{ maintenance.scheduled_to|date:"Y-m-d H:i:s" }}" />
+                                <input type="hidden" name="time_estimate" value="{{ maintenance.time_estimate }}" />
+                                <input type="hidden" name="message" value="{{ maintenance.message }}"/>
+                                <input type="hidden" name="action" />
+
+                                <div class="btn-group">
+                                    {% if not maintenance.is_done %}
+                                        {% if maintenance.is_in_the_future %}
+                                            <button class="btn end-maintenance" type="submit" name="End">Cancel</button>
+                                        {% else %}{% if maintenance.is_undergoing %}
+                                            <button class="btn end-maintenance" type="submit" name="End">End</button>
+                                        {% endif %}{% endif %}
+                                        <button class="btn edit-maintenance" type="submit">Edit</button>
+                                        <button class="btn extend-maintenance" type="submit" name="Extend" value="10">Extend</button>
+                                    {% endif %}
+                                </div>
+                            </form>
+                        </td>
+                    </tr>
+                {% endif %}
+            {% endfor %}
+            </tbody>
+        </table>
+
     </div>
 </div>

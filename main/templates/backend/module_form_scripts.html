@@ -1,0 +1,74 @@
+
+<script type="text/javascript">
+    (function() {
+        $(".end-maintenance").live('click', function(ev){
+            $(this).closest("form").addClass("END")
+        });
+
+        $(".extend-maintenance").live('click', function(ev){
+            $(this).closest("form").addClass("EXTEND")
+        });
+
+        $(".edit-maintenance").live('submit',function(ev){
+            var smain = $(this).serializeArray(),
+                    to_field,
+                    that = $(this),
+                    visible_form =$(".update-maintenance"),
+                    form_data;
+
+            function flatten_form(form) {
+                var data = form.serializeArray(),
+                    dict = {};
+                data.map(function(e){
+                    if (e.hasOwnProperty('name') && e.hasOwnProperty('value')) {
+                        dict[e.name] = e.value
+                    }
+                });
+                return dict;
+            }
+
+            if (that.hasClass("END")) {
+                that.removeClass("END");
+                form_data = flatten_form(that) || {};
+                if (form_data.hasOwnProperty('maintenance_id')){
+                    $.post("{% url end_maintenance %}", {'maintenance_id': form_data.maintenance_id}, function(data){
+                        var id = that.closest('.tab-pane.active').attr("id");
+                        that.closest('.maintenances').load("/backend/ #"+id+" .maintenances >*")
+                    });
+                }
+            } else if (that.hasClass("EXTEND")) {
+                that.removeClass("EXTEND");
+                form_data = flatten_form(that) || {};
+                if (form_data.hasOwnProperty('maintenance_id')){
+                    $.post("{% url extend_maintenance %}", {'maintenance_id': form_data.maintenance_id});
+                    var id = that.closest('.tab-pane.active').attr("id");
+                    that.closest('.maintenances').load("/backend/ #"+id+" .maintenances >*")
+                }
+            } else {
+
+                $(".add-maintenance").addClass("hidden");
+                $(".update-maintenance").removeClass("hidden");
+
+                $(smain).each(function(idx,elem){
+                    to_field = visible_form.find('*[name="'+elem.name+'"]');
+                    if (to_field) {
+                        to_field.val(elem.value);
+                    } else {
+                        to_field = $("input") .attr("type","hidden")
+                                .name("name", elem.name)
+                                .val(elem.value);
+                        visible_form.append(to_field);
+                    }
+                });
+            }
+
+            ev.preventDefault();
+            ev.stopImmediatePropagation();
+        });
+        $(".cancel-update-maintenance").live('click',function(ev){
+            ev.preventDefault();
+            $(".add-maintenance").removeClass("hidden");
+            $(".update-maintenance").addClass("hidden");
+        });
+    }());
+</script>
