@@ -36,7 +36,7 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'OPTIONS': {
-            'read_default_file': '/Users/apredoi/work/gsoc2012/site-status/db.cnf',
+            'read_default_file': './db.cnf',
         },
     },
 }
