@@ -1,5 +1,5 @@
 [client]
-database = gsoc
-user = gsoc
-password = gsoc
+database = site_status
+user = root
+password = 
 default-character-set = utf8

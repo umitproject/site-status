@@ -36,7 +36,7 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'OPTIONS': {
-            'read_default_file': './db.cnf',
+            'read_default_file': join(dirname(__file__), 'db.cnf'),
         },
     },
 }
@@ -246,8 +246,7 @@ LOGIN_REDIRECT_URL = '/'
 
 ########
 # EMAIL
-#EMAIL_BACKEND = 'appengineemail.EmailBackend'
-#'django.core.mail.backends.console.EmailBackend'
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 DEFAULT_FROM_EMAIL = 'noreply@umit-site-status.appspotmail.com'
 EMAIL_HOST = 'localhost'
 EMAIL_PORT = 25
