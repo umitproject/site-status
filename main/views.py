@@ -46,8 +46,10 @@ def root_home(request, msg=None):
     context = RequestContext(request)
     return render(request, 'main/root_home.html', context)
 
-def home(request, msg=None):
+def home(request, msg=None, site_id=None):
     site_config = request.site_config
+    if not site_config:
+        raise Http404
     modules = Module.objects.filter(site_config=site_config)
     show_days = Module.show_days(site_config)
     last_incident = request.aggregation.last_incident
@@ -68,7 +70,7 @@ def home(request, msg=None):
         context['msg'] = msg
     return render(request, 'main/home.html', context)
 
-def event(request, event_id):
+def event(request, event_id, *args, **kwargs):
     # TODO: Must show event details
     event = get_object_or_404(ModuleEvent, pk=event_id)
     scheduled_maintenances = ScheduledMaintenance.objects.filter(module=event.module)
@@ -78,7 +80,7 @@ def event(request, event_id):
 
 #############################
 # SUBSCRIPTION RELATED VIEWS
-def subscribe(request, event_id=None, module_id=None):
+def subscribe(request, event_id=None, module_id=None, *args, **kwargs):
     """Possible behaviors:
     
     1 - If no id is provided
@@ -157,7 +159,7 @@ def subscribe(request, event_id=None, module_id=None):
     context = locals()
     return render(request, 'main/subscribe.html', context)
 
-def manage_subscriptions(request,uuid=None):
+def manage_subscriptions(request,uuid=None, *args, **kwargs):
     if uuid is not None:
         subscriber = get_object_or_404(Subscriber, edit_token=uuid)
         if not subscriber.can_be_edited:
@@ -195,7 +197,7 @@ def manage_subscriptions(request,uuid=None):
     context=locals()
     return render(request, 'main/manage_subscription.html', context)
 
-def unsubscribe(request):
+def unsubscribe(request, *args, **kwargs):
     if request.method == 'POST':
         subscriber = None
         submitted_data = request.POST.copy()
@@ -229,7 +231,7 @@ def unsubscribe(request):
 
     return redirect("manage_subscription")
 
-def subscriber_setting(request):
+def subscriber_setting(request, *args, **kwargs):
     if request.method == 'POST':
         uuid = request.POST.get("unique_identifier")
         instance = Subscriber.objects.get(unique_identifier=uuid)

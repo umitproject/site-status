@@ -1,6 +1,7 @@
 {% load media %}
 {% load i18n %}
 {% load status_tags %}
+{% load site_url %}
 <!DOCTYPE html>
 <html>
 <head>
@@ -42,8 +43,8 @@
         {% block menu %}
             <div class="subnav">
                 <ul id="main-menu" class="nav nav-pills">
-                    <li><a href="/"><i class="icon-home"></i> Home</a></li>
-                    <li><a href="/subscribe"><i class="icon-flag"></i>{% trans "Subscribe" %}</a></li>
+                    <li><a href="{% site_url home site_id=request.site_config.id %}"><i class="icon-home"></i> Home</a></li>
+                    <li><a href="{% site_url system_subscribe site_id=request.site_config.id %}"><i class="icon-flag"></i>{% trans "Subscribe" %}</a></li>
                 </ul>
             </div>
         {% endblock %}

@@ -2,6 +2,7 @@
 {% load media %}
 {% load i18n %}
 {% load status_tags %}
+{% load site_url %}
 
 {% block title %}{% blocktrans with site_config.site_name as site-name%}{{ site-name }} Status{% endblocktrans %}{% endblock %}
 
@@ -10,7 +11,24 @@
 {% block header_status %}
 	{% include "main/parts/header_status.html" %}
 {% endblock %}
-	
+
+
+{% block scheduled_maintenances %}
+    {% if scheduled_maintenances %}
+        <br />
+        <br />
+        <div class='box'>
+            {% for schedule in scheduled_maintenances %}
+                <div class="text_box">
+                    <p class="title"><img src='{% media_url schedule.status_img %}' alt='{% verbose_status schedule.status %}'/>&nbsp;&nbsp;{% verbose_status schedule.status %} {% trans "on" %} {{ schedule.scheduled_to|date:"DATETIME_FORMAT" }}</p>
+                    <p class="description">{% trans "Downtime estimate:" %} <b>{% blocktrans %}{{ schedule.time_estimate }} minutes{% endblocktrans %}</b><br/><br/>{{ schedule.message }}</p>
+                    <div class="more"><a href=""></a></div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endblock %}
+
 {% block first_content %}
 <div class="box">
 	<div class="text_box">
@@ -35,7 +53,7 @@
 				</td>
 				{% endfor %}
 				<td><img src='{% media_url module.status_img %}' alt='{% verbose_status module.status %}'/></td>
-                <td><a href='/subscribe/module/{{ module.pk }}' title='{% blocktrans with module.name as module_name %} Subscribe to module {{ module_name }} {% endblocktrans %}'><i class="icon-envelope"></i></a></td>
+                <td><a href='{% site_url module_subscribe site_id=request.site_config.id module_id=module.pk %}' title='{% blocktrans with module.name as module_name %} Subscribe to module {{ module_name }} {% endblocktrans %}'><i class="icon-envelope"></i></a></td>
 			</tr>
 			{% endfor %}
             </tbody>
@@ -53,11 +71,11 @@
             <tbody>
             {% for event in events %}
                 <tr>
-                    <td><a href='{{ event.module.url }}'>{{ event.module.name }}</a></td>
+                    <td><a href='{% site_url event site_id=request.site_config.id event_id=event.id %}'>{{ event.module.name }}</a></td>
                     <td><img src='{% media_url event.status_img %}' alt='{% verbose_status event.status %}' title='{% verbose_status event.status %}'/></td>
                     <td>{{ event.down_at }}</td>
                     {% if not event.back_at %}
-                        <td><a href='/subscribe/event/{{ event.pk }}' title='{% blocktrans %}Subscribe to this event.{% endblocktrans %}'><i class="icon-envelope"></i></a></td>
+                        <td><a href='{% site_url event_subscribe site_id=request.site_config.id event_id=event.id %}' title='{% blocktrans %}Subscribe to this event.{% endblocktrans %}'><i class="icon-envelope"></i></a></td>
                     {% else %}
                         <td>{{ event.back_at }}</td>
                     {% endif %}
@@ -113,21 +131,5 @@
 {% if scheduled_maintenances %}
 	<img src="{% media_url "img/hr.png" %}" alt="" />
 {% endif %}
-{% endif %}
-{% endblock %}
-			
-{% block scheduled_maintenances %}
-{% if scheduled_maintenances %}
-	<br />
-	<br />
-	<div class='box'>
-		{% for schedule in scheduled_maintenances %}
-			<div class="text_box">
-				<p class="title"><img src='{% media_url schedule.status_img %}' alt='{% verbose_status schedule.status %}'/>&nbsp;&nbsp;{% verbose_status schedule.status %} {% trans "on" %} {{ schedule.scheduled_to|date:"DATETIME_FORMAT" }}</p>
-				<p class="description">{% trans "Downtime estimate:" %} <b>{% blocktrans %}{{ schedule.time_estimate }} minutes{% endblocktrans %}</b><br/><br/>{{ schedule.message }}</p>
-				<div class="more"><a href=""></a></div>
-			</div>
-		{% endfor %}
-	</div>
 {% endif %}
 {% endblock %}

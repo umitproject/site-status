@@ -2,6 +2,7 @@
 {% load media %}
 {% load i18n %}
 {% load status_tags %}
+{% load site_url %}
 
 {% block title %}{% blocktrans %}{{ event.verbose }} - {{ SITE_NAME }} Status{% endblocktrans %}{% endblock %}
 
@@ -19,7 +20,7 @@
 				{% if event.back_at %}
 					<b>{% blocktrans %}System have recovered from this event since {{ event.back_at }}{% endblocktrans %}</b>
 				{% else %}
-					<b>{% blocktrans %}We're still working to recover from this event. <a href='/subscribe/{{ event.id }}'>Subscribe now</a> to receive a notification as soon as we're back!{% endblocktrans %}</b>
+					<b>{% trans "We're still working to recover from this event." %}<a href='{% site_url event_subscribe site_id=request.site_config.id event_id=event.id %}'>{% trans "Subscribe now" %}</a>{% trans "to receive a notification as soon as we're back!" %}</b>
 				{% endif %}
 				</p>
 				<p class="event_detail"><b>{% trans "Module:" %}</b> {% if event.module.url %}<a href="{{ event.module.url }}">{{ event.module.name }}</a>{% else %}{{ event.module.name }}{% endif %}</p>
@@ -30,7 +31,7 @@
 				{% if event.details %}
 					<p class="event_detail"><b>{% trans "Details:" %}</b> {{ event.details }}</p>
 				{% endif %}
-				<div class="more"><a href="/">{% trans "All Status" %}</a></div>
+				<div class="more"><a href="{% site_url home site_id=request.site_config.id %}">{% trans "All Status" %}</a></div>
 			</div>
 		</div>
 	</div>

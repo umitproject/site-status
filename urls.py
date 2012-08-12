@@ -26,14 +26,17 @@ from main.feeds import LastModuleStatuses
 handler500 = 'djangotoolbox.errorviews.server_error'
 
 urlpatterns = patterns('',
-    url('^$', 'main.views.home', name='home'),
+    url('^/?$', 'main.views.home', name='home'),
+    url('^event/(?P<event_id>\d+)/?$', 'main.views.event', name='event'),
+
+    ####################
+    #  subscribe-related urls
     url('^subscribe/event/(?P<event_id>\d+)/?$', 'main.views.subscribe', name='event_subscribe'),
     url('^subscribe/module/(?P<module_id>\d+)/?$', 'main.views.subscribe', name='module_subscribe'),
     url('^subscribe/?$', 'main.views.subscribe', name='system_subscribe'),
     url('^subscribe/manage/(?P<uuid>[a-fA-F0-9\-]+)?$', 'main.views.manage_subscriptions', name='manage_subscription'),
     url('^subscribe/settings/?$', 'main.views.subscriber_setting', name='subscriber_settings'),
     url('^unsubscribe/?$', 'main.views.unsubscribe', name='unsubscribe'),
-    url('^event/(?P<event_id>\d+)/?$', 'main.views.event', name='event'),
     
     ########
     # FEEDS
@@ -44,17 +47,7 @@ urlpatterns = patterns('',
     url('^test_populate/?$', 'main.views.test_populate', name='test_populate'),
     url('^test_events_and_aggregations/?$', 'main.views.test_events_and_aggregations', name='test_events_and_aggregations'),
     url(r'^hard_reset/', 'main.views.hard_reset', name='hard_reset'),
-    
-    ######
-    # API
-    #TODO: ADD THESE BACK
-    #url(r'^api/', include('status_api.urls')),
-    
-    #######
-    # Cron
-    #TODO: ADD THESE BACK
-    #url(r'^cron/', include('status_cron.urls')),
-    
+
     ######################
     # Notification System
     url(r'^notification/', include('status_notification.urls')),

@@ -26,8 +26,9 @@ import logging
 from django.conf import settings
 from django.http import Http404
 from django.core.cache import cache
-from django.core.urlresolvers import resolve, Resolver404
+from django.core.urlresolvers import resolve, Resolver404, reverse
 from django.utils.http import urlquote
+from django.shortcuts import get_object_or_404, redirect
 
 from main.models import SiteConfig, AggregatedStatus, StatusSiteDomain
 
@@ -49,34 +50,32 @@ class SiteConfigMiddleware(object):
 
         request.site_config = None
         request.aggregation = None
-        
+        request.use_private_urls = False
+
         if domain:
             site_config = cache.get(DOMAIN_SITE_CONFIG_CACHE_KEY % domain, False)
             if site_config:
                 request.site_config = site_config
             else:
                 site_config = SiteConfig.get_from_domain(domain)
-                
-                if site_config:
-                    request.site_config = site_config
+                if not site_config and request.path.startswith('/sites'):
+                    view = resolve(request.path)
+                    site_config_id = view.kwargs.get('site_id')
+                    request.site_config = get_object_or_404(SiteConfig,id=site_config_id)
+                    request.use_private_urls = True
+
+                    # require authentication for private status site
+                    if not request.user.is_authenticated():
+                        return redirect("auth_login")
+
+                    # hide status site from other users
+                    if not request.site_config or request.site_config.user != request.user:
+                        raise Http404
+
                 else:
+                    request.site_config = site_config
+                    cache.set(DOMAIN_SITE_CONFIG_CACHE_KEY % domain, request.site_config, 120)
 
-#                    site_config = SiteConfig()
-#                    site_config.site_name = domain
-#                    scheme = 'https://' if request.is_secure() else 'http://'
-#                    site_config.main_site_url = scheme + domain
-#                    site_config.save()
-#
-#                    status_domain = StatusSiteDomain()
-#                    status_domain.status_url = domain
-#                    status_domain.site_config = site_config
-#                    status_domain.save()
-#
-#                    request.site_config = site_config
-
-                    #TODO: work this out
-                    request.site_config = None
-            
             aggregation = cache.get(DOMAIN_AGGREGATION_CACHE_KEY % domain, False)
             if aggregation:
                 request.aggregation = aggregation
@@ -89,11 +88,10 @@ class SiteConfigMiddleware(object):
                     aggregation.save()
                 else:
                     aggregation = aggregation[0]
-                    
+
+                cache.set(DOMAIN_AGGREGATION_CACHE_KEY % domain, request.aggregation, 60)
                 request.aggregation = aggregation
-            
-            cache.set(DOMAIN_SITE_CONFIG_CACHE_KEY % domain, request.site_config, 120)
-            cache.set(DOMAIN_AGGREGATION_CACHE_KEY % domain, request.aggregation, 60)
+
                 
             
 class SubdomainMiddleware(object):
@@ -111,7 +109,7 @@ class SubdomainMiddleware(object):
                 request.subdomain = subdomain
                 request.urlconf = 'urls'
 
-        else:
+
             warnings.warn('Unable to get subdomain from %s using %s.' % (request.get_host(), re.escape(domain)), UserWarning)
 
         # Continue processing the request as normal.

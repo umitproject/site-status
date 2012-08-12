@@ -156,7 +156,22 @@ class SiteConfig(models.Model):
     @property
     def schedule_warning_up_to(self):
         return datetime.datetime.now() + datetime.timedelta(days=self.schedule_warning_time)
-    
+
+    @property
+    def is_public(self):
+        return StatusSiteDomain.objects.filter(site_config=self).exists()
+
+    @property
+    def list_urls(self):
+        if self.is_public:
+            return ["http://" + s.status_url for s in StatusSiteDomain.objects.filter(site_config=self)]
+        return [reverse("home", args=[self.id]) ,]
+
+    @property
+    def aggregated_status(self):
+        return AggregatedStatus.objects.get(site_config=self)
+
+
     def save(self, *args, **kwargs):
         memcache.delete(SITE_CONFIG_KEY % self.site_name)
         

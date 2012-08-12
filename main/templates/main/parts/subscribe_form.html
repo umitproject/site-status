@@ -1,4 +1,5 @@
 {% load i18n %}
+{% load site_url %}
 {% if event %}
 	<p class="title">{% blocktrans with event.verbose as event_verbose %}Subscribe to Event - {{ event_verbose }}{% endblocktrans %}</p>
 {% else %}
@@ -12,21 +13,21 @@
 <div class="description">
 	{% if saved %}
 		{% blocktrans %}You've successfuly subscribed to receive {% endblocktrans %}{% if one_time %}{% blocktrans %}a one time notification as soon as the system is back on line{% endblocktrans %}{% else %}{% blocktrans %}notifications whenever an incident happens with the system{% endblocktrans %}{% endif %}.
-        <a href="{% url manage_subscription %}">{% trans "Manage my subscription"%}</a>
+        <a href="{% site_url manage_subscription site_id=request.site_config.id  %}">{% trans "Manage my subscription"%}</a>
 	{% else %}
 		{% if event %}
-			<form action="/subscribe/event/{{ event.id }}" method="POST">
+			<form action="{% site_url event_subscribe site_id=request.site_config.id event_id=event.id %}" method="POST">
 		{% else %}
 			{% if module %}
-				<form action="/subscribe/module/{{ module.id }}" method="POST">
+				<form action="{% site_url module_subscribe site_id=request.site_config.id module_id=module.id %}" method="POST">
 			{% else %}
-				<form action="/subscribe" method="POST">
+				<form action="{% site_url system_subscribe site_id=request.site_config.id %}" method="POST">
 			{% endif %}
 		{% endif %}
                 {% csrf_token %}
 				{{ form.as_p }}
 				<input type="submit" value="{% trans "Submit" %}"/>
 		</form>
-        {% trans "I already have a subscription."%} <a href="{% url manage_subscription %}">{% trans "Manage my subscription"%}</a>.
+        {% trans "I already have a subscription."%} <a href="{% site_url manage_subscription site_id=request.site_config.id %}">{% trans "Manage my subscription"%}</a>.
 	{% endif %}
 </div>

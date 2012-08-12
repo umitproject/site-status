@@ -1,3 +1,5 @@
+import urls
+
 __author__ = 'apredoi'
 from django.conf.urls.defaults import *
 from django.contrib import admin
@@ -51,4 +53,11 @@ urlpatterns = patterns('',
     url(r'^clean_cache/', 'main.views.clean_cache', name='clean_cache'),
     url(r'^admin/', include(admin.site.urls)),
     url(r'^accounts/login/$', 'django.contrib.auth.views.login', name='login'),
+
+    #######
+    # site_config
+    url(r'^sites/(?P<site_id>\d+)/', include('urls')),
+
+
+    url('^sites/(?P<site_id>\d+)/unsubscribe/?$', 'main.views.unsubscribe', name='private_unsubscribe'),
 )

@@ -58,6 +58,7 @@
                 </div>
             </div>
         </div>
+
         <section id="profile">
             <div class="page-header">
                 <h1>My Profile</h1>
@@ -79,7 +80,22 @@
                 </li>
                 {% for site_config_form in site_config_forms %}
                     <li data-form-id="{{ site_config_form.instance.pk }}">
-                        <a href="#site-config-{{  site_config_form.instance.pk }}" data-toggle="tab">{{ site_config_form.initial.site_name }}</a>
+                        <a href="#site-config-{{  site_config_form.instance.pk }}" data-toggle="tab">
+                            {% with site_config_form.instance.aggregated_status.percentage_uptime as uptime %}
+                                {% if uptime %}
+                                {% if uptime >= 99.0 %}
+                                    <span class="badge badge-success">{{ uptime|floatformat:"-2" }}%</span>
+                                {% else %}{% if uptime > 80 %}
+                                        <span class="badge badge-warning">{{ uptime|floatformat:"-2" }}%</span>
+                                    {% else %} {% if uptime > 0 %}
+                                            <span class="badge badge-important">{{ uptime|floatformat:"-2" }}%</span>
+                                        {% endif %}
+                                    {% endif %}
+                                {% endif %}
+                                {% endif %}
+                            {% endwith %}
+                            {{ site_config_form.initial.site_name }}
+                        </a>
                     </li>
                 {% endfor %}
             </ul>
@@ -111,7 +127,22 @@
                 </li>
                 {% for module_form in module_forms %}
                     <li data-form-id="{{ module_form.instance.pk }}">
-                        <a href="#module-{{  module_form.instance.pk }}" data-toggle="tab">{{ module_form.initial.name }}</a>
+                        <a href="#module-{{  module_form.instance.pk }}" data-toggle="tab">
+                            {% with module_form.instance.percentage_uptime as uptime %}
+                                {% if uptime %}
+                                    {% if uptime >= 99.0 %}
+                                        <span class="badge badge-success">{{ uptime|floatformat:"-2" }}%</span>
+                                        {% else %}{% if uptime > 80 %}
+                                            <span class="badge badge-warning">{{ uptime|floatformat:"-2" }}%</span>
+                                        {% else %} {% if uptime > 0 %}
+                                                <span class="badge badge-important">{{ uptime|floatformat:"-2" }}%</span>
+                                            {% endif %}
+                                        {% endif %}
+                                    {% endif %}
+                                {% endif %}
+                            {% endwith %}
+                            {{ module_form.initial.name }}
+                        </a>
                     </li>
                 {% endfor %}
             </ul>
@@ -164,7 +195,6 @@
                 {% endfor %}
             </div>
         </section>
-        <div style="height:1000px;"></div>
     </div>
     {% include_media 'bootstrap.js' %}
     <script type="text/template" id="site_domain_form_template">
@@ -222,7 +252,8 @@
                             $("#site-domain-"+response.id).remove();
                         }
                         if(response.action === 'add') {
-                            $("#status-site-domains").load("/backend/ #status-site-domains >*")
+                            var id = $this.closest('.tab-pane.active').attr('id');
+                            $this.closest('.site_config_details').load("/backend #"+id+" .site_config_details >*");
                         }
                     }
                 },
@@ -341,6 +372,21 @@
                         parent_form.find(".check_port").closest('tr').addClass('hidden');
                 }
             }).change();
+
+            $(".add_domain").live('click', function(evt){
+                evt.preventDefault();
+                if ($(this).hasClass("first")) {
+                    $(this).parent().siblings(".info").toggle();
+                }
+                $(this).parent().siblings(".add_domain_form").toggle();
+            });
+
+            $(".go_private").live('click', function(evt){
+                evt.preventDefault();
+                var answer = confirm("WARNING! This will delete any of your currently added domains. Are you sure you want to continue?");
+                if (answer) {
+                }
+            })
         });
     </script>
 </body>
