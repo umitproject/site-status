@@ -124,10 +124,12 @@ class StatusSiteDomain(models.Model):
 
 class SiteConfig(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
-    site_name = models.CharField(max_length=200)
-    main_site_url = models.CharField(max_length=500, null=True, blank=True, default="")
+    site_name = models.CharField(max_length=200, help_text="Public name for the site.")
+    main_site_url = models.CharField(max_length=500, null=True, blank=True, default="",
+                                    help_text="URL to your main website.")
     contact_phone = models.CharField(max_length=50, null=True, blank=True, default="")
-    contact_email = models.EmailField(null=True, blank=True, default="")
+    contact_email = models.EmailField(null=True, blank=True, default="",
+                                    help_text="Customer support email.")
     admin_email = models.EmailField(null=True, blank=True, default="")
     feed_size = models.IntegerField(default=5)
     analytics_id = models.CharField(max_length=20, null=True, blank=True, default="")
@@ -136,12 +138,12 @@ class SiteConfig(models.Model):
     notification_to = models.EmailField(null=True, blank=True, default=settings.DEFAULT_NOTIFICATION_TO)
     notification_reply_to = models.EmailField(null=True, blank=True, default=settings.DEFAULT_NOTIFICATION_REPLY_TO)
     show_days = models.IntegerField(default=7)
+    schedule_warning_time = models.IntegerField(default=7, help_text="in minutes")
     show_incidents = models.BooleanField(default=settings.DEFAULT_SHOW_INCIDENTS)
     show_uptime = models.BooleanField(default=settings.DEFAULT_SHOW_UPTIME)
     show_last_incident = models.BooleanField(default=settings.DEFAULT_SHOW_LAST_INCIDENT)
     user_theme_selection = models.BooleanField(default=True)
     send_notifications_automatically = models.BooleanField(default=True)
-    schedule_warning_time = models.IntegerField(default=7)
     api_key = models.CharField(max_length=100, null=True, blank=True)
     api_secret = models.CharField(max_length=100, null=True, blank=True)
     user = models.ForeignKey(User)
@@ -811,18 +813,21 @@ class Module(models.Model):
     description = models.TextField(default=' ', null=True, blank=True)
     total_downtime = models.FloatField(default=0.0)
     module_type = models.CharField(max_length=15, choices=MODULE_TYPES, default=MODULE_TYPES[0]) # two initial types: passive and active. In passive, status site pings the url/port to see if it returns 200. In the active mode, the server sends message to status site to inform its status
-    host = models.CharField(max_length=500)
+    host = models.CharField(max_length=500, help_text="Host name only (no http:// or path).")
     url = models.CharField(max_length=1000,
                             validators=[validators.URLValidator()],
-                            error_messages={'url': _('Invalid URL')},)
+                            error_messages={'url': _('Invalid URL')},
+                            help_text='Full URL, including http:// and path.')
     status = models.CharField(max_length=30, choices=STATUS, default=STATUS[3]) # current_status
     tags = models.TextField(default=' ', blank=True, null=True)
     site_config = models.ForeignKey('main.SiteConfig', null=True)
     logs = ListField()
 
     #url checker
-    expected_status = models.IntegerField(default=200, null=True, blank=True)
-    search_keyword = models.CharField(max_length=30, null=True, blank=True, default=None)
+    expected_status = models.IntegerField(default=200, null=True, blank=True,
+                                            help_text="HTTP response status code.")
+    search_keyword = models.CharField(max_length=30, null=True, blank=True, default=None,
+                                            help_text="Keyword or regex to search for in the result page.")
 
     #port checker
     check_port = models.IntegerField(null=True, blank=True, default=None, choices=PORT_CHECK_OPTIONS)
@@ -866,6 +871,8 @@ class Module(models.Model):
 
     @property
     def percentage_uptime(self):
+        if not self.total_downtime and not self.total_uptime:
+            return 100
         return (self.total_uptime/(self.total_downtime + self.total_uptime))*100
 
     @property
@@ -925,7 +932,7 @@ class ScheduledMaintenance(models.Model):
     created_at = models.DateTimeField(null=True, blank=True, default=None)
     updated_at = models.DateTimeField(null=True, blank=True, default=None)
     status = models.CharField(max_length=30, choices=STATUS)
-    time_estimate = models.IntegerField(default=0)
+    time_estimate = models.IntegerField(default=0, help_text="Used units: minutes")
     scheduled_to = models.DateTimeField(null=True, blank=True, default=None)
     total_downtime = models.FloatField(default=0.0)
     message = models.TextField()
@@ -973,7 +980,8 @@ class UserProfile(models.Model):
     user = models.OneToOneField(User)
 
     # adding aditional fields to the user profile
-    birth_date = models.DateField(_('Date of birth'), null=True, blank=True)
+    birth_date = models.DateField(_('Date of birth'), null=True, blank=True,
+                                    help_text="Date format: YYYY-mm-dd")
     address = models.CharField(_('Address'), max_length=100, null=True, blank=True)
     city = models.CharField(_('City'), max_length=50, null=True, blank=True)
     country = models.CharField(_('Country'), max_length=50, null=True, blank=True)

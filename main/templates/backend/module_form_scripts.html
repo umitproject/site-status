@@ -40,7 +40,8 @@
                 that.removeClass("EXTEND");
                 form_data = flatten_form(that) || {};
                 if (form_data.hasOwnProperty('maintenance_id')){
-                    $.post("{% url extend_maintenance %}", {'maintenance_id': form_data.maintenance_id});
+                    $.post("{% url extend_maintenance %}", {'maintenance_id': form_data.maintenance_id,
+                                                            'extend_value' : form_data.extend_value || 10});
                     var id = that.closest('.tab-pane.active').attr("id");
                     that.closest('.maintenances').load("/backend/ #"+id+" .maintenances >*")
                 }

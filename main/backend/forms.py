@@ -10,20 +10,8 @@ from main.models import SiteConfig, UserProfile, Module, StatusSiteDomain, PORT_
 class ProfileForm(forms.ModelForm):
     class Meta:
         model=UserProfile
-        exclude=('user',)
+        exclude=('user', 'username', 'email')
 
-    username = forms.RegexField(regex=r'^[\w.@+-]+$',
-        max_length=30,
-        widget=forms.TextInput(attrs={'class':'disabled', 'readonly':'readonly', 'disabled':'disabled' }),
-        label=_("Username"),
-        error_messages={'invalid': _("This value may contain only letters, numbers and @/./+/-/_ characters.")},
-        required=False)
-    email = forms.EmailField(widget=forms.TextInput(attrs=dict({'class':'disabled', 'readonly':'readonly', 'disabled':'disabled' },
-        maxlength=75)),
-        label=_("E-mail"),
-        required=False,
-        validators=[validators.validate_email],
-        error_messages={'invalid': _("Invalid email address.")})
     first_name = forms.CharField(max_length=30, required=False)
     last_name = forms.CharField(max_length=30, required=False)
     password1 = forms.CharField(widget=forms.PasswordInput(render_value=False),
@@ -36,7 +24,7 @@ class ProfileForm(forms.ModelForm):
 
     def __init__(self, *args, **kw):
         super(forms.ModelForm, self).__init__(*args, **kw)
-        self.fields.keyOrder = ['username', 'email', 'first_name', 'last_name','birth_date', 'address', 'city', 'country',
+        self.fields.keyOrder = ['first_name', 'last_name','birth_date', 'address', 'city', 'country',
                            'state', 'phone_number','password1', 'password2']
 
     def clean(self):
@@ -50,15 +38,18 @@ class ProfileForm(forms.ModelForm):
 class SiteConfigForm(forms.ModelForm):
     class Meta:
         model = SiteConfig
-        exclude = ('user','twitter_account','api_key','api_secret')
+        exclude = ('user','twitter_account','api_key','api_secret', 'notification_sender', 'notification_to')
 
 class ScheduledMaintenanceForm(forms.ModelForm):
     def __init__(self, user, *args, **kw):
         super(forms.ModelForm, self).__init__(*args, **kw)
         self.fields.keyOrder = ['scheduled_to','time_estimate','message', 'total_downtime', 'created_at', 'updated_at']
-    scheduled_to = forms.DateTimeField(required=True)
+    scheduled_to = forms.DateTimeField(required=True,
+                                        help_text="Date format is: YYYY-mm-dd HH:ii:ss")
     created_at = forms.DateTimeField(required=False)
     updated_at = forms.DateTimeField(required=False)
+
+    time_estimate = forms.IntegerField(help_text="Used units: minutes")
     total_downtime = forms.FloatField(widget=forms.TextInput(attrs=dict({'class':'disabled', 'readonly':'readonly', 'disabled':'disabled' })), required=False)
 
     class Meta:
@@ -69,6 +60,8 @@ class ScheduledMaintenanceTemplateForm(forms.ModelForm):
     def __init__(self, user, *args, **kw):
         super(forms.ModelForm, self).__init__(*args, **kw)
         self.fields.keyOrder = ['scheduled_to','time_estimate','message']
+    scheduled_to = forms.DateTimeField(required=True,
+        help_text="Date format is: YYYY-mm-dd HH:ii:ss")
 
     class Meta:
         model = ScheduledMaintenance
@@ -86,11 +79,12 @@ class ModuleForm(forms.ModelForm):
 
 
     check_port = forms.ChoiceField(choices=PORT_CHECK_OPTIONS, required=False, widget=forms.Select(attrs=dict({'class':'check_port'})))
-    expected_status = forms.IntegerField(initial=200, required=False, widget=forms.TextInput(attrs=dict({'class':'expected_status'})))
-    search_keyword = forms.CharField(required=False, widget=forms.TextInput(attrs=dict({'class':'search_keyword'})))
+    expected_status = forms.IntegerField(initial=200, required=False, widget=forms.TextInput(attrs=dict({'class':'expected_status'})),
+                                        help_text="HTTP response status code.")
+    search_keyword = forms.CharField(required=False, widget=forms.TextInput(attrs=dict({'class':'search_keyword'})),
+                                        help_text="Keyword or regex to search for in the result page.")
 
     status = forms.CharField(widget=forms.TextInput(attrs=dict({'class':'disabled', 'readonly':'readonly', 'disabled':'disabled' })), required=False)
-
 
     class Meta:
         model = Module

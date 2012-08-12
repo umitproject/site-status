@@ -10,21 +10,38 @@
         <button class="btn btn-primary site-config-update" type="submit" name="Submit" value="edit_site_config" data-complete-text="Saved!">Save</button>
         <button class="btn btn-danger site-config-delete" type="submit" name="Submit" value="delete_site_config" data-complete-text="Deleted!">Delete</button>
     </form>
+    <div class="site_config_info span7 well">
+        <table class="table table-condensed">
+            <thead>
+            <tr>
+                <th colspan="2">API</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td>Api Key:</td><td>{{ site_config_form.instance.api_key }}</td>
+            </tr>
+            <tr>
+                <td>Api Secret:</td><td>{{ site_config_form.instance.api_secret }}</td>
+            </tr>
+            </tbody>
+        </table>
+        <form method='post' action='/backend/reset_site_config' class="span4">{% csrf_token %}
+            <input type="hidden" name="site_config_id" value="{{ site_config_form.instance.pk }}" />
+            <button class="btn site-config-reset" type="submit" name="Submit" value="reset_site_config" data-complete-text="Reseted!">Reset</button>
+        </form>
+    </div>
+
     <div class="site_config_details span7 well">
-    <table class="table table-condensed">
-        <thead>
-        <tr>
-            <th colspan="2">Details</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr>
-            <td>Api Key:</td><td>{{ site_config_form.instance.api_key }}</td>
-        </tr>
-        <tr>
-            <td>Api Secret:</td><td>{{ site_config_form.instance.api_secret }}</td>
-        </tr>
-        <tr>
+        <table class="table table-condensed">
+            <thead>
+            <tr>
+                <th colspan="2">Status page</th>
+            </tr>
+            </thead>
+            <tbody>
+
+            <tr>
             <td>Public:</td><td>{% if site_config_form.instance.is_public %}
                                         <span>Yes</span> <div class="btn-group"><a href="#" class="btn go_private">Go private</a><a href="#" class="btn another add_domain">Add another domain</a>
                                 {% else %}
@@ -48,7 +65,8 @@
                         {% endfor %}
                       </ul></td>
         </tr>
-        </tbody>
-    </table>
+            </tbody>
+        </table>
+
     </div>
 </div>

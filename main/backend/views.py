@@ -304,10 +304,25 @@ def extend_maintenance(request):
 
     if request.method == 'POST':
         object_key = request.POST.get("maintenance_id")
+        value = request.POST.get("extend_value", 10)
         if object_key:
             maintenance = ScheduledMaintenance.objects.get(id=object_key,site_config__user=request.user)
             if maintenance:
-                maintenance.time_estimate += 600 # seconds
+                maintenance.time_estimate += int(value) * 60 # seconds
                 maintenance.save()
+
+    return HttpResponse(simplejson.dumps(response_obj), mimetype='application/json')
+
+
+@login_required
+def reset_api(request):
+    response_obj = {'status': 'ok', 'target': 'reset_api'}
+
+    if request.method == 'POST' :
+        object_key = request.POST['site_config_id']
+        instance = SiteConfig.objects.get(user=request.user, pk=object_key)
+        instance.api_key = None
+        instance.api_secret = None
+        instance.save()
 
     return HttpResponse(simplejson.dumps(response_obj), mimetype='application/json')

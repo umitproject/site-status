@@ -24,6 +24,16 @@
         textarea {
             height: 50px;
         }
+        .helptext {
+            display: block;
+        }
+        .extend_value{
+            display: inline;
+            width: 30px;
+        }
+        th {
+            max-width: 130px;
+        }
     </style>
 </head>
 <body data-spy="scroll" data-target=".navbar-fixed-top">
@@ -63,8 +73,11 @@
             <div class="page-header">
                 <h1>My Profile</h1>
             </div>
+                <strong>{{ request.user.email }}</strong>
+
                 <form method='post' action='/backend/update_profile'>{% csrf_token %}
                     <table>
+                        <tr><br/></tr>
                         {{  profile_form.as_table }}
                     </table>
                     <button class="btn btn-primary" type="submit" name="Submit" value="update_profile" data-complete-text="Saved!">Save</button>
@@ -258,9 +271,16 @@
                     }
                 },
                 'maintenance': function(response) {
-                    if(response.hasOwnProperty('action') && response.hasOwnProperty('status') && response.status === 'ok') {
+                    if( response.hasOwnProperty('status') && response.status === 'ok') {
                         var id = $this.closest('.tab-pane.active').attr('id');
                         $this.closest('.maintenances').load("/backend #"+id+" .maintenances >*");
+                    }
+                },
+
+                'reset_api': function(response) {
+                    if( response.hasOwnProperty('status') && response.status === 'ok') {
+                        var id = $this.closest('.tab-pane.active').attr('id');
+                        $this.closest('.site_config_info').load("/backend #"+id+" .site_config_info >*");
                     }
                 },
                 'module': function(response) {
@@ -386,8 +406,32 @@
                 var answer = confirm("WARNING! This will delete any of your currently added domains. Are you sure you want to continue?");
                 if (answer) {
                 }
-            })
+            });
+
+            $('.site-config-reset').live('click', function(evt){
+                var answer = confirm("WARNING! Resetting your keys will cause all your current active monitors to stop functioning."+
+                                     "Proceed only if you know what you are doing!");
+                if (!answer) {
+                    evt.stopImmediatePropagation();
+                    evt.preventDefault();
+                }
+            });
+
+
+            $(".helptext").prev("br").remove();
+            $('<a>').attr('href','#')
+                    .html("<i class=\"icon-question-sign\">")
+                    .click(function(event){
+                        event.preventDefault();
+                        $(this).next('.helptext').toggle();
+                    }).insertBefore($('.helptext').hide());
+
+            $('<tr>').height(30)
+                     .insertBefore($('#id_password1').closest('tr'));
+
         });
+
+
     </script>
 </body>
 </html>

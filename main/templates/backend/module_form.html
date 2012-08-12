@@ -2,9 +2,6 @@
 
     <h2>{{ module_form.initial.name }}</h2>
 
-    <div class="module-log" style="float:right; ">
-        <a href="/log/monitor{{ module_form.instance.pk }}.log">View logfile</a>
-    </div>
     <form method='post' action='/backend/add_module' class="span4">{% csrf_token %}
         <table>
             {{  module_form.as_table }}
@@ -15,6 +12,9 @@
         <button class="btn btn-danger module-delete" type="submit" name="Submit" value="delete_module" data-complete-text="Deleted!">Delete</button>
     </form>
     <div class="module_info span7 well">
+        <div class="module-log" style="float:right; ">
+            <a href="/log/monitor{{ module_form.instance.pk }}.log">View logfile</a>
+        </div>
         <table class="table table-condensed">
             <thead>
                 <tr>
@@ -82,10 +82,10 @@
             {% for maintenance in maintenances %}
                 {% if maintenance.module == module_form.instance %}
                     <tr>
-                        <td>{{ maintenance.scheduled_to|date:"Y-m-d H:i:s" }}</td>
-                        <td>{{ maintenance.estimated_end_time|date:"Y-m-d H:i:s" }}</td>
+                        <td style="font-family:monospace;">{{ maintenance.scheduled_to|date:"Y-m-d H:i:s" }}</td>
+                        <td style="font-family:monospace;">{{ maintenance.estimated_end_time|date:"Y-m-d H:i:s" }}</td>
                         <td>{{ maintenance.message }}</td>
-                        <td>
+                        <td  style="min-width:230px;">
                             <form class="edit-maintenance">
                                 <input type="hidden" name="maintenance_id" value="{{ maintenance.pk }}" />
                                 <input type="hidden" name="module" value="{{ maintenance.module }}" />
@@ -108,6 +108,9 @@
                                         {% endif %}{% endif %}
                                         <button class="btn edit-maintenance" type="submit">Edit</button>
                                         <button class="btn extend-maintenance" type="submit" name="Extend" value="10">Extend</button>
+                                        <input class="extend_value" type="text" name="extend_value" value="10"/>
+                                        <label style="display: inline;">min</label>
+
                                     {% endif %}
                                 </div>
                             </form>
