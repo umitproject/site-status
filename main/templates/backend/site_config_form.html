@@ -42,12 +42,7 @@
             <tbody>
 
             <tr>
-            <td>Public:</td><td>{% if site_config_form.instance.is_public %}
-                                        <span>Yes</span> <div class="btn-group"><a href="#" class="btn go_private">Go private</a><a href="#" class="btn another add_domain">Add another domain</a>
-                                {% else %}
-                                        <span>No</span>  <div class="btn-group"><a href="#" class="btn add_domain first">Go public</a>
-                                {% endif %}
-                                </div>
+            <td colspan="2"><div class="btn-group"><a href="#" class="btn add_domain">Add a domain</a></div>
 
             <span class="info" style="display:none; ">Add the domain which points to your site status page (this can be a subdomain of <span class="label">{{ request.get_host }}</span> ):</span>
             <br/>
@@ -59,11 +54,33 @@
         </td>
         </tr>
         <tr>
-            <td>Links:</td><td><ul>
+            <td>Links:</td><td>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Link</th>
+                            <th>Public</th>
+                        </tr>
+                    </thead>
+                    <tbody>
                         {% for url in site_config_form.instance.list_urls %}
-                            <li><a href="{{ url }}" target="_blank">{{ url }}</a></li>
+                            <tr>
+                                <td><a href="{{ url.0 }}" target="_blank">{{ url.0 }}</a></td>
+                                <td>
+                                    <form method="post" action="{% url toggle_site_config_url %}">
+                                        <input type="hidden" name="url" value="{{ url.0 }}">
+                                    {% if url.1 %}
+                                        Yes <button class="btn" type="submit">Make Private</button>
+                                    {% else %}
+                                        No  <button class="btn" type="submit">Make Public</button>
+                                    {% endif %}
+                                    </form>
+                                </td>
+                            </tr>
                         {% endfor %}
-                      </ul></td>
+                    </tbody>
+                  </table>
+            </td>
         </tr>
             </tbody>
         </table>

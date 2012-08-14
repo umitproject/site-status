@@ -264,7 +264,7 @@
                             $("#site-domains").tab();
                             $("#site-domain-"+response.id).remove();
                         }
-                        if(response.action === 'add') {
+                        if(response.action === 'add' || response.action === 'toggle') {
                             var id = $this.closest('.tab-pane.active').attr('id');
                             $this.closest('.site_config_details').load("/backend #"+id+" .site_config_details >*");
                         }
@@ -395,9 +395,7 @@
 
             $(".add_domain").live('click', function(evt){
                 evt.preventDefault();
-                if ($(this).hasClass("first")) {
-                    $(this).parent().siblings(".info").toggle();
-                }
+                $(this).parent().siblings(".info").toggle();
                 $(this).parent().siblings(".add_domain_form").toggle();
             });
 

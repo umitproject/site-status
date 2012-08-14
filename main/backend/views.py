@@ -6,6 +6,8 @@ from django.shortcuts import render, render_to_response
 from django.contrib.auth.models import User
 from django.utils import simplejson
 from django.utils.datastructures import MultiValueDictKeyError
+import re
+from urlparse import urlparse
 from main.decorators import login_required
 from main.backend.forms import ProfileForm, SiteConfigForm, ModuleForm, StatusSiteDomainForm, ScheduledMaintenanceForm, ScheduledMaintenanceTemplateForm
 from main.models import SiteConfig, Module, UserProfile, StatusSiteDomain, STATUS, ScheduledMaintenance
@@ -213,6 +215,8 @@ def add_site_domain(request):
         form = StatusSiteDomainForm(request.user,request.POST,instance=instance) if instance else StatusSiteDomainForm(request.user,request.POST)
         if form.is_valid():
             site_domain = form.save(commit=False)
+            if site_domain.status_url.startswith('http://') or site_domain.status_url.startswith('https://'):
+                site_domain.status_url = urlparse(site_domain.status_url).hostname
             site_domain.save()
             response_obj['id'] = site_domain.pk
         else:
@@ -224,6 +228,32 @@ def add_site_domain(request):
         response_obj['name'] = site_domain.status_url
         response_obj['item'] = render_to_string("backend/site_domain_form.html", dict(site_domain_form=form))
         return HttpResponse(simplejson.dumps(response_obj), mimetype='application/json')
+
+    return HttpResponse(simplejson.dumps(response_obj), mimetype='application/json')
+
+
+@login_required
+def toggle_site_config_url(request):
+    response_obj = {'status': 'ok', 'target': 'site_domain', 'action':'toggle'}
+    if request.method == 'POST':
+        url = request.POST.get('url',False)
+        if url:
+            if url.startswith("/sites/"):
+                site_config_id = re.findall(r'\d+', url)[0]
+                site_config = SiteConfig.objects.get(id=site_config_id)
+                if site_config:
+                    site_config.public_internal_url = not site_config.public_internal_url
+                    site_config.save()
+            else:
+                parse_result = urlparse(url)
+                host = parse_result.hostname
+                if parse_result.port:
+                    host += ":"+str(parse_result.port)
+                site_config_domain = StatusSiteDomain.objects.get(status_url=host)
+                if site_config_domain:
+                    site_config_domain.public = not site_config_domain.public
+                    site_config_domain.save()
+
 
     return HttpResponse(simplejson.dumps(response_obj), mimetype='application/json')
 

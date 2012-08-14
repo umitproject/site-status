@@ -114,13 +114,13 @@ MIDDLEWARE_CLASSES = (
     'mediagenerator.middleware.MediaMiddleware',
 
 
-    'main.middleware.SubdomainMiddleware',
 
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
+    'main.middleware.SubdomainMiddleware',
     'main.middleware.SiteConfigMiddleware',
     )
 
@@ -129,7 +129,7 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     'django.core.context_processors.request',
     'django.core.context_processors.media',
     'django.contrib.messages.context_processors.messages',
-  #  'main.context_processors.get_settings',
+    #'main.context_processors.get_settings',
     )
 
 TEMPLATE_LOADERS = (
@@ -246,6 +246,8 @@ LOGIN_REDIRECT_URL = '/'
 
 ########
 # EMAIL
+#EMAIL_BACKEND = 'appengineemail.EmailBackend'
+#'django.core.mail.backends.console.EmailBackend'
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 DEFAULT_FROM_EMAIL = 'noreply@umit-site-status.appspotmail.com'
 EMAIL_HOST = 'localhost'

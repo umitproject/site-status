@@ -52,29 +52,36 @@ class SiteConfigMiddleware(object):
         request.aggregation = None
         request.use_private_urls = False
 
+        public = None
+
         if domain:
             site_config = cache.get(DOMAIN_SITE_CONFIG_CACHE_KEY % domain, False)
             if site_config:
                 request.site_config = site_config
             else:
-                site_config = SiteConfig.get_from_domain(domain)
+                site_config, public = SiteConfig.get_from_domain(domain)
                 if not site_config and request.path.startswith('/sites'):
                     view = resolve(request.path)
                     site_config_id = view.kwargs.get('site_id')
-                    request.site_config = get_object_or_404(SiteConfig,id=site_config_id)
-                    request.use_private_urls = True
-
-                    # require authentication for private status site
-                    if not request.user.is_authenticated():
-                        return redirect("auth_login")
-
-                    # hide status site from other users
-                    if not request.site_config or request.site_config.user != request.user:
-                        raise Http404
-
+                    site_config = SiteConfig.objects.filter(id=site_config_id)
+                    if site_config:
+                        site_config = site_config[0]
+                        request.site_config = site_config
+                        public = request.site_config.public_internal_url
                 else:
                     request.site_config = site_config
                     cache.set(DOMAIN_SITE_CONFIG_CACHE_KEY % domain, request.site_config, 120)
+
+            request.public = public
+
+            if not public and request.site_config and not request.path.startswith(reverse("auth_login")):
+                # require authentication for private status site
+                if not request.user.is_authenticated():
+                    return redirect("auth_login")
+
+                # hide status site from other users
+                if not request.site_config or request.site_config.user != request.user:
+                    raise Http404
 
             aggregation = cache.get(DOMAIN_AGGREGATION_CACHE_KEY % domain, False)
             if aggregation:
@@ -105,7 +112,7 @@ class SubdomainMiddleware(object):
 
         if matches:
             subdomain = matches.group('subdomain')
-            if subdomain:
+            if subdomain and not request.path.startswith(reverse("auth_login")):
                 request.subdomain = subdomain
                 request.urlconf = 'urls'
 

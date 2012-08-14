@@ -117,6 +117,7 @@ def percentage(value, total):
 
 class StatusSiteDomain(models.Model):
     status_url = models.CharField(max_length=255, unique=True)
+    public = models.BooleanField(default=False)
     site_config = models.ForeignKey('main.SiteConfig')
     
     def __unicode__(self):
@@ -146,14 +147,15 @@ class SiteConfig(models.Model):
     send_notifications_automatically = models.BooleanField(default=True)
     api_key = models.CharField(max_length=100, null=True, blank=True)
     api_secret = models.CharField(max_length=100, null=True, blank=True)
+    public_internal_url = models.BooleanField(default=False)
     user = models.ForeignKey(User)
     
     @staticmethod
     def get_from_domain(domain):
         status_site = StatusSiteDomain.objects.filter(status_url=domain)
         if status_site:
-            return status_site[0].site_config
-        return None
+            return status_site[0].site_config, status_site[0].public
+        return None, None
     
     @property
     def schedule_warning_up_to(self):
@@ -165,9 +167,7 @@ class SiteConfig(models.Model):
 
     @property
     def list_urls(self):
-        if self.is_public:
-            return ["http://" + s.status_url for s in StatusSiteDomain.objects.filter(site_config=self)]
-        return [reverse("home", args=[self.id]) ,]
+        return [(reverse("home", args=[self.id]) , self.public_internal_url),] + [("http://" + s.status_url, s.public) for s in StatusSiteDomain.objects.filter(site_config=self)]
 
     @property
     def aggregated_status(self):
