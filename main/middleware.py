@@ -35,13 +35,9 @@ from main.models import SiteConfig, AggregatedStatus, StatusSiteDomain
 ########
 # REGEX
 #TODO do we need this?
+from settings import DOMAIN_SITE_CONFIG_CACHE_KEY, DOMAIN_AGGREGATION_CACHE_KEY
+
 DOMAIN_RE = re.compile(r"(?P<domain>[\w\d_:\.-]+)/?(?P<tail>.*)")
-
-############
-# CACHE KEY
-DOMAIN_SITE_CONFIG_CACHE_KEY = 'domain_site_config_%s'
-DOMAIN_AGGREGATION_CACHE_KEY = 'domain_aggregation_%s'
-
 
 
 class SiteConfigMiddleware(object):
@@ -83,6 +79,9 @@ class SiteConfigMiddleware(object):
                 if not request.site_config or request.site_config.user != request.user:
                     raise Http404
 
+            if request.site_config:
+                request.urlconf = 'urls'
+
             aggregation = cache.get(DOMAIN_AGGREGATION_CACHE_KEY % domain, False)
             if aggregation:
                 request.aggregation = aggregation
@@ -103,21 +102,4 @@ class SiteConfigMiddleware(object):
             
 class SubdomainMiddleware(object):
     def process_request(self, request):
-        domain, host = settings.SITE_STATUS_DOMAIN.lower(), request.get_host().lower()
-
-        pattern = r'^(?:(?P<subdomain>.*?)\.)?%s(?::.*)?$' % re.escape(domain)
-        matches = re.match(pattern, host)
-
-        request.subdomain = None
-
-        if matches:
-            subdomain = matches.group('subdomain')
-            if subdomain and not request.path.startswith(reverse("auth_login")):
-                request.subdomain = subdomain
-                request.urlconf = 'urls'
-
-
-            warnings.warn('Unable to get subdomain from %s using %s.' % (request.get_host(), re.escape(domain)), UserWarning)
-
-        # Continue processing the request as normal.
-        return None
+        pass

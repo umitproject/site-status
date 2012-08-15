@@ -120,7 +120,6 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
-    'main.middleware.SubdomainMiddleware',
     'main.middleware.SiteConfigMiddleware',
     )
 
