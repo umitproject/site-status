@@ -225,6 +225,7 @@ MEDIA_BUNDLES = (
      'bootstrap/js/bootstrap-dropdown.js',
      'bootstrap/js/bootstrap-scrollspy.js',
      'bootstrap/js/bootstrap-button.js',
+     'bootstrap/js/bootstrap-popover.js',
         ),
     ('bootstrap.css',
         'bootstrap/css/bootstrap-responsive.css',

@@ -25,7 +25,7 @@
             height: 50px;
         }
         .helptext {
-            display: block;
+            display: none;
         }
         .extend_value{
             display: inline;
@@ -225,6 +225,25 @@
         $(function() {
             $( ".datepicker" ).datepicker();
         });
+
+        function load_popovers(){
+            $(".helptext").prev("br").remove();
+
+            $(".helptext").each(function(index, elem){
+                var $this = $(elem);
+                $this.replaceWith($('<a>').attr('href','#')
+                        .attr('rel', 'popover')
+                        .attr('tabindex', -1)
+                        .attr('data-content', $this.text())
+                        .html("<i class=\"icon-question-sign\">")
+                        .popover()
+                        .click(function(event){
+                            event.preventDefault();
+                        })
+                );
+            });
+        }
+
         $("form").live('submit', function(evt){
             var submit_to = $(this).attr("action"),
                 $this = $(this),
@@ -252,7 +271,7 @@
                     if(response.hasOwnProperty('action') && response.hasOwnProperty('status') && response.status === 'ok') {
                             $("#site_configs_monitor").load("/backend/ #site_configs_monitor >*");
                             $("#status-site-domains").load("/backend/ #status-site-domains >*");
-                            $("#monitors").load("/backend/ #monitors >*");
+                            $("#monitors").load("/backend/ #monitors >*", load_popovers);
                     }
                 },
                 'site_domain': function (response) {
@@ -266,21 +285,21 @@
                         }
                         if(response.action === 'add' || response.action === 'toggle') {
                             var id = $this.closest('.tab-pane.active').attr('id');
-                            $this.closest('.site_config_details').load("/backend #"+id+" .site_config_details >*");
+                            $this.closest('.site_config_details').load("/backend #"+id+" .site_config_details >*", load_popovers);
                         }
                     }
                 },
                 'maintenance': function(response) {
                     if( response.hasOwnProperty('status') && response.status === 'ok') {
                         var id = $this.closest('.tab-pane.active').attr('id');
-                        $this.closest('.maintenances').load("/backend #"+id+" .maintenances >*");
+                        $this.closest('.maintenances').load("/backend #"+id+" .maintenances >*", load_popovers);
                     }
                 },
 
                 'reset_api': function(response) {
                     if( response.hasOwnProperty('status') && response.status === 'ok') {
                         var id = $this.closest('.tab-pane.active').attr('id');
-                        $this.closest('.site_config_info').load("/backend #"+id+" .site_config_info >*");
+                        $this.closest('.site_config_info').load("/backend #"+id+" .site_config_info >*", load_popovers);
                     }
                 },
                 'module': function(response) {
@@ -293,7 +312,7 @@
                             $("#module-"+response.id).remove();
                         }
                         if(response.action === 'add') {
-                            $("#monitors").load("/backend/ #monitors >*")
+                            $("#monitors").load("/backend/ #monitors >*", load_popovers);
                         }
                     }
                 }
@@ -330,6 +349,7 @@
                     $(".datepicker").datepicker();
                 })
         });
+
         $(document).ready(function(){
            // $("#navbar").scrollspy();
            // $(".btn").button();
@@ -418,14 +438,7 @@
                 }
             });
 
-
-            $(".helptext").prev("br").remove();
-            $('<a>').attr('href','#')
-                    .html("<i class=\"icon-question-sign\">")
-                    .click(function(event){
-                        event.preventDefault();
-                        $(this).next('.helptext').toggle();
-                    }).insertBefore($('.helptext').hide());
+            load_popovers();
 
             $('<tr>').height(30)
                      .insertBefore($('#id_password1').closest('tr'));
