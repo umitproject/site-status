@@ -29,6 +29,9 @@ from django.views.decorators.csrf import csrf_exempt
 from main.models import *
 
 from status_api.decorators import authenticate_api_request
+from settings import ACTIVE_MONITOR_THROTTLE_TIME, ACTIVE_MONITOR_CACHE_KEY
+from django.core.cache import cache
+
 
 def __build_response(**kwargs):
     return HttpResponse(json.dumps(kwargs))
@@ -42,7 +45,14 @@ def __known_status(status):
 @csrf_exempt
 @authenticate_api_request
 def report_status(request):
-    status = request.POST['module_status']
+    status = request.POST.get('module_status', 'unknown')
+
+    module_id = cache.get(ACTIVE_MONITOR_CACHE_KEY%request.module.id, False)
+
+    if module_id:
+        return __build_response(response="DENIED")
+
+    cache.set(ACTIVE_MONITOR_CACHE_KEY%request.module.id, 'true', ACTIVE_MONITOR_THROTTLE_TIME)
 
     # check if the sent status is a known one
     if not __known_status(status):
