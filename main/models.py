@@ -43,7 +43,7 @@ from dbextra.fields import ListField
 ##########
 # CHOICES
 from settings import DEFAULT_NOTIFICATION_DEBOUNCE_TIMER
-from django.core.urlresolvers import reverse
+from django.core.urlresolvers import reverse, NoReverseMatch
 
 STATUS = (
           ('on-line', _('On-line')),
@@ -247,7 +247,10 @@ class Subscriber(models.Model):
 
     @property
     def management_url(self):
-        return reverse('manage_subscription', args=[self.edit_token,])
+        try:
+            return reverse('manage_subscription', args=[self.edit_token,])
+        except NoReverseMatch:
+            return reverse('manage_subscription', kwargs={'site_id' : self.site_config.id, 'uuid':self.edit_token})
     
     def add_ip(self, ip):
         list_ips = self.list_ips
