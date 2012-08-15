@@ -64,8 +64,9 @@ class SiteConfigMiddleware(object):
                         site_config = site_config[0]
                         request.site_config = site_config
                         public = request.site_config.public_internal_url
-                else:
+                elif site_config:
                     request.site_config = site_config
+                    request.urlconf = 'urls'
                     cache.set(DOMAIN_SITE_CONFIG_CACHE_KEY % domain, request.site_config, 120)
 
             request.public = public
@@ -78,9 +79,6 @@ class SiteConfigMiddleware(object):
                 # hide status site from other users
                 if not request.site_config or request.site_config.user != request.user:
                     raise Http404
-
-            if request.site_config:
-                request.urlconf = 'urls'
 
             aggregation = cache.get(DOMAIN_AGGREGATION_CACHE_KEY % domain, False)
             if aggregation:
