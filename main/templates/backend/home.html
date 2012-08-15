@@ -323,6 +323,9 @@
                             }
                         }
                     }
+                    $('input[name="module_action"]').val('');
+                    $('input[name="site_config_action"]').val('');
+                    $('input[name="site_domain_action"]').val('');
 
                     $(".datepicker").datepicker();
                 })
@@ -349,27 +352,27 @@
             });
 
             $(".module-delete").live("click", function(e){
-                $('input[name="module_action"]').val('delete')
+                $(this).parent().find('input[name="module_action"]').val('delete')
             });
 
             $(".module-update").live("click", function(e){
-                $('input[name="module_action"]').val('update')
+                $(this).parent().find('input[name="module_action"]').val('update')
             });
 
             $(".site-config-delete").live("click", function(e){
-                $('input[name="site_config_action"]').val('delete')
+                $(this).parent().find('input[name="site_config_action"]').val('delete')
             });
 
             $(".site-config-update").live("click", function(e){
-                $('input[name="site_config_action"]').val('update')
+                $(this).parent().find('input[name="site_config_action"]').val('update')
             });
 
             $(".site-domain-delete").live("click", function(e){
-                $('input[name="site_domain_action"]').val('delete')
+                $(this).parent().find('input[name="site_domain_action"]').val('delete')
             });
 
             $(".site-domain-update").live("click", function(e){
-                $('input[name="site_domain_action"]').val('update')
+                $(this).parent().find('input[name="site_domain_action"]').val('update')
             });
 
             $('select[name="module_type"]').live("change", function(e){
