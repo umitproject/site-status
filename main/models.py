@@ -35,8 +35,8 @@ from django.conf import settings
 from django.utils.translation import ugettext_lazy as _
 
 from main.memcache import memcache
+from settings import SUBSCRIBER_EDIT_EXPIRATION,DOMAIN_SITE_CONFIG_CACHE_KEY
 from main.utils import pretty_date
-from settings import SUBSCRIBER_EDIT_EXPIRATION
 
 from dbextra.fields import ListField
 
@@ -122,6 +122,10 @@ class StatusSiteDomain(models.Model):
     
     def __unicode__(self):
         return '%s -> %s' % (self.status_url, self.site_config.site_name)
+
+    def save(self, *args, **kwargs):
+        super(StatusSiteDomain, self).save(*args, **kwargs)
+        memcache.delete(DOMAIN_SITE_CONFIG_CACHE_KEY % self.status_url)
 
 class SiteConfig(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
