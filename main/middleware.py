@@ -46,39 +46,31 @@ class SiteConfigMiddleware(object):
 
         request.site_config = None
         request.aggregation = None
-        request.use_private_urls = False
-
-        public = None
 
         if domain:
-            site_config = cache.get(DOMAIN_SITE_CONFIG_CACHE_KEY % domain, False)
+            site_config, public = SiteConfig.get_from_domain(domain)
             if site_config:
-                request.site_config = site_config
+                request.urlconf = 'urls'
             else:
-                site_config, public = SiteConfig.get_from_domain(domain)
                 if not site_config and request.path.startswith('/sites'):
                     view = resolve(request.path)
                     site_config_id = view.kwargs.get('site_id')
                     site_config = SiteConfig.objects.filter(id=site_config_id)
                     if site_config:
                         site_config = site_config[0]
-                        request.site_config = site_config
-                        public = request.site_config.public_internal_url
-                elif site_config:
-                    request.site_config = site_config
-                    request.urlconf = 'urls'
-                    cache.set(DOMAIN_SITE_CONFIG_CACHE_KEY % domain, request.site_config, 120)
+                        public = site_config.public_internal_url
 
-            request.public = public
-
-            if not public and request.site_config and not request.path.startswith(reverse("auth_login")):
+            if not public and site_config and not request.path.startswith(reverse("auth_login")):
                 # require authentication for private status site
                 if not request.user.is_authenticated():
                     return redirect("auth_login")
 
                 # hide status site from other users
-                if not request.site_config or request.site_config.user != request.user:
+                if not site_config or site_config.user != request.user:
                     raise Http404
+
+            request.site_config = site_config
+            request.public = public
 
             aggregation = cache.get(DOMAIN_AGGREGATION_CACHE_KEY % domain, False)
             if aggregation:
@@ -95,9 +87,3 @@ class SiteConfigMiddleware(object):
 
                 cache.set(DOMAIN_AGGREGATION_CACHE_KEY % domain, request.aggregation, 60)
                 request.aggregation = aggregation
-
-                
-            
-class SubdomainMiddleware(object):
-    def process_request(self, request):
-        pass
