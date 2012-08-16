@@ -33,6 +33,7 @@ from django.db.models.signals import post_save, pre_save
 from django.template.loader import render_to_string
 from django.conf import settings
 from django.utils.translation import ugettext_lazy as _
+from django.core.cache import cache
 
 from main.memcache import memcache
 from settings import SUBSCRIBER_EDIT_EXPIRATION,DOMAIN_SITE_CONFIG_CACHE_KEY
@@ -156,10 +157,14 @@ class SiteConfig(models.Model):
     
     @staticmethod
     def get_from_domain(domain):
+        site_config, public = cache.get(DOMAIN_SITE_CONFIG_CACHE_KEY % domain, (False, True))
+        if site_config:
+            return site_config, public
         status_site = StatusSiteDomain.objects.filter(status_url=domain)
         if status_site:
+            cache.set(DOMAIN_SITE_CONFIG_CACHE_KEY % domain, (status_site[0].site_config, status_site[0].public))
             return status_site[0].site_config, status_site[0].public
-        return None, None
+        return None, True
     
     @property
     def schedule_warning_up_to(self):
