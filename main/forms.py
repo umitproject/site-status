@@ -33,8 +33,8 @@ class SubscribeOneTimeForm(SubscribeForm):
                                   help_text=_("Leave this unchecked if you want to receive a notification whenever an incident occurs."))
 
 class UnsubscribeForm(forms.Form):
-    uuid = forms.CharField(label="",widget=forms.HiddenInput())
-    subscription_id = forms.IntegerField(label="",widget=forms.HiddenInput())
+    uuid = forms.CharField(label="",widget=forms.HiddenInput(),required=False)
+    subscription_id = forms.IntegerField(label="",widget=forms.HiddenInput(),required=False)
 
 UnsubscribeFormFactory = formset_factory(UnsubscribeForm,extra=0)
 
