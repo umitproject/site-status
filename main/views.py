@@ -197,6 +197,13 @@ def manage_subscriptions(request,uuid=None, *args, **kwargs):
     context=locals()
     return render(request, 'main/manage_subscription.html', context)
 
+def try_redirect(request, viewname):
+    try:
+        return redirect(viewname)
+    except NoReverseMatch:
+        return redirect(viewname, site_id=request.site_config.id)
+
+
 def unsubscribe(request, *args, **kwargs):
     if request.method == 'POST':
         subscriber = None
@@ -214,22 +221,25 @@ def unsubscribe(request, *args, **kwargs):
                 for subscription in subscriptions:
                     subscriber.unsubscribe(subscription.notification_type, subscription.one_time, subscription.target_id)
                 subscriber.delete()
-                return redirect("/")
+                return try_redirect(request,"home")
             else:
                 for data in form.cleaned_data:
-                    uuid = data.get("uuid")
-                    subscription_id = data.get("subscription_id")
+                    uuid = data.get("uuid", False)
+                    subscription_id = data.get("subscription_id", False)
+
+                    if not uuid or not subscription_id:
+                        continue
 
                     subscriber = Subscriber.objects.get(unique_identifier = uuid)
                     subscription = NotifyOnEvent.objects.get(id=subscription_id)
                     subscriber.unsubscribe(subscription.notification_type, subscription.one_time, subscription.target_id)
-                    if not len(subscriber.list_subscriptions_ids):
+                    if len(subscriber.list_subscriptions_ids) == 1:
                         subscriber.delete()
-                        return redirect("/")
+                        return try_redirect(request,"home")
                     else:
                         return redirect(subscriber.management_url)
 
-    return redirect("manage_subscription")
+    try_redirect(request,"manage_subscription")
 
 def subscriber_setting(request, *args, **kwargs):
     if request.method == 'POST':
@@ -240,7 +250,7 @@ def subscriber_setting(request, *args, **kwargs):
             form.save()
             return redirect(form.instance.management_url)
 
-    return redirect("/")
+    return try_redirect(request,"home")
 
 
 ###############################################################################
