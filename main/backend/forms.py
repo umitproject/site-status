@@ -38,7 +38,7 @@ class ProfileForm(forms.ModelForm):
 class SiteConfigForm(forms.ModelForm):
     class Meta:
         model = SiteConfig
-        exclude = ('user','twitter_account','api_key','api_secret', 'notification_sender', 'notification_to')
+        exclude = ('user','twitter_account','api_key','api_secret', 'notification_sender', 'notification_to','custom_css','logo','preview_custom_css','preview_logo')
 
 class ScheduledMaintenanceForm(forms.ModelForm):
     def __init__(self, user, *args, **kw):
