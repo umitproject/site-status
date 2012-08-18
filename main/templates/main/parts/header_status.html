@@ -12,7 +12,7 @@
 		    data.addRows({{ incidents_data|safe }});
 		
 		    var chart = new google.visualization.AreaChart(document.getElementById('incidents_chart'));
-		    chart.draw(data, {width: 175, height: 70,
+		    chart.draw(data, {width: 400, height: 150,
 		                      hAxis: {textPosition: 'none'},
 		                      vAxis: {textPosition: 'none',
 		                      		  gridlineColor:'none',
@@ -36,7 +36,7 @@
 		    data.addRows({{ uptime_data|safe }});
 		
 		    var chart = new google.visualization.AreaChart(document.getElementById('uptime_chart'));
-		    chart.draw(data, {width: 175, height: 70,
+		    chart.draw(data, {width: 400, height: 150,
 		                      hAxis: {textPosition: 'none'},
 		                      vAxis: {textPosition: 'none',
 		                      		  gridlineColor:'none',
