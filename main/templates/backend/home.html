@@ -5,7 +5,7 @@
 <!DOCTYPE HTML>
 <html>
 <head>
-    <title></title>
+    <title>Backend</title>
     {% include_media 'main.js' %}
     {% include_media 'bootstrap.css' %}
     {% include_media 'jquery-ui.css' %}
@@ -251,11 +251,13 @@
             });
         }
 
-        $("form").live('submit', function(evt){
+        $('form').live('submit', function(evt){
             var submit_to = $(this).attr("action"),
                 $this = $(this),
                 $submit_button = $(this.Submit),
                 data = {};
+            if ($this.attr('enctype'))
+                return;
 
             function get_form_object($form) {
                 var data = {};
