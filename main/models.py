@@ -36,7 +36,7 @@ from django.utils.translation import ugettext_lazy as _
 from django.core.cache import cache
 
 from main.memcache import memcache
-from settings import SUBSCRIBER_EDIT_EXPIRATION,DOMAIN_SITE_CONFIG_CACHE_KEY
+from settings import SUBSCRIBER_EDIT_EXPIRATION,DOMAIN_SITE_CONFIG_CACHE_KEY, SITE_CONFIG_CACHE_KEY
 from main.utils import pretty_date
 
 from dbextra.fields import ListField
@@ -153,10 +153,18 @@ class SiteConfig(models.Model):
     api_key = models.CharField(max_length=100, null=True, blank=True)
     api_secret = models.CharField(max_length=100, null=True, blank=True)
     public_internal_url = models.BooleanField(default=False)
+    logo = models.TextField(null=True,blank=True)
+    custom_css = models.TextField(null=True, blank=True)
+
+    preview_logo = models.TextField(null=True,blank=True)
+    preview_custom_css = models.TextField(null=True, blank=True)
     user = models.ForeignKey(User)
     
     @staticmethod
     def get_from_domain(domain):
+        """
+        gets a site_config from its associated domain. It first tries to pull from memcached
+        """
         site_config, public = cache.get(DOMAIN_SITE_CONFIG_CACHE_KEY % domain, (False, True))
         if site_config:
             return site_config, public
@@ -165,6 +173,21 @@ class SiteConfig(models.Model):
             cache.set(DOMAIN_SITE_CONFIG_CACHE_KEY % domain, (status_site[0].site_config, status_site[0].public))
             return status_site[0].site_config, status_site[0].public
         return None, True
+
+
+    @staticmethod
+    def get_from_id(id):
+        """
+        wrapper that tries to get the site_config from memcached first
+        """
+        site_config = cache.get(SITE_CONFIG_CACHE_KEY % id, False)
+        if site_config:
+            return site_config
+        site_config = SiteConfig.objects.get(id=id)
+        if site_config:
+            cache.set(SITE_CONFIG_CACHE_KEY % site_config.id, site_config)
+        return site_config
+
     
     @property
     def schedule_warning_up_to(self):
@@ -185,6 +208,7 @@ class SiteConfig(models.Model):
 
     def save(self, *args, **kwargs):
         memcache.delete(SITE_CONFIG_KEY % self.site_name)
+        memcache.delete(SITE_CONFIG_CACHE_KEY % self.id)
         
         if not self.api_key:
             self.api_key = uuid.uuid4()

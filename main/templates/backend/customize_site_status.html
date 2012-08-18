@@ -1,0 +1,74 @@
+{% load media %}
+{% load i18n %}
+{% load status_tags %}
+{% load user_tags %}
+<!DOCTYPE HTML>
+<html>
+<head>
+    <title>Customize {{ site_config }}</title>
+    {% include_media 'main.js' %}
+    {% include_media 'bootstrap.css' %}
+    {% include_media 'jquery-ui.css' %}
+    <style>
+        .logo {
+            max-width: 200px;
+        }
+        .float-right{
+            float:right;
+        }
+        textarea, table {
+            width: 100%;
+            min-width: 100%;
+            max-width: 100%;
+            min-height: 500px;
+            max-height: 500px;
+        }
+    </style>
+</head>
+<body>
+<div id="main-container" class="container">
+
+<section>
+
+    <h1>Customize {{ site_config }}</h1>
+
+    <div class="">
+    <form action="" method="post" enctype="multipart/form-data" class="span7 well">{% csrf_token %}
+            <table>
+                {{ customization_form.as_table }}
+            </table>
+        <input type="hidden" name="customization-action" id="customization-action" value="" />
+        <div class="btn-group float-right">
+            <button type="submit" class="btn btn-primary save">Save</button>
+            <button type="submit" class="btn btn-secondary preview">Preview</button>
+        <button type="submit" class="btn btn-secondary remove_logo">Remove logo</button>
+        </div>
+    </form>
+
+        {% if site_config.logo %}
+            <div class="span3 well">
+                <p>Current logo:</p>
+                <img class="logo" src="{{ site_config.logo }}" />
+            </div>
+        {% endif %}
+
+    </div>
+</section>
+</div>
+<script type="text/javascript">
+    (function($){
+        $('.btn.save').click(function(evt){
+            $("#customization-action").val("save")
+        });
+        $('.btn.preview').click(function(evt){
+            $("#customization-action").val("preview");
+            $(this).closest('form').attr("target", "_new")
+        });
+        $('.btn.remove_logo').click(function(evt){
+            $("#customization-action").val("remove_logo")
+        });
+    }(jQuery))
+</script>
+
+</body>
+</html>

@@ -89,6 +89,12 @@ class ModuleForm(forms.ModelForm):
     class Meta:
         model = Module
 
+
+class StatusSiteCustomizationForm(forms.Form):
+    logo = forms.ImageField(required=False)
+    custom_css = forms.CharField(widget=forms.Textarea, required=False)
+    site_config_id = forms.CharField(widget=forms.HiddenInput)
+
 class StatusSiteDomainForm(forms.ModelForm):
     def __init__(self, user, *args, **kw):
         super(forms.ModelForm, self).__init__(*args, **kw)

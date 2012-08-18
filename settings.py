@@ -123,6 +123,14 @@ MIDDLEWARE_CLASSES = (
     'main.middleware.SiteConfigMiddleware',
     )
 
+FILE_UPLOAD_HANDLERS = (
+    "django.core.files.uploadhandler.MemoryFileUploadHandler",
+    "django.core.files.uploadhandler.TemporaryFileUploadHandler",
+    )
+
+FILE_UPLOAD_MAX_MEMORY_SIZE = 1024*1024 # 1MB
+FILE_UPLOAD_TEMP_DIR = "/tmp"
+
 TEMPLATE_CONTEXT_PROCESSORS = (
     'django.contrib.auth.context_processors.auth',
     'django.core.context_processors.request',
@@ -165,6 +173,7 @@ CACHE_SHARDED_COUNTER_EXPIRATION = 30
 # CACHE KEYS
 DOMAIN_SITE_CONFIG_CACHE_KEY = 'domain_site_config_%s'
 DOMAIN_AGGREGATION_CACHE_KEY = 'domain_aggregation_%s'
+SITE_CONFIG_CACHE_KEY = 'site_config_%s'
 ACTIVE_MONITOR_CACHE_KEY = 'active_monitor_%d'
 ACTIVE_MONITOR_THROTTLE_TIME = 10 #seconds
 

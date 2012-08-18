@@ -1,15 +1,22 @@
 from datetime import datetime
+import base64
+import cStringIO
+from django.core.urlresolvers import reverse
 from django.template.loader import render_to_string
-from django.http import HttpResponse
+from django.http import HttpResponse, Http404
 from django.template.context import RequestContext
-from django.shortcuts import render, render_to_response
+from django.shortcuts import render, render_to_response, get_object_or_404, redirect
 from django.contrib.auth.models import User
 from django.utils import simplejson
 from django.utils.datastructures import MultiValueDictKeyError
+from django.core.cache import cache
 import re
 from urlparse import urlparse
+from django.views.decorators.csrf import csrf_protect
 from main.decorators import login_required
-from main.backend.forms import ProfileForm, SiteConfigForm, ModuleForm, StatusSiteDomainForm, ScheduledMaintenanceForm, ScheduledMaintenanceTemplateForm
+from main.backend.forms import ProfileForm, SiteConfigForm, ModuleForm, StatusSiteDomainForm, ScheduledMaintenanceForm, ScheduledMaintenanceTemplateForm, StatusSiteCustomizationForm
+from main.middleware import DOMAIN_SITE_CONFIG_CACHE_KEY
+
 from main.models import SiteConfig, Module, UserProfile, StatusSiteDomain, STATUS, ScheduledMaintenance
 
 __author__ = 'apredoi'
@@ -58,7 +65,7 @@ def backend(request):
                                                  'site_domain_forms' : site_domain_forms,
                                                  'site_domain_form_template' : site_domain_form_template,
                                                  'maintenance_form_template' : maintenance_form_template,
-                                                 'maintenances' : maintenances,
+                                                 'maintenances' : maintenances
                                                  })
 
 
@@ -109,7 +116,9 @@ def add_site_config(request):
         instance = None
         action = request.POST['site_config_action']
         if action in ('update', 'delete') and object_key is not None:
-            instance = SiteConfig.objects.get(user=request.user, pk=object_key)
+            instance = SiteConfig.get_from_id(object_key)
+            if instance.user != request.user:
+                raise Http404
             response_obj['id'] = object_key
             response_obj['action'] = 'update'
 
@@ -240,7 +249,7 @@ def toggle_site_config_url(request):
         if url:
             if url.startswith("/sites/"):
                 site_config_id = re.findall(r'\d+', url)[0]
-                site_config = SiteConfig.objects.get(id=site_config_id)
+                site_config = SiteConfig.get_from_id(site_config_id)
                 if site_config:
                     site_config.public_internal_url = not site_config.public_internal_url
                     site_config.save()
@@ -254,6 +263,19 @@ def toggle_site_config_url(request):
                     site_config_domain.public = not site_config_domain.public
                     site_config_domain.save()
 
+    return HttpResponse(simplejson.dumps(response_obj), mimetype='application/json')
+
+
+@login_required
+def toggle_public_module(request):
+    response_obj = {'status': 'ok', 'target': 'module', 'action':'toggle'}
+    if request.method == 'POST':
+        module_id = request.POST.get('module_id',False)
+        module = Module.objects.filter(id=module_id)
+        if module:
+            module = module[0]
+            module.public = not module.public
+            module.save()
 
     return HttpResponse(simplejson.dumps(response_obj), mimetype='application/json')
 
@@ -293,7 +315,7 @@ def add_maintenance(request):
                 maintenance.status = "unknown"
                 maintenance.total_downtime = 0.0
                 maintenance.module = Module.objects.get(pk=request.POST['module_id'])
-                maintenance.site_config = SiteConfig.objects.get(pk=request.POST['site_config_id'])
+                maintenance.site_config = SiteConfig.get_from_id(request.POST.get('site_config_id',None))
 
             maintenance.updated_at = datetime.now()
             maintenance.save()
@@ -350,9 +372,58 @@ def reset_api(request):
 
     if request.method == 'POST' :
         object_key = request.POST['site_config_id']
-        instance = SiteConfig.objects.get(user=request.user, pk=object_key)
-        instance.api_key = None
-        instance.api_secret = None
-        instance.save()
+        instance = SiteConfig.get_from_id(object_key)
+        if instance and instance.user == request.user:
+            instance.api_key = None
+            instance.api_secret = None
+            instance.save()
 
     return HttpResponse(simplejson.dumps(response_obj), mimetype='application/json')
+
+
+def _handle_uploaded_file(f):
+    output = cStringIO.StringIO()
+    base64.encode(f, output)
+    return "data:" + f.content_type + ";base64," + output.getvalue()
+
+
+@login_required
+def customize_site_status(request, site_id):
+    if request.method == 'POST':
+        customization_form = StatusSiteCustomizationForm(request.POST, request.FILES)
+        if customization_form.is_valid():
+            action = request.POST.get('customization-action', "save")
+            id = customization_form.cleaned_data.get('site_config_id')
+            site_config = get_object_or_404(SiteConfig, id=id, user=request.user)
+
+            if action == 'save':
+                logo_file = request.FILES.get('logo', False)
+                if logo_file:
+                    site_config.logo = _handle_uploaded_file(logo_file)
+                site_config.custom_css = customization_form.cleaned_data.get('custom_css')
+
+                site_config.preview_custom_css = None
+                site_config.preview_logo = None
+
+                site_config.save()
+            elif action == 'preview':
+                logo_file = request.FILES.get('logo', False)
+                if logo_file:
+                    site_config.preview_logo = _handle_uploaded_file(logo_file)
+
+                site_config.preview_custom_css = customization_form.cleaned_data.get('custom_css')
+                site_config.save()
+                return redirect( reverse("home", kwargs={'site_id':site_config.id}) + '?preview=true')
+
+            elif action == 'remove_logo':
+                site_config.logo = None
+                site_config.save()
+        else:
+            site_config = get_object_or_404(SiteConfig, id=site_id, user=request.user)
+    elif request.method == 'GET':
+        site_config = get_object_or_404(SiteConfig, id=site_id, user=request.user)
+        customization_form = StatusSiteCustomizationForm(initial=dict({'site_config_id': site_id, 'custom_css': site_config.preview_custom_css or site_config.custom_css}))
+
+    context = RequestContext(request,locals())
+
+    return render_to_response('backend/customize_site_status.html',context)

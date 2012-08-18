@@ -13,6 +13,8 @@ urlpatterns = patterns('',
     url('^add_site_domain', 'main.backend.views.add_site_domain', name='add_site_domain'),
     url('^toggle_site_config_url', 'main.backend.views.toggle_site_config_url', name='toggle_site_config_url'),
 
+    url('^customize/(?P<site_id>\d+)/', 'main.backend.views.customize_site_status', name='customize'),
+
     url('^add_maintenance', 'main.backend.views.add_maintenance', name='add_maintenance'),
     url('^end_maintenance', 'main.backend.views.end_maintenance', name='end_maintenance'),
     url('^extend_maintenance', 'main.backend.views.extend_maintenance', name='extend_maintenance'),

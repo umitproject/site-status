@@ -12,6 +12,18 @@
     {% include_media 'bootstrap.js' %}
     {% include_media 'bootstrap.css' %}
 
+
+    {% if not request.GET.preview or not request.site_config.preview_custom_css %}
+        <style>
+            {{ request.site_config.custom_css }}
+        </style>
+    {% endif %}
+    {% if request.GET.preview and request.site_config.preview_custom_css %}
+        <style>
+            {{ request.site_config.preview_custom_css }}
+        </style>
+    {% endif %}
+
 	{% block extra_head %}{% endblock %}
 </head>
 <body id="body">
@@ -35,6 +47,12 @@
 
         <header id="top-header" class="jumbotron subhead">
         {% block top_div %}
+            {% if not request.GET.preview or not request.site_config.preview_logo %}
+                <img src="{{  request.site_config.logo }}" style="max-width:200px"/>
+            {% endif %}
+            {% if request.GET.preview and request.site_config.preview_logo %}
+                <img src="{{  request.site_config.preview_logo }}" style="max-width:200px"/>
+            {% endif %}
             <h1>{{ site_config.site_name }}</h1>
             <p class="lead">{% trans "Site Status" %}</p>
 
