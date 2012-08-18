@@ -28,7 +28,7 @@ def check_passive_url_monitors():
             #this means that the check is already running
             logging.critical("Module id %s is already running"%module.id)
             continue
-        memcache.set(passive_key,module)
+        memcache.set(passive_key,module,60)
         check_passive_url_task.apply_async((request, module.id))
 
 
@@ -36,25 +36,25 @@ def check_passive_url_monitors():
 def check_passive_port_monitors():
     modules = Module.objects.filter(module_type='port_check')
 
-    request = HttpRequest()
-    request.META['HTTP_X_CELERY_CRON'] = 'true'
-
     for module in modules:
         passive_key = CHECK_HOST_KEY % module.id
         if memcache.get(passive_key,False):
             #this means that the check is already running
             logging.critical("Module id %s is already running"%module.id)
             continue
-        memcache.set(passive_key,module)
+
+        request = HttpRequest()
+        request.META['HTTP_X_CELERY_CRON'] = 'true'
+
+        memcache.set(passive_key,module, 60)
         check_passive_port_task.apply_async((request, module.id))
+    return True
 
 
 @periodic_task(run_every=crontab(hour="*", minute="*/1", day_of_week="*"))
 def send_notifications():
     notifications = Notification.objects.filter(sent_at=None, send=True).order_by('-created_at')
 
-    request = HttpRequest()
-    request.META['HTTP_X_CELERY_CRON'] = 'true'
 
     for notification in notifications:
         not_key = CHECK_NOTIFICATION_KEY % notification.id
@@ -62,8 +62,13 @@ def send_notifications():
             #this means that the check is already running
             logging.critical("Module id %s is already running"%notification.id)
             continue
-        memcache.set(not_key,notification)
+
+        request = HttpRequest()
+        request.META['HTTP_X_CELERY_CRON'] = 'true'
+        memcache.set(not_key,notification, 60)
         send_notification_task.apply_async((request, notification.id))
+
+    return True
 
 
 #class CheckNotifications(Job):

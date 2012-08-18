@@ -103,7 +103,8 @@ CELERY_IMPORTS = (
     'status_cron.views'
 )
 
-CELERYD_TASK_SOFT_TIME_LIMIT = 50 #seconds; prevents workers from overlapping
+CELERYD_TASK_SOFT_TIME_LIMIT = 55 #seconds; prevents workers from overlapping
+CELERYD_TASK_TIME_LIMIT = 60
 
 
 MIDDLEWARE_CLASSES = (

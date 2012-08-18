@@ -20,13 +20,15 @@
 ##
 from logging.handlers import TimedRotatingFileHandler
 
-import urllib2
+import pycurl
 import datetime
 import logging
 import uuid
 import traceback
 import itertools
+import cStringIO
 from django.core.mail import send_mail, EmailMessage
+from django.db import transaction
 
 from django.http import HttpResponse, Http404
 from django.conf import settings
@@ -69,24 +71,28 @@ def debug(logger, msg=""):
 
 @celery.task(ignore_result=True)
 @staff_member_required
+@transaction.commit_manually
 def send_notification_task(request, notification_id):
     """This task will send out the notifications
     """
-    notification = Notification.objects.get(pk=notification_id)
-    notification.build_email_data()
+    try:
+        notification = Notification.objects.get(pk=notification_id)
+        notification.build_email_data()
 
-    email = EmailMessage(subject=notification.subject,
-                         body=notification.body,
-                         to=[notification.site_config.notification_to,],
-                         bcc=notification.list_emails,
-                         headers = {'Reply-To': notification.site_config.notification_reply_to})
+        email = EmailMessage(subject=notification.subject,
+                             body=notification.body,
+                             to=[notification.site_config.notification_to,],
+                             bcc=notification.list_emails,
+                             headers = {'Reply-To': notification.site_config.notification_reply_to})
 
-    sent = email.send()
+        sent = email.send()
 
-    notification.sent_at = datetime.datetime.now()
-    notification.save()
-    
-    memcache.delete(CHECK_NOTIFICATION_KEY % notification.id)
+        notification.sent_at = datetime.datetime.now()
+        notification.save()
+    finally:
+        transaction.commit()
+        memcache.delete(CHECK_NOTIFICATION_KEY % notification.id)
+
     return HttpResponse("OK")
 
 @staff_member_required
@@ -109,6 +115,7 @@ def _create_new_event(module, status, down_at, back_at=None, details=""):
 
 @celery.task(ignore_result=True, soft_timeout=1)
 @staff_member_required
+@transaction.commit_manually
 def check_passive_url_task(request, module_key):
     logger = get_monitor_log(module_key)
     debug(logger, ("begin",))
@@ -120,7 +127,7 @@ def check_passive_url_task(request, module_key):
     start = datetime.datetime.now()
 
     try:
-        status_code = _get_status_code(module)
+        remote_response = _get_remote_response(module)
         end = datetime.datetime.now()
 
         total_time = end - start
@@ -131,7 +138,8 @@ def check_passive_url_task(request, module_key):
         #            logging.warning('Spent %s seconds checking %s' % (total_time.seconds, module.name))
             debug(logger,'Spent %s seconds checking %s' % (total_time.seconds, module.name))
 
-        if (module.expected_status and status_code == module.expected_status) or status_code == 200:
+        if _check_status_code(module,remote_response) and _check_keyword(module,remote_response):
+
             # This case is for when a module's status is set by hand and no event is created.
             if module.status != 'on-line' and not events:
                 _create_new_event(module,"unknown", start, start)
@@ -152,35 +160,23 @@ def check_passive_url_task(request, module_key):
 Events: %s''' % ("urlfetch.HTTPError", module.name, e,
                  traceback.extract_stack(), events)
 
-        debug(logger, "time_limit_exceeded")
+        debug(logger, "[%s] time_limit_exceeded"%module.id)
+        transaction.rollback() #cancel saving events if it exceeded timeout
 
         if not events:
             _create_new_event(module, "off-line", start, None, details)
 
-    except urllib2.HTTPError, e:
+
+    except pycurl.error, e:
         details = '''%s %s
 %s
 ---
 %s
 ---
-Events: %s''' % ("urlfetch.HTTPError", module.name, e,
+Events: %s''' % ("pycurl_error", module.name, e,
                  traceback.extract_stack(), events)
 
-        debug(logger, "http_error")
-
-        if not events:
-            _create_new_event(module, "unknown", start, None, details)
-
-    except urllib2.URLError, e:
-        details = '''%s %s
-%s
----
-%s
----
-Events: %s''' % ("urllib2.URLError", module.name, e,
-                 traceback.extract_stack(), events)
-
-        debug(logger, "url_error")
+        debug(logger, "url_error (%s) %s"%(e[0],e[1]))
         logging.critical("Events: %s" % events)
         if not events:
             _create_new_event(module, "off-line", start, None, details)
@@ -193,16 +189,18 @@ Events: %s''' % ("urllib2.URLError", module.name, e,
 ---
 Events: %s''' % ("Exception", module.name, e,
                  traceback.extract_stack(), events)
-        debug(logger, "monitor_error")
+        debug(logger, "monitor_error%s"%details)
         if not events:
             _create_new_event(module, "unknown", start, None, details)
     finally:
+        transaction.commit()
         memcache.delete(CHECK_HOST_KEY % module.id)
     return HttpResponse("OK")
 
 
 @celery.task(ignore_result=True, soft_timeout=50)
 @staff_member_required
+@transaction.commit_manually
 def check_passive_port_task(request, module_key):
     logger = get_monitor_log(module_key)
     debug(logger, ("begin",))
@@ -248,19 +246,37 @@ Events: %s''' % ("Exception", module.name, e,
 
 
     finally:
+        transaction.commit()
         memcache.delete(CHECK_HOST_KEY % module.id)
     debug(logger, "end")
     return HttpResponse("OK")
 
-def _get_status_code(module):
-    if settings.GAE:
-        result = urlfetch.fetch(module.url,
-                                follow_redirects=True,
-                                allow_truncated=True,
-                                deadline=60)
-        return result.status_code
-    result = urllib2.urlopen(module.url)
-    return result.getcode()
+def _get_remote_response(module):
+    print "[%s] calling %s"%(module.id, module.url)
+    curl = pycurl.Curl()
+    buff = cStringIO.StringIO()
+    hdr = cStringIO.StringIO()
+
+    curl.setopt(pycurl.URL, module.url.encode('utf-8'))
+    curl.setopt(pycurl.WRITEFUNCTION, buff.write)
+    curl.setopt(pycurl.HEADERFUNCTION, hdr.write)
+    curl.setopt(pycurl.FAILONERROR, 1)
+    curl.setopt(pycurl.FOLLOWLOCATION, 1)
+    curl.setopt(pycurl.TIMEOUT, 59)
+
+    curl.perform()
+
+    print "[%s] end calling %s"%(module.id, module.url)
+
+    return dict({'http_code':curl.getinfo(pycurl.HTTP_CODE), 'http_headers': hdr.getvalue(), 'http_response': buff.getvalue()})
+
+def _check_status_code(module,remote_response):
+    return (module.expected_status and remote_response.get('http_code',False) == module.expected_status) or remote_response.get('http_code',False) == 200
+
+def _check_keyword(module,remote_response):
+    if module.search_keyword:
+        return remote_response.get('http_response', '').find(module.search_keyword.encode('ascii')) != -1
+    return True
 
 @staff_member_required
 def aggregate_daily_status(request):
