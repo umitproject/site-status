@@ -1,0 +1,85 @@
+{% load media %}
+{% load i18n %}
+{% load status_tags %}
+{% load user_tags %}
+<!DOCTYPE HTML>
+<html>
+<head>
+    <title>Notifications for {{ site_config }}</title>
+    {% include_media 'main.js' %}
+    {% include_media 'bootstrap.css' %}
+    {% include_media 'jquery-ui.css' %}
+    <style>
+        .float-right{
+            float:right;
+        }
+    </style>
+</head>
+<body>
+<div id="main-container" class="container">
+
+    <section>
+
+        <h1>Notification {{ site_config }}</h1>
+
+        <div class="">
+            {% for notification in notifications %}
+                <div class="text_box well">
+                    {% if not notification.send %}
+                        <form action="" method="post" class="float-right">{% csrf_token %}
+                            <input type="hidden" name="notification-action" id="notification-action" value="" />
+                            <input type="hidden" name="notification_id" value="{{ notification.id }}" />
+                            <div class="btn-group">
+                                <button type="submit" class="btn btn-primary send">Send</button>
+                                <button type="submit" class="btn btn-danger delete">Delete</button>
+                            </div>
+                        </form>
+                    {% endif %}
+                    <p class="title">{{ notification.subject }}</p>
+                    <p class="description">{% trans "Created at: " %}
+                        <b>{{  notification.created_at|date:"DATETIME_FORMAT" }}</b><br/>
+                        {% if notification.send %}
+                            {% if notification.sent_at %}
+                                <b>{{  notification.sent_at|date:"DATETIME_FORMAT" }}</b>
+                            {% else %}
+                                <b>{% trans "Notification queued for sending." %}</b>
+                            {% endif %}
+                        {% endif %}
+                        <br/><br/>
+                        {% if notification.list_emails %}
+                            {{ notification.list_emails }}
+                        {% endif %}
+                    </p>
+                    <div class="more"><a href=""></a></div>
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+</div>
+<script type="text/javascript">
+    (function($){
+        $('.btn.send').click(function(evt){
+            var response = confirm("This operation cannot be undone! Continue?");
+            if (! response) {
+                e.stopImmediatePropagation();
+                e.stopPropagation();
+                e.preventDefault();
+                return false
+            }
+            $("#notification-action").val("send")
+        });
+        $('.btn.delete').click(function(evt){
+            var response = confirm("You are about to delete a notification! Continue?");
+            if (! response) {
+                e.stopImmediatePropagation();
+                e.stopPropagation();
+                e.preventDefault();
+                return false
+            }
+            $("#notification-action").val("delete");
+        });
+    }(jQuery))
+</script>
+
+</body>
+</html>

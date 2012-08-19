@@ -15,6 +15,7 @@ urlpatterns = patterns('',
     url('^toggle_public_module', 'main.backend.views.toggle_public_module', name='toggle_public_module'),
 
     url('^customize/(?P<site_id>\d+)/', 'main.backend.views.customize_site_status', name='customize'),
+    url('^notification/(?P<site_id>\d+)/', 'main.backend.views.notification_site_status', name='notification'),
 
     url('^add_maintenance', 'main.backend.views.add_maintenance', name='add_maintenance'),
     url('^end_maintenance', 'main.backend.views.end_maintenance', name='end_maintenance'),

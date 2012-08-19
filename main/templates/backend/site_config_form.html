@@ -42,16 +42,21 @@
             <tbody>
 
             <tr>
-            <td colspan="2"><div class="btn-group"><a class="btn" href="{% url customize site_config_form.instance.id %}" target="_blank">Customize</a><a href="#" class="btn add_domain">Add a domain</a></div>
+            <td colspan="2">
+                <div class="btn-group">
+                    <a class="btn" href="{% url customize site_config_form.instance.id %}" target="_blank">Customize</a>
+                    <a href="#" class="btn add_domain">Add a domain</a>
+                    <a class="btn" href="{% url notification site_config_form.instance.id %}" target="_blank">Notifications</a>
+                </div>
 
-            <span class="info" style="display:none; ">Add the domain which points to your site status page (this can be a subdomain of <span class="label">{{ request.get_host }}</span> ):</span>
-            <br/>
-            <form method="post" action="{% url add_site_domain %}" class="add_domain_form" style="display:none;">{% csrf_token %}
-                <input type="text" name="status_url" />
-                <input type="hidden" name="site_config" value="{{ site_config_form.instance.id }}" />
-                <input type="hidden" name="site_domain_action" value="add" />
-            </form>
-        </td>
+                <span class="info" style="display:none; ">Add the domain which points to your site status page (this can be a subdomain of <span class="label">{{ request.get_host }}</span> ):</span>
+                <br/>
+                <form method="post" action="{% url add_site_domain %}" class="add_domain_form" style="display:none;">{% csrf_token %}
+                    <input type="text" name="status_url" />
+                    <input type="hidden" name="site_config" value="{{ site_config_form.instance.id }}" />
+                    <input type="hidden" name="site_domain_action" value="add" />
+                </form>
+            </td>
         </tr>
 
         <tr>

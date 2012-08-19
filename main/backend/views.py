@@ -17,7 +17,7 @@ from main.decorators import login_required
 from main.backend.forms import ProfileForm, SiteConfigForm, ModuleForm, StatusSiteDomainForm, ScheduledMaintenanceForm, ScheduledMaintenanceTemplateForm, StatusSiteCustomizationForm
 from main.middleware import DOMAIN_SITE_CONFIG_CACHE_KEY
 
-from main.models import SiteConfig, Module, UserProfile, StatusSiteDomain, STATUS, ScheduledMaintenance
+from main.models import SiteConfig, Module, UserProfile, StatusSiteDomain, STATUS, ScheduledMaintenance, Notification
 
 __author__ = 'apredoi'
 
@@ -427,3 +427,21 @@ def customize_site_status(request, site_id):
     context = RequestContext(request,locals())
 
     return render_to_response('backend/customize_site_status.html',context)
+
+
+@login_required
+def notification_site_status (request, site_id):
+    if request.method == 'POST':
+        action = request.POST.get('notification-action', "send")
+        notification_id = request.POST.get('notification_id', None)
+        notification = get_object_or_404(Notification, id=notification_id)
+        if action == 'send':
+            notification.send = True
+            notification.save()
+        elif action == 'delete':
+            notification.delete()
+
+    notifications = Notification.objects.filter(site_config__id=site_id)
+    context = RequestContext(request, locals())
+
+    return render_to_response('backend/notification_site_status.html',context)
