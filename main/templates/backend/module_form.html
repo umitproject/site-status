@@ -34,6 +34,17 @@
                 <tr>
                     <td>Updated at:</td><td>{{ module_form.instance.updated_at }}</td>
                 </tr>
+            <tr>
+                <td>Public:</td>
+                <td><form method="post" action="{% url toggle_public_module %}">
+                    <input type="hidden" name="module_id" value="{{ module_form.instance.id }}">
+                    {% if module_form.instance.public %}
+                        Yes <button class="btn" type="submit">Make Private</button>
+                    {% else %}
+                        No  <button class="btn" type="submit">Make Public</button>
+                    {% endif %}
+                </form></td>
+            </tr>
             </tbody>
         </table>
     </div>

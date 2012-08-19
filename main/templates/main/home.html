@@ -32,7 +32,8 @@
 {% block first_content %}
 <div class="box">
 	<div class="text_box">
-		<h3>{% trans "Site Status" %}</h3>
+        <h3>{% trans "Site Status" %}</h3>
+
 		<table class="table table-condensed">
 			<thead>
                 <tr>
@@ -43,6 +44,7 @@
             </thead>
             <tbody>
 			{% for module in modules %}
+                {% if not request.public or request.public and module.public %}
 			<tr>
 				<td><a href='{{ module.url }}'>{{ module.name }}</a></td>
 				{% for day in module.last_7_days %}
@@ -55,6 +57,8 @@
 				<td><img src='{% media_url module.status_img %}' alt='{% verbose_status module.status %}'/></td>
                 <td><a href='{% site_url module_subscribe site_id=request.site_config.id module_id=module.pk %}' title='{% blocktrans with module.name as module_name %} Subscribe to module {{ module_name }} {% endblocktrans %}'><i class="icon-envelope"></i></a></td>
 			</tr>
+
+                {% endif %}
 			{% endfor %}
             </tbody>
 		</table>

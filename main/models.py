@@ -856,6 +856,7 @@ class Module(models.Model):
                             help_text='Full URL, including http:// and path.')
     status = models.CharField(max_length=30, choices=STATUS, default=STATUS[3]) # current_status
     tags = models.TextField(default=' ', blank=True, null=True)
+    public = models.BooleanField(default=False, help_text=_('Choose whether to show on the status page or not'))
     site_config = models.ForeignKey('main.SiteConfig', null=True)
     logs = ListField()
 

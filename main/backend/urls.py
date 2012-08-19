@@ -12,6 +12,7 @@ urlpatterns = patterns('',
     url('^add_module', 'main.backend.views.add_module', name='add_module'),
     url('^add_site_domain', 'main.backend.views.add_site_domain', name='add_site_domain'),
     url('^toggle_site_config_url', 'main.backend.views.toggle_site_config_url', name='toggle_site_config_url'),
+    url('^toggle_public_module', 'main.backend.views.toggle_public_module', name='toggle_public_module'),
 
     url('^customize/(?P<site_id>\d+)/', 'main.backend.views.customize_site_status', name='customize'),
 

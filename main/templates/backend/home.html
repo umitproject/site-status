@@ -323,6 +323,10 @@
                         if(response.action === 'add') {
                             $("#monitors").load("/backend/ #monitors >*", load_popovers);
                         }
+                        if(response.action === 'toggle'){
+                            var id = $this.closest('.tab-pane.active').attr('id');
+                            $this.closest('.module_info').load("/backend #"+id+" .module_info >*");
+                        }
                     }
                 }
             };
