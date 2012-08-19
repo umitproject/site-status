@@ -48,7 +48,9 @@
         <header id="top-header" class="jumbotron subhead">
         {% block top_div %}
             {% if not request.GET.preview or not request.site_config.preview_logo %}
-                <img src="{{  request.site_config.logo }}" style="max-width:200px"/>
+                {% if request.site_config.logo %}
+                    <img src="{{  request.site_config.logo }}" style="max-width:200px"/>
+                {% endif %}
             {% endif %}
             {% if request.GET.preview and request.site_config.preview_logo %}
                 <img src="{{  request.site_config.preview_logo }}" style="max-width:200px"/>
