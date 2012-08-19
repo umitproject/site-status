@@ -57,6 +57,9 @@ def send_notifications():
 
 
     for notification in notifications:
+        if not notification.send:
+            logging.info("Auto-send is disabled for notification %s."%notification.id)
+            continue
         not_key = CHECK_NOTIFICATION_KEY % notification.id
         if memcache.get(not_key,False):
             #this means that the check is already running
