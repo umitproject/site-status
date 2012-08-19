@@ -36,6 +36,7 @@ from django.conf import settings
 from nmap import PortScanner
 
 # Appengine TASKS
+import re
 from main.models import *
 from main.memcache import memcache
 from main.decorators import staff_member_required
@@ -50,23 +51,20 @@ from celery.exceptions import SoftTimeLimitExceeded
 
 from settings import NMAP_ARGS
 import os
-from dbextra.utils import ModuleListFieldHandler
+from dbextra.utils import ModuleListFieldHandler, MAX_LOG_ENTRIES
+
 MONITOR_LOG_SEPARATOR = ' '
 
-# TODO: keep log in memory and only perform a save once
-def get_monitor_log(module_id):
-    logger = logging.getLogger("rotating_logger")
-    log_handler = ModuleListFieldHandler(module_id)
-    logger.addHandler(log_handler)
-    return logger
-
-def debug(logger, msg=""):
+def debug(module, msg=""):
     debug_tokens = (str(datetime.datetime.now()), )
     if isinstance(msg, tuple):
         debug_tokens += msg
     else:
         debug_tokens += (msg, )
-    logger.debug(MONITOR_LOG_SEPARATOR.join(debug_tokens))
+    module.logs.append(MONITOR_LOG_SEPARATOR.join(debug_tokens))
+    #rotate
+    module.logs = module.logs[-MAX_LOG_ENTRIES:]
+    module.save()
 
 
 @celery.task(ignore_result=True)
@@ -117,12 +115,11 @@ def _create_new_event(module, status, down_at, back_at=None, details=""):
 @staff_member_required
 @transaction.commit_manually
 def check_passive_url_task(request, module_key):
-    logger = get_monitor_log(module_key)
-    debug(logger, ("begin",))
 
 
     module = Module.objects.get(id=module_key)
     events = ModuleEvent.objects.filter(module=module).filter(back_at=None)
+    debug(module, ("begin",))
 
     start = datetime.datetime.now()
 
@@ -132,11 +129,11 @@ def check_passive_url_task(request, module_key):
 
         total_time = end - start
 
-        debug(logger, ("end", str(total_time.total_seconds()),))
+        debug(module, ("end_check", str(total_time.total_seconds()),))
         if total_time.seconds > 3:
         # TODO: Turn this into a notification
         #            logging.warning('Spent %s seconds checking %s' % (total_time.seconds, module.name))
-            debug(logger,'Spent %s seconds checking %s' % (total_time.seconds, module.name))
+            debug(module,'Spent %s seconds checking %s' % (total_time.seconds, module.name))
 
         if _check_status_code(module,remote_response) and _check_keyword(module,remote_response):
 
@@ -148,7 +145,7 @@ def check_passive_url_task(request, module_key):
             for event in events:
                 event.back_at = now
                 event.save()
-                debug(logger,"Site is back online %s" % module.name)
+                debug(module,"Site is back online %s" % module.name)
 
 
     except SoftTimeLimitExceeded, e:
@@ -160,7 +157,7 @@ def check_passive_url_task(request, module_key):
 Events: %s''' % ("urlfetch.HTTPError", module.name, e,
                  traceback.extract_stack(), events)
 
-        debug(logger, "[%s] time_limit_exceeded"%module.id)
+        debug(module, "[%s] time_limit_exceeded"%module.id)
         transaction.rollback() #cancel saving events if it exceeded timeout
 
         if not events:
@@ -176,7 +173,7 @@ Events: %s''' % ("urlfetch.HTTPError", module.name, e,
 Events: %s''' % ("pycurl_error", module.name, e,
                  traceback.extract_stack(), events)
 
-        debug(logger, "url_error (%s) %s"%(e[0],e[1]))
+        debug(module, "url_error (%s) %s"%(e[0],e[1]))
         logging.critical("Events: %s" % events)
         if not events:
             _create_new_event(module, "off-line", start, None, details)
@@ -189,10 +186,11 @@ Events: %s''' % ("pycurl_error", module.name, e,
 ---
 Events: %s''' % ("Exception", module.name, e,
                  traceback.extract_stack(), events)
-        debug(logger, "monitor_error%s"%details)
+        debug(module, "monitor_error%s"%details)
         if not events:
             _create_new_event(module, "unknown", start, None, details)
     finally:
+        debug(module, "end task")
         transaction.commit()
         memcache.delete(CHECK_HOST_KEY % module.id)
     return HttpResponse("OK")
@@ -202,10 +200,9 @@ Events: %s''' % ("Exception", module.name, e,
 @staff_member_required
 @transaction.commit_manually
 def check_passive_port_task(request, module_key):
-    logger = get_monitor_log(module_key)
-    debug(logger, ("begin",))
 
     module = Module.objects.get(id=module_key)
+    debug(module, ("begin",))
     events = ModuleEvent.objects.filter(module=module).filter(back_at=None)
 
     portscanner = PortScanner()
@@ -219,11 +216,11 @@ def check_passive_port_task(request, module_key):
 
         host = portscanner.all_hosts()[0]
         if 'open' == portscanner[host]['tcp'][module.check_port]['state']:
-            debug(logger, "Port open")
+            debug(module, "Port open")
             for event in events:
                 event.back_at = now
                 event.save()
-                debug(logger,"Site is back online %s" % module.name)
+                debug(module,"Site is back online %s" % module.name)
         else:
             if not events:
                 _create_new_event(module, "off-line", now, None, "Port is closed")
@@ -239,16 +236,16 @@ def check_passive_port_task(request, module_key):
 ---
 Events: %s''' % ("Exception", module.name, e,
                  traceback.extract_stack(), events)
-        debug(logger, "monitor_error" + details)
+        debug(module, "monitor_error" + details)
         start = datetime.datetime.now()
         if not events:
             _create_new_event(module, "unknown", start, None, details)
 
 
     finally:
+        debug(module, "end task")
         transaction.commit()
         memcache.delete(CHECK_HOST_KEY % module.id)
-    debug(logger, "end")
     return HttpResponse("OK")
 
 def _get_remote_response(module):
