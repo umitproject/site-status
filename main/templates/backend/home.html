@@ -381,6 +381,13 @@
             });
 
             $(".module-delete").live("click", function(e){
+                var response = confirm("You are about to delete a module! Continue?");
+                if (! response) {
+                    e.stopImmediatePropagation();
+                    e.stopPropagation();
+                    e.preventDefault();
+                    return false
+                }
                 $(this).parent().find('input[name="module_action"]').val('delete')
             });
 
@@ -389,6 +396,13 @@
             });
 
             $(".site-config-delete").live("click", function(e){
+                var response = confirm("You are about to delete a site config! Continue?");
+                if (! response) {
+                    e.stopImmediatePropagation();
+                    e.stopPropagation();
+                    e.preventDefault();
+                    return false
+                }
                 $(this).parent().find('input[name="site_config_action"]').val('delete')
             });
 
@@ -397,6 +411,13 @@
             });
 
             $(".site-domain-delete").live("click", function(e){
+                var response = confirm("You are about to delete a domain! Continue?");
+                if (! response) {
+                    e.stopImmediatePropagation();
+                    e.stopPropagation();
+                    e.preventDefault();
+                    return false
+                }
                 $(this).parent().find('input[name="site_domain_action"]').val('delete')
             });
 
@@ -431,12 +452,6 @@
                 $(this).parent().siblings(".add_domain_form").toggle();
             });
 
-            $(".go_private").live('click', function(evt){
-                evt.preventDefault();
-                var answer = confirm("WARNING! This will delete any of your currently added domains. Are you sure you want to continue?");
-                if (answer) {
-                }
-            });
 
             $('.site-config-reset').live('click', function(evt){
                 var answer = confirm("WARNING! Resetting your keys will cause all your current active monitors to stop functioning."+
