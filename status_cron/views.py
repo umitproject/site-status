@@ -268,11 +268,12 @@ def _get_remote_response(module):
     return dict({'http_code':curl.getinfo(pycurl.HTTP_CODE), 'http_headers': hdr.getvalue(), 'http_response': buff.getvalue()})
 
 def _check_status_code(module,remote_response):
-    return (module.expected_status and remote_response.get('http_code',False) == module.expected_status) or remote_response.get('http_code',False) == 200
+    expected_status = module.expected_status or 200
+    return remote_response.get('http_code', 0) == expected_status
 
 def _check_keyword(module,remote_response):
     if module.search_keyword:
-        return remote_response.get('http_response', '').find(module.search_keyword.encode('ascii')) != -1
+        return bool(re.search(module.search_keyword, remote_response.get('http_response', '')))
     return True
 
 @staff_member_required
