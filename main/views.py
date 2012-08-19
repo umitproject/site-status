@@ -398,9 +398,12 @@ def log(request, log_name):
             module_id = int(match.group(1))
             module = Module.objects.get(pk=module_id)
             if module.site_config.user.username == u.username:
-                response = HttpResponse(module.logs, mimetype='text/plain')
-                response['Cache-Control'] = 'no-cache'
-                return response
+                if request.GET.get('raw',False):
+                    response = HttpResponse(module.logs, mimetype='text/plain')
+                    response['Cache-Control'] = 'no-cache'
+                    return response
+                else:
+                    return render_to_response("main/pretty_log.html", dict({'module':module,'logs':'\n'.join(module.logs)}))
     except Exception,e:
         raise Http404
     raise Http404

@@ -1,0 +1,25 @@
+{% load media %}
+{% load i18n %}
+{% load status_tags %}
+{% load user_tags %}
+<!DOCTYPE HTML>
+<html>
+<head>
+    <title>Log for {{ module.name }}</title>
+    {% include_media 'main.js' %}
+    {% include_media 'bootstrap.css' %}
+</head>
+<body>
+<div id="main-container" class="container">
+
+    <section>
+
+        <h1>Log for {{ module.name }}</h1>
+        <a href="?raw=true">Raw log</a>
+        <pre>{{ logs }}</pre>
+
+    </section>
+</div>
+
+</body>
+</html>
