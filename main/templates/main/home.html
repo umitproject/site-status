@@ -18,12 +18,15 @@
         <br />
         <br />
         <div class='box'>
+            <h3>Scheduled maintenances</h3>
             {% for schedule in scheduled_maintenances %}
-                <div class="text_box">
-                    <p class="title"><img src='{% media_url schedule.status_img %}' alt='{% verbose_status schedule.status %}'/>&nbsp;&nbsp;{% verbose_status schedule.status %} {% trans "on" %} {{ schedule.scheduled_to|date:"DATETIME_FORMAT" }}</p>
-                    <p class="description">{% trans "Downtime estimate:" %} <b>{% blocktrans %}{{ schedule.time_estimate }} minutes{% endblocktrans %}</b><br/><br/>{{ schedule.message }}</p>
-                    <div class="more"><a href=""></a></div>
-                </div>
+                {% if schedule.time_left > 0 %}
+                    <div class="text_box well">
+                        <p class="title">{% trans "Maintenance scheduled to: " %}{{ schedule.scheduled_to|date:"DATETIME_FORMAT" }}</p>
+                        <p class="description">{% trans "Remaining downtime estimate: " %} <b>{{ schedule.time_left|floatformat:2 }} {% trans " minutes" %}</b><br/><br/>{{ schedule.message }}</p>
+                        <div class="more"><a href=""></a></div>
+                    </div>
+                {% endif %}
             {% endfor %}
         </div>
     {% endif %}

@@ -71,6 +71,17 @@
         {% block header_status %}
             {% include "main/parts/header_status.html" %}
         {% endblock %}
+    
+        {% block scheduled_maintenances %}
+            {% if scheduled_maintenances %}
+                <br />
+                <br />
+                <div class="big_round_box">
+                    <p class="title">{% trans "Scheduled Maintenances" %}</p>
+                    <p class="description">{{ scheduled_maintenances }}</p>
+                </div>
+            {% endif %}
+        {% endblock %}
 
         {% block content %}
         <div id="content">
@@ -148,17 +159,6 @@
                 {% if scheduled_maintenances %}
                     <img src="{% media_url "img/hr.png" %}" alt="" />
                 {% endif %}
-                {% endif %}
-                {% endblock %}
-
-                {% block scheduled_maintenances %}
-                {% if scheduled_maintenances %}
-                    <br />
-                    <br />
-                    <div class="big_round_box">
-                        <p class="title">{% trans "Scheduled Maintenances" %}</p>
-                        <p class="description">{{ scheduled_maintenances }}</p>
-                    </div>
                 {% endif %}
                 {% endblock %}
                 <div style="clear:both"></div>

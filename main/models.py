@@ -978,7 +978,15 @@ class ScheduledMaintenance(models.Model):
 
     @property
     def estimated_end_time(self):
-        return self.scheduled_to + datetime.timedelta(seconds=self.time_estimate)
+        return self.scheduled_to + datetime.timedelta(minutes=self.time_estimate)
+
+    @property
+    def time_left(self):
+        if self.is_in_the_future:
+            return self.time_estimate
+        if self.is_undergoing:
+            return (self.estimated_end_time - datetime.datetime.now()).total_seconds() / 60
+        return 0
 
     @property
     def is_in_the_future(self):
