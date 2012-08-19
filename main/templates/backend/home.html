@@ -295,6 +295,8 @@
                         if(response.action === 'add' || response.action === 'toggle') {
                             var id = $this.closest('.tab-pane.active').attr('id');
                             $this.closest('.site_config_details').load("/backend #"+id+" .site_config_details >*", load_popovers);
+
+                            $("#status-site-domains").load("/backend/ #status-site-domains >*");
                         }
                     }
                 },
