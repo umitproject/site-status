@@ -29,6 +29,7 @@ from django.core import validators
 from django.contrib.auth.models import User
 
 from django.db import models
+from django.db.models import Q
 from django.db.models.signals import post_save, pre_save
 from django.template.loader import render_to_string
 from django.conf import settings
@@ -564,101 +565,271 @@ class NotifyOnEvent(models.Model):
 class AggregatedStatus(models.Model):
     created_at = models.DateTimeField(null=True, blank=True, default=None)
     updated_at = models.DateTimeField(null=True, blank=True, default=None)
-    total_downtime = models.FloatField(default=0.0)
     time_estimate_all_modules = models.FloatField(default=0.0)
     status = models.CharField(max_length=30, choices=STATUS, default=STATUS[0][0])
     site_config = models.ForeignKey('main.SiteConfig', null=True)
-    
+
+    @property
+    def total_time(self):
+        """
+        Sum of monitors total_time
+        """
+        modules = Module.objects.filter(site_config=self.site_config)
+        total_time = 0
+        for module in modules:
+            total_time += module.total_time
+        return total_time
+
+    @property
+    def total_public_time(self):
+        """
+        Sum of public monitors total_time
+        """
+        modules = Module.objects.filter(site_config=self.site_config, public=True)
+        total_time = 0
+        for module in modules:
+            total_time += module.total_time
+        return total_time
+
+    @property
+    def total_downtime(self):
+        """
+        Sum of monitors down_time
+        """
+        modules = Module.objects.filter(site_config=self.site_config)
+        total_downtime = 0
+        for module in modules:
+            total_downtime += module.total_downtime
+        return total_downtime
+
+    @property
+    def total_public_downtime(self):
+        """
+        Sum of monitors down_time
+        """
+        modules = Module.objects.filter(site_config=self.site_config, public=True)
+        total_downtime = 0
+        for module in modules:
+            total_downtime += module.total_downtime
+        return total_downtime
+
+
     @property
     def total_uptime(self):
-        now = datetime.datetime.now()
-        uptime = (timedelta_seconds(now - self.created_at) / 60.0) - self.total_downtime
-        return uptime if uptime > self.total_downtime else 0.0 
-    
+        return self.total_time - self.total_downtime
+
+
+    @property
+    def total_public_uptime(self):
+        return self.total_public_time - self.total_public_downtime
+
+    @property
+    def percentage_downtime(self):
+        return percentage(self.total_downtime, self.total_time) if self.total_time > 0 else 100.0
+
+
+    @property
+    def public_percentage_downtime(self):
+        return percentage(self.total_public_downtime, self.total_public_time) if self.total_public_time > 0 else 100.0
+
     @property
     def percentage_uptime(self):
         return 100 - self.percentage_downtime
-    
+
+
     @property
-    def percentage_downtime(self):
-        return percentage(self.total_downtime, self.total_uptime) if self.total_uptime > 0 else 100.0
+    def public_percentage_uptime(self):
+        return 100 - self.public_percentage_downtime
 
     @property
     def incidents_data(self):
-        today = datetime.datetime.now()
+        now = datetime.datetime.now()
+        today = datetime.datetime(now.year, now.month, now.day, 0, 0, 0)
         total_base = Module.objects.filter(site_config=self.site_config).count() * 24 * 60 # Total minutes all modules can be offline in a day
+
+        no_days = self.site_config.show_days
+        first_day = today - datetime.timedelta(days=no_days)
+        impacting_events = ModuleEvent.objects.filter(Q(back_at__isnull=True) | Q(back_at__gte=first_day), site_config=self.site_config)
         
         incidents = []
-        for d in xrange(6, -1, -1):
-            incident = []
-            day = today - datetime.timedelta(days=d)
-            
-            data = ModuleEvent.objects.\
-                        filter(down_at__gte=datetime.datetime(\
-                                 day.year, day.month, day.day, 0, 0, 0)).\
-                        filter(down_at__lte=datetime.datetime(\
-                                 day.year, day.month, day.day, 23, 59, 59, 999999)).\
-                        filter(site_config=self.site_config)
-        
+        for i in xrange(no_days-1, -1, -1):
+            day = today - datetime.timedelta(days=i)
+            day_end = datetime.datetime(day.year, day.month, day.day, 23, 59, 59, 999999)
+            if day_end > now:
+                day_end = now
+
             key = '%s/%s' % (day.month, day.day)
-            if data:
-                for d in data:
-                    if key in incident:
-                        incident[1] += d.total_downtime
+            incident = [key, 0]
+
+            for event in impacting_events:
+                impacting_downtime = 0
+                if day < event.down_at < day_end:
+                    if (event.back_at or day_end) < day_end:
+                        impacting_downtime = event.total_downtime
                     else:
-                        incident = [key, d.total_downtime]
-                else:
-                    incident[1] = percentage(incident[1], total_base)
+                        impacting_downtime = (day_end - event.down_at).total_seconds() / 60
+                elif event.down_at < day <= (event.back_at or day_end):
+                    if (event.back_at or day_end) < day_end:
+                        impacting_downtime = (event.back_at - day).total_seconds() / 60
+                    else:
+                        impacting_downtime = (day_end - day).total_seconds() / 60
+
+
+                incident[1] += impacting_downtime
+
             else:
-                incident = [key, 0]
-            
+                incident[1] = percentage(incident[1], total_base)
+
             incidents.append(incident)
-        
+
         return incidents
 
     @property
-    def uptime_data(self):
-        today = datetime.datetime.now()
-        num_modules = Module.objects.filter(site_config=self.site_config).count()
-        total_base = num_modules * 24 * 60
-        
-        uptimes = []
-        for d in xrange(6, -1, -1):
-            uptime = []
-            day = today - datetime.timedelta(days=d)
-            
-            data = DailyModuleStatus.objects.\
-                        filter(created_at__gte=datetime.datetime(\
-                                 day.year, day.month, day.day, 0, 0, 0)).\
-                        filter(created_at__lte=datetime.datetime(\
-                                 day.year, day.month, day.day, 23, 59, 59, 999999)).\
-                        filter(site_config=self.site_config)
-        
+    def public_incidents_data(self):
+        now = datetime.datetime.now()
+        today = datetime.datetime(now.year, now.month, now.day, 0, 0, 0)
+        total_base = Module.objects.filter(site_config=self.site_config, public=True).count() * 24 * 60 # Total minutes all modules can be offline in a day
+
+        no_days = self.site_config.show_days
+        first_day = today - datetime.timedelta(days=no_days)
+        impacting_events = ModuleEvent.objects.filter(Q(back_at__isnull=True) | Q(back_at__gte=first_day), site_config=self.site_config, module__public=True)
+
+        incidents = []
+        for i in xrange(no_days-1, -1, -1):
+            day = today - datetime.timedelta(days=i)
+            day_end = datetime.datetime(day.year, day.month, day.day, 23, 59, 59, 999999)
+            if day_end > now:
+                day_end = now
+
             key = '%s/%s' % (day.month, day.day)
-            if data:
-                n = num_modules
-                for d in data:
-                    if key in uptime:
-                        uptime[1] += d.total_uptime
+            incident = [key, 0]
+
+            for event in impacting_events:
+                impacting_downtime = 0
+                if day < event.down_at < day_end:
+                    if (event.back_at or day_end) < day_end:
+                        impacting_downtime = event.total_downtime
                     else:
-                        uptime = [key, d.total_uptime]
-                    n -= 1
-                else:
-                    uptime[1] += 24*60*n
-                    uptime[1] = percentage(uptime[1], total_base)
+                        impacting_downtime = (day_end - event.down_at).total_seconds() / 60
+                elif event.down_at < day <= (event.back_at or day_end):
+                    if (event.back_at or day_end) < day_end:
+                        impacting_downtime = (event.back_at - day).total_seconds() / 60
+                    else:
+                        impacting_downtime = (day_end - day).total_seconds() / 60
+
+
+                incident[1] += impacting_downtime
+
             else:
-                uptime = [key, 100.0]
-            
-            uptimes.append(uptime)
-        
-        return uptimes
-    
+                incident[1] = percentage(incident[1], total_base)
+
+            incidents.append(incident)
+
+        return incidents
+
+
+    @property
+    def uptime_data(self):
+        now = datetime.datetime.now()
+        today = datetime.datetime(now.year, now.month, now.day, 0, 0, 0)
+        total_base = Module.objects.filter(site_config=self.site_config).count() * 24 * 60 # Total minutes all modules can be offline in a day
+
+        no_days = self.site_config.show_days
+        first_day = today - datetime.timedelta(days=no_days)
+        impacting_events = ModuleEvent.objects.filter(Q(back_at__isnull=True) | Q(back_at__gte=first_day), site_config=self.site_config)
+
+        incidents = []
+        for i in xrange(no_days-1, -1, -1):
+            day = today - datetime.timedelta(days=i)
+            day_end = datetime.datetime(day.year, day.month, day.day, 23, 59, 59, 999999)
+            if day_end > now:
+                day_end = now
+
+            key = '%s/%s' % (day.month, day.day)
+            incident = [key, total_base]
+
+            for event in impacting_events:
+                impacting_downtime = 0
+                if day < event.down_at < day_end:
+                    if (event.back_at or day_end) < day_end:
+                        impacting_downtime = event.total_downtime
+                    else:
+                        impacting_downtime = (day_end - event.down_at).total_seconds() / 60
+                elif event.down_at < day <= (event.back_at or day_end):
+                    if (event.back_at or day_end) < day_end:
+                        impacting_downtime = (event.back_at - day).total_seconds() / 60
+                    else:
+                        impacting_downtime = (day_end - day).total_seconds() / 60
+
+
+                incident[1] -= impacting_downtime
+
+            else:
+                incident[1] = percentage(incident[1], total_base)
+
+            incidents.append(incident)
+
+        return incidents
+
+    @property
+    def public_uptime_data(self):
+        now = datetime.datetime.now()
+        today = datetime.datetime(now.year, now.month, now.day, 0, 0, 0)
+        total_base = Module.objects.filter(site_config=self.site_config, public=True).count() * 24 * 60 # Total minutes all modules can be offline in a day
+
+        no_days = self.site_config.show_days
+        first_day = today - datetime.timedelta(days=no_days)
+        impacting_events = ModuleEvent.objects.filter(Q(back_at__isnull=True) | Q(back_at__gte=first_day), site_config=self.site_config, module__public=True)
+
+        incidents = []
+        for i in xrange(no_days-1, -1, -1):
+            day = today - datetime.timedelta(days=i)
+            day_end = datetime.datetime(day.year, day.month, day.day, 23, 59, 59, 999999)
+            if day_end > now:
+                day_end = now
+
+            key = '%s/%s' % (day.month, day.day)
+            incident = [key, total_base]
+
+            for event in impacting_events:
+                impacting_downtime = 0
+                if day < event.down_at < day_end:
+                    if (event.back_at or day_end) < day_end:
+                        impacting_downtime = event.total_downtime
+                    else:
+                        impacting_downtime = (day_end - event.down_at).total_seconds() / 60
+                elif event.down_at < day <= (event.back_at or day_end):
+                    if (event.back_at or day_end) < day_end:
+                        impacting_downtime = (event.back_at - day).total_seconds() / 60
+                    else:
+                        impacting_downtime = (day_end - day).total_seconds() / 60
+
+
+                incident[1] -= impacting_downtime
+
+            else:
+                incident[1] = percentage(incident[1], total_base)
+
+            incidents.append(incident)
+
+        return incidents
+
+
     @property
     def last_incident(self):
         last_incident = ModuleEvent.objects.filter(site_config=self.site_config).order_by('-down_at')[:1]
         if last_incident:
             last_incident = last_incident[0]
         
+        return last_incident
+
+
+    @property
+    def last_public_incident(self):
+        last_incident = ModuleEvent.objects.filter(site_config=self.site_config, module__public = True).order_by('-down_at')[:1]
+        if last_incident:
+            last_incident = last_incident[0]
+
         return last_incident
     
     def __unicode__(self):
@@ -676,9 +847,9 @@ class DailyModuleStatus(models.Model):
     status = models.CharField(max_length=30, choices=STATUS)
     module = models.ForeignKey('main.Module')
     site_config = models.ForeignKey('main.SiteConfig', null=True)
-    
+
     # TODO: on creation, revoke module's today_status memcache
-    
+
     @property
     def total_uptime(self):
         return (24*60) - self.total_downtime
@@ -801,7 +972,7 @@ def module_event_post_save(sender, instance, created, **kwargs):
 
     aggregated_statuses = AggregatedStatus.objects.filter(site_config=instance.site_config)
     aggregation = aggregated_statuses[0] if len(aggregated_statuses) > 0 else AggregatedStatus()
-    
+
     if created:
         instance.module.status = instance.status
         day_status.add_status(instance.status)
@@ -813,10 +984,7 @@ def module_event_post_save(sender, instance, created, **kwargs):
         day_status.add_status(instance.module.status)
 
         day_status.total_downtime += instance.total_downtime
-        instance.module.total_downtime += instance.total_downtime
-        
-        aggregation.total_downtime += instance.total_downtime
-        
+
         # Sync aggregation status
         open_event = ModuleEvent.objects.filter(back_at=None, site_config=instance.site_config).order_by('-down_at')[:1]
         if not open_event:
@@ -847,7 +1015,6 @@ class Module(models.Model):
     updated_at = models.DateTimeField(null=True, blank=True, default=None)
     name = models.CharField(max_length=50, default='')
     description = models.TextField(default=' ', null=True, blank=True)
-    total_downtime = models.FloatField(default=0.0)
     module_type = models.CharField(max_length=15, choices=MODULE_TYPES, default=MODULE_TYPES[0]) # two initial types: passive and active. In passive, status site pings the url/port to see if it returns 200. In the active mode, the server sends message to status site to inform its status
     host = models.CharField(max_length=500, help_text="Host name only (no http:// or path).")
     url = models.CharField(max_length=1000,
@@ -902,19 +1069,31 @@ class Module(models.Model):
         return 'img/%s.gif' % self.status
 
     @property
+    def total_downtime(self):
+        module_events = ModuleEvent.objects.filter(module=self)
+        total_downtime = 0.0
+        for event in module_events:
+            total_downtime += event.total_downtime
+        return total_downtime
+
+    @property
+    def total_time(self):
+        """
+         Number of minutes this monitor has run
+        """
+        return (datetime.datetime.now() - self.monitoring_since).total_seconds() / 60.0
+
+    @property
     def total_uptime(self):
-        return (timedelta_seconds(datetime.datetime.now() - \
-                 self.monitoring_since) / 60) - self.total_downtime
+        return self.total_time - self.total_downtime
 
     @property
     def percentage_uptime(self):
-        if not self.total_downtime and not self.total_uptime:
-            return 100
-        return (self.total_uptime/(self.total_downtime + self.total_uptime))*100
+        return 100 - self.percentage_downtime
 
     @property
     def percentage_downtime(self):
-        return 100.0 - self.percentage_uptime
+        return percentage(self.total_downtime,self.total_time) if self.total_time else 100
 
     @property
     def last_7_days(self):

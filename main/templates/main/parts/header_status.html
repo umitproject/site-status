@@ -9,7 +9,13 @@
 		    var data = new google.visualization.DataTable();
 		    data.addColumn('string', '{% trans "Day" %}');
 		    data.addColumn('number', '{% trans "Downtime" %}');
-		    data.addRows({{ incidents_data|safe }});
+		    data.addRows(
+                    {%  if request.public %}
+                        {{ public_incidents_data|safe }}
+                    {% else %}
+                        {{ incidents_data|safe }}
+                    {% endif %}
+            );
 		
 		    var chart = new google.visualization.AreaChart(document.getElementById('incidents_chart'));
 		    chart.draw(data, {width: 400, height: 150,
@@ -33,7 +39,13 @@
 		    var data = new google.visualization.DataTable();
 		    data.addColumn('string', '{% trans "Day" %}');
 		    data.addColumn('number', '{% trans "Uptime" %}');
-		    data.addRows({{ uptime_data|safe }});
+		    data.addRows(
+                    {%  if request.public %}
+                        {{ public_uptime_data|safe }}
+                    {% else %}
+                        {{ uptime_data|safe }}
+                    {% endif %}
+            );
 		
 		    var chart = new google.visualization.AreaChart(document.getElementById('uptime_chart'));
 		    chart.draw(data, {width: 400, height: 150,
@@ -56,12 +68,23 @@
 
 <div id="video">
 	<div id="get-started">
-			<h2>{% trans "Availability - " %}{{ current_availability }} %</h2>
+			<h2>{% trans "Availability - " %}
+                {%  if request.public %}
+                    {{ current_public_availability }}
+                {% else %}
+                    {{ current_availability }}
+                {% endif %} %</h2>
 			
 			{% if SHOW_LAST_INCIDENT %}
 				<div class='status_header_block'>
 					<p class='status_header_title'>{% trans "Last Incident" %}</p>
-					<p class='status_header_value'>{{ last_incident.verbose_html|safe }}</p>
+					<p class='status_header_value'>
+                        {%  if request.public %}
+                            {{ last_public_incident.verbose_html|safe }}
+                        {% else %}
+                            {{ last_incident.verbose_html|safe }}
+                        {% endif %}
+                    </p>
 				</div>
 			{% endif %}
 			<table class="chart-table">

@@ -53,14 +53,21 @@ def home(request, msg=None, site_id=None):
     modules = Module.objects.filter(site_config=site_config)
     show_days = Module.show_days(site_config)
     last_incident = request.aggregation.last_incident
+    last_public_incident = request.aggregation.last_public_incident
+
     current_availability = request.aggregation.percentage_uptime
+    current_public_availability = request.aggregation.public_percentage_uptime
     scheduled_maintenances = ScheduledMaintenance.objects.\
                                 filter(site_config=request.site_config,
                                        scheduled_to__lte=request.site_config.schedule_warning_up_to)
-    events = ModuleEvent.objects.filter(site_config=site_config, down_at__gte=(datetime.datetime.now()-datetime.timedelta(days=7)) )
+    events = ModuleEvent.objects.filter(site_config=site_config, down_at__gte=(datetime.datetime.now()-datetime.timedelta(days=7)), module__public = request.public )
 
     incidents_data = json.dumps(request.aggregation.incidents_data)
     uptime_data = json.dumps(request.aggregation.uptime_data)
+
+    public_incidents_data = json.dumps(request.aggregation.public_incidents_data)
+    public_uptime_data = json.dumps(request.aggregation.public_uptime_data)
+
     SHOW_LAST_INCIDENT = site_config.show_last_incident
     SHOW_INCIDENTS = site_config.show_incidents
     SHOW_UPTIME = site_config.show_uptime
