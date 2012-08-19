@@ -14,7 +14,7 @@
 
 
 {% block scheduled_maintenances %}
-    {% if scheduled_maintenances %}
+    {% if scheduled_maintenances|length %}
         <br />
         <br />
         <div class='box'>
@@ -65,31 +65,33 @@
 			{% endfor %}
             </tbody>
 		</table>
-        <h3>{% trans "Events list" %}</h3>
-        <table class="table table-condensed">
-            <thead>
-                <tr>
-                    <th>{% blocktrans %}Module{% endblocktrans %}</th>
-                    <th>Status</th>
-                    <th>Down from</th>
-                    <th>Back at</th>
-                </tr>
-            </thead>
-            <tbody>
-            {% for event in events %}
-                <tr>
-                    <td><a href='{% site_url event site_id=request.site_config.id event_id=event.id %}'>{{ event.module.name }}</a></td>
-                    <td><img src='{% media_url event.status_img %}' alt='{% verbose_status event.status %}' title='{% verbose_status event.status %}'/></td>
-                    <td>{{ event.down_at }}</td>
-                    {% if not event.back_at %}
-                        <td><a href='{% site_url event_subscribe site_id=request.site_config.id event_id=event.id %}' title='{% blocktrans %}Subscribe to this event.{% endblocktrans %}'><i class="icon-envelope"></i></a></td>
-                    {% else %}
-                        <td>{{ event.back_at }}</td>
-                    {% endif %}
-                </tr>
-            {% endfor %}
-            </tbody>
-        </table>
+        {% if events %}
+            <h3>{% trans "Events list" %}</h3>
+            <table class="table table-condensed">
+                <thead>
+                    <tr>
+                        <th>{% blocktrans %}Module{% endblocktrans %}</th>
+                        <th>Status</th>
+                        <th>Down from</th>
+                        <th>Back at</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for event in events %}
+                    <tr>
+                        <td><a href='{% site_url event site_id=request.site_config.id event_id=event.id %}'>{{ event.module.name }}</a></td>
+                        <td><img src='{% media_url event.status_img %}' alt='{% verbose_status event.status %}' title='{% verbose_status event.status %}'/></td>
+                        <td>{{ event.down_at }}</td>
+                        {% if not event.back_at %}
+                            <td><a href='{% site_url event_subscribe site_id=request.site_config.id event_id=event.id %}' title='{% blocktrans %}Subscribe to this event.{% endblocktrans %}'><i class="icon-envelope"></i></a></td>
+                        {% else %}
+                            <td>{{ event.back_at }}</td>
+                        {% endif %}
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
 	</div>
 </div>
 {% if scheduled_maintenances or twitter_account %}

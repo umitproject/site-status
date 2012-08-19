@@ -343,7 +343,7 @@ def end_maintenance(request):
             maintenance = ScheduledMaintenance.objects.get(id=object_key,site_config__user=request.user)
             if maintenance:
                 if maintenance.is_undergoing:
-                    maintenance.time_estimate = (datetime.now() - maintenance.scheduled_to).total_seconds()
+                    maintenance.time_estimate = (datetime.now() - maintenance.scheduled_to).total_seconds() / 60
                     maintenance.save()
                 elif maintenance.is_in_the_future:
                     maintenance.delete()

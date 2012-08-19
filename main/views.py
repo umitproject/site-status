@@ -57,10 +57,18 @@ def home(request, msg=None, site_id=None):
 
     current_availability = request.aggregation.percentage_uptime
     current_public_availability = request.aggregation.public_percentage_uptime
-    scheduled_maintenances = ScheduledMaintenance.objects.\
+    all_maintenances = ScheduledMaintenance.objects.\
                                 filter(site_config=request.site_config,
                                        scheduled_to__lte=request.site_config.schedule_warning_up_to)
     events = ModuleEvent.objects.filter(site_config=site_config, down_at__gte=(datetime.datetime.now()-datetime.timedelta(days=7)), module__public = request.public )
+
+    scheduled_maintenances = []
+
+    for schedule in all_maintenances:
+        if schedule.time_left > 0:
+            scheduled_maintenances.append(schedule)
+
+    events = ModuleEvent.objects.filter(site_config=site_config, down_at__gte=(datetime.datetime.now()-datetime.timedelta(days=7)) )
 
     incidents_data = json.dumps(request.aggregation.incidents_data)
     uptime_data = json.dumps(request.aggregation.uptime_data)
@@ -158,8 +166,10 @@ def subscribe(request, event_id=None, module_id=None, *args, **kwargs):
         
         if module:
             saved = subscriber.subscribe('module', one_time, module.id)
+
         if event:
             saved = subscriber.subscribe('event', one_time, event.id) or saved
+
         if not module and not event:
             saved = subscriber.subscribe('system', one_time, None) or saved
     

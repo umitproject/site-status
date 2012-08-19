@@ -192,7 +192,7 @@ class SiteConfig(models.Model):
     
     @property
     def schedule_warning_up_to(self):
-        return datetime.datetime.now() + datetime.timedelta(days=self.schedule_warning_time)
+        return datetime.datetime.now() + datetime.timedelta(minutes=self.schedule_warning_time)
 
     @property
     def is_public(self):
@@ -926,7 +926,7 @@ class ModuleEvent(models.Model):
     
     @property
     def total_downtime(self):
-        '''Returns total downtime in seconds
+        '''Returns total downtime in minutes
         '''
         if self.back_at:
             return float(timedelta_seconds(self.back_at - self.down_at) / 60.0)
