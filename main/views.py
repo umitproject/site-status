@@ -62,7 +62,7 @@ def home(request, msg=None, site_id=None):
     incidents_data = json.dumps(request.aggregation.incidents_data)
     uptime_data = json.dumps(request.aggregation.uptime_data)
     SHOW_LAST_INCIDENT = site_config.show_last_incident
-    SHOW_INCIDENTS = site_config.show_incident
+    SHOW_INCIDENTS = site_config.show_incidents
     SHOW_UPTIME = site_config.show_uptime
     
     context = locals()
