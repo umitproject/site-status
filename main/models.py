@@ -119,8 +119,8 @@ def percentage(value, total):
 
 class StatusSiteDomain(models.Model):
     status_url = models.CharField(max_length=255, unique=True)
-    public = models.BooleanField(default=False)
     site_config = models.ForeignKey('main.SiteConfig')
+    public = models.BooleanField(default=False)
     
     def __unicode__(self):
         return '%s -> %s' % (self.status_url, self.site_config.site_name)
