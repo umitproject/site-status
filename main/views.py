@@ -62,7 +62,7 @@ def home(request, msg=None, site_id=None):
                                        scheduled_to__lte=request.site_config.schedule_warning_up_to)
     events = ModuleEvent.objects.filter(site_config=site_config, down_at__gte=(datetime.datetime.now()-datetime.timedelta(days=7)))
     if request.public:
-        events.filter(monitor__public=True)
+        events = events.filter(module__public=True)
 
     scheduled_maintenances = []
 
@@ -70,7 +70,6 @@ def home(request, msg=None, site_id=None):
         if schedule.time_left > 0:
             scheduled_maintenances.append(schedule)
 
-    events = ModuleEvent.objects.filter(site_config=site_config, down_at__gte=(datetime.datetime.now()-datetime.timedelta(days=7)) )
 
     incidents_data = json.dumps(request.aggregation.incidents_data)
     uptime_data = json.dumps(request.aggregation.uptime_data)
