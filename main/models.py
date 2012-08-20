@@ -625,12 +625,12 @@ class AggregatedStatus(models.Model):
 
     @property
     def percentage_downtime(self):
-        return percentage(self.total_downtime, self.total_time) if self.total_time > 0 else 100.0
+        return percentage(self.total_downtime, self.total_time) if self.total_time > 0 else 0
 
 
     @property
     def public_percentage_downtime(self):
-        return percentage(self.total_public_downtime, self.total_public_time) if self.total_public_time > 0 else 100.0
+        return percentage(self.total_public_downtime, self.total_public_time) if self.total_public_time > 0 else 0
 
     @property
     def percentage_uptime(self):
