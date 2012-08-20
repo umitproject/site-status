@@ -89,8 +89,8 @@ def debug(module, msg=""):
 def send_notification_task(request, notification_id):
     """This task will send out the notifications
     """
+    notification = Notification.objects.get(pk=notification_id)
     try:
-        notification = Notification.objects.get(pk=notification_id)
         notification.build_email_data()
 
         email = EmailMessage(subject=notification.subject,
