@@ -23,7 +23,7 @@
                 {% if schedule.time_left > 0 %}
                     <div class="text_box well">
                         <p class="title">{% trans "Maintenance scheduled to: " %}{{ schedule.scheduled_to|date:"DATETIME_FORMAT" }}</p>
-                        <p class="description">{% trans "Remaining downtime estimate: " %} <b>{{ schedule.time_left|floatformat:2 }} {% trans " minutes" %}</b><br/><br/>{{ schedule.message }}</p>
+                        <p class="description">{% trans "Remaining downtime estimate: " %} <b>{{ schedule.time_left|floatformat:0 }} {% trans " minutes" %}</b><br/><br/>{{ schedule.message }}</p>
                         <div class="more"><a href=""></a></div>
                     </div>
                 {% endif %}
