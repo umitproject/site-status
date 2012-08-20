@@ -178,7 +178,6 @@ def add_module(request):
             if not instance:
                 module.monitoring_since = datetime.now()
                 module.status = "unknown"
-                module.total_downtime = "0.0"
 
             module.save()
             instance = module
