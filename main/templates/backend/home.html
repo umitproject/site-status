@@ -286,6 +286,12 @@
             });
         }
 
+
+    $('.btn').live('click',function(evt){
+        evt.stopPropagation();
+        $(this).button("loading");
+    });
+
         $('form').live('submit', function(evt){
             var submit_to = $(this).attr("action"),
                 $this = $(this),
@@ -305,8 +311,6 @@
             }
 
             data = get_form_object($this);
-
-            $submit_button.button("loading");
 
             evt.preventDefault();
 
@@ -374,11 +378,7 @@
 
             $.post(submit_to,data,
                 function(response){
-                    $submit_button.button("complete");
-
-                    setTimeout(function() {
-                        $submit_button.button("reset");
-                    }, 2000);
+                    $submit_button.button("reset");
 
                     if (response.hasOwnProperty('target') &&
                         typeof handlers[response.target] === 'function') {
