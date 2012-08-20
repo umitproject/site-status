@@ -32,7 +32,7 @@
 	<div class="box">
 		<div class="text_box">
 			{% include "main/parts/subscribe_form.html" %}
-			<div class="more"><a href="{% site_url home site_id=request.site_config.id %}">{% trans "All Status" %}</a></div>
+			<div class="more"><a href="{% site_url home site_slug=request.site_config.slug %}">{% trans "All Status" %}</a></div>
 		</div>
 	</div>
 	{% if scheduled_maintenances or twitter_account %}

@@ -58,7 +58,7 @@
 				</td>
 				{% endfor %}
 				<td><img src='{% media_url module.status_img %}' alt='{% verbose_status module.status %}'/></td>
-                <td><a href='{% site_url module_subscribe site_id=request.site_config.id module_id=module.pk %}' title='{% blocktrans with module.name as module_name %} Subscribe to module {{ module_name }} {% endblocktrans %}'><i class="icon-envelope"></i></a></td>
+                <td><a href='{% site_url module_subscribe site_slug=request.site_config.slug module_id=module.pk %}' title='{% blocktrans with module.name as module_name %} Subscribe to module {{ module_name }} {% endblocktrans %}'><i class="icon-envelope"></i></a></td>
 			</tr>
 
                 {% endif %}
@@ -79,11 +79,11 @@
                 <tbody>
                 {% for event in events %}
                     <tr>
-                        <td><a href='{% site_url event site_id=request.site_config.id event_id=event.id %}'>{{ event.module.name }}</a></td>
+                        <td><a href='{% site_url event site_slug=request.site_config.slug event_id=event.id %}'>{{ event.module.name }}</a></td>
                         <td><img src='{% media_url event.status_img %}' alt='{% verbose_status event.status %}' title='{% verbose_status event.status %}'/></td>
                         <td>{{ event.down_at }}</td>
                         {% if not event.back_at %}
-                            <td><a href='{% site_url event_subscribe site_id=request.site_config.id event_id=event.id %}' title='{% blocktrans %}Subscribe to this event.{% endblocktrans %}'><i class="icon-envelope"></i></a></td>
+                            <td><a href='{% site_url event_subscribe site_slug=request.site_config.slug event_id=event.id %}' title='{% blocktrans %}Subscribe to this event.{% endblocktrans %}'><i class="icon-envelope"></i></a></td>
                         {% else %}
                             <td>{{ event.back_at }}</td>
                         {% endif %}

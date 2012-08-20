@@ -412,7 +412,7 @@ def customize_site_status(request, site_id):
 
                 site_config.preview_custom_css = customization_form.cleaned_data.get('custom_css')
                 site_config.save()
-                return redirect( reverse("home", kwargs={'site_id':site_config.id}) + '?preview=true')
+                return redirect( reverse("home", kwargs={'site_slug':site_config.slug}) + '?preview=true')
 
             elif action == 'remove_logo':
                 site_config.logo = None

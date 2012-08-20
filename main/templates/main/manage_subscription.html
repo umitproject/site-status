@@ -16,12 +16,12 @@
     <div class="box">
         <div class="text_box">
             {% if subscriber %}
-                <form method="post" action="{% site_url subscriber_settings site_id=request.site_config.id %}">{% csrf_token %}
+                <form method="post" action="{% site_url subscriber_settings site_slug=request.site_config.slug %}">{% csrf_token %}
                     {{ subscriber_settings }}
                     <input type="submit" value="Submit" />
                 </form>
 
-                <form method="post" action="{% site_url unsubscribe site_id=request.site_config.id %}">{% csrf_token %}
+                <form method="post" action="{% site_url unsubscribe site_slug=request.site_config.slug %}">{% csrf_token %}
                     {{ unsubscribe_all_form }}
                     <input type="hidden" name="unsubscribe_all" value="true"/>
                     <input type="submit" value="Remove all subscriptions" class="btn btn-danger"/>
@@ -43,7 +43,7 @@
                         <td>{{ unsubscribe_form.instance.target_name }}</td>
                         <td>{{ unsubscribe_form.instance.one_time }}</td>
                         <td>
-                            <form method="post" action="{% site_url unsubscribe site_id=request.site_config.id %}">{% csrf_token %}
+                            <form method="post" action="{% site_url unsubscribe site_slug=request.site_config.slug %}">{% csrf_token %}
                                 {{ unsubscribe_formset.management_form }}
                                 {{ unsubscribe_form }}
                                 <button type="submit" class="btn btn-small btn-danger">&times;</button>
@@ -56,14 +56,14 @@
                 {% if sent %}
                     {% blocktrans %}An email was sent to your inbox.{% endblocktrans %}
                 {% else %}
-                    <form method="post" action="{% site_url manage_subscription site_id=request.site_config.id %}">{% csrf_token %}
+                    <form method="post" action="{% site_url manage_subscription site_slug=request.site_config.slug %}">{% csrf_token %}
                         <p>{% blocktrans %}Enter your email below to get a link to your subscription management page.{% endblocktrans %}</p>
                         {{ get_link_form  }}
                         <button class="btn btn-info">Submit</button>
                     </form>
                 {% endif %}
             {% endif %}
-            <div class="more"><a href="{% site_url home site_id=request.site_config.id %}">{% trans "All Status" %}</a></div>
+            <div class="more"><a href="{% site_url home site_slug=request.site_config.slug %}">{% trans "All Status" %}</a></div>
         </div>
     </div>
     {% if scheduled_maintenances or twitter_account %}

@@ -54,8 +54,8 @@ class SiteConfigMiddleware(object):
             else:
                 if not site_config and request.path.startswith('/sites'):
                     view = resolve(request.path)
-                    site_config_id = view.kwargs.get('site_id')
-                    site_config = SiteConfig.objects.filter(id=site_config_id)
+                    site_config_slug = view.kwargs.get('site_slug')
+                    site_config = SiteConfig.objects.filter(slug=site_config_slug)
                     if site_config:
                         site_config = site_config[0]
                         public = site_config.public_internal_url

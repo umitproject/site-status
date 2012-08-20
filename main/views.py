@@ -46,7 +46,7 @@ def root_home(request, msg=None):
     context = RequestContext(request)
     return render(request, 'main/root_home.html', context)
 
-def home(request, msg=None, site_id=None):
+def home(request, msg=None, site_slug=None):
     site_config = request.site_config
     if not site_config:
         raise Http404
@@ -219,7 +219,7 @@ def try_redirect(request, viewname):
     try:
         return redirect(viewname)
     except NoReverseMatch:
-        return redirect(viewname, site_id=request.site_config.id)
+        return redirect(viewname, site_slug=request.site_config.slug)
 
 
 def unsubscribe(request, *args, **kwargs):

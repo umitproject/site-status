@@ -11,7 +11,7 @@ class SiteURLNode(URLNode):
         try:
             return super(SiteURLNode, self).render(context)
         except NoReverseMatch:
-            self.kwargs.pop('site_id')
+            self.kwargs.pop('site_slug')
         return super(SiteURLNode, self).render(context)
 
 def site_url(parser, token, node_cls=SiteURLNode):

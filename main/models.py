@@ -22,11 +22,13 @@
 import datetime
 import logging
 from decimal import *
+import re
 import uuid
 from types import StringTypes
 import itertools
 from django.core import validators
 from django.contrib.auth.models import User
+from django.core.validators import RegexValidator
 
 from django.db import models
 from django.db.models import Q
@@ -156,6 +158,9 @@ class SiteConfig(models.Model):
     public_internal_url = models.BooleanField(default=False)
     logo = models.TextField(null=True,blank=True)
     custom_css = models.TextField(null=True, blank=True)
+    slug= models.CharField(max_length=30, null=False, unique=True,\
+                            validators=[validators.validate_slug],\
+                            help_text="Unique name to identify your site status.")
 
     preview_logo = models.TextField(null=True,blank=True)
     preview_custom_css = models.TextField(null=True, blank=True)
@@ -200,7 +205,7 @@ class SiteConfig(models.Model):
 
     @property
     def list_urls(self):
-        return [(reverse("home", args=[self.id]) , self.public_internal_url),] + [("http://" + s.status_url, s.public) for s in StatusSiteDomain.objects.filter(site_config=self)]
+        return [(reverse("home", args=[self.slug]) , self.public_internal_url),] + [("http://" + s.status_url, s.public) for s in StatusSiteDomain.objects.filter(site_config=self)]
 
     @property
     def aggregated_status(self):
@@ -278,9 +283,9 @@ class Subscriber(models.Model):
     @property
     def management_url(self):
         try:
-            return reverse('manage_subscription', args=[self.edit_token,])
+            return reverse('manage_subscription', kwargs={'uuid':self.edit_token})
         except NoReverseMatch:
-            return reverse('manage_subscription', kwargs={'site_id' : self.site_config.id, 'uuid':self.edit_token})
+            return reverse('manage_subscription', kwargs={'site_slug' : self.site_config.slug, 'uuid':self.edit_token})
     
     def add_ip(self, ip):
         list_ips = self.list_ips
@@ -910,6 +915,7 @@ class DailyModuleStatus(models.Model):
                                                                self.status,
                                                                self.total_downtime,
                                                                self.created_at)
+
 class ModuleEvent(models.Model):
     down_at = models.DateTimeField(null=True, blank=True, default=None)
     back_at = models.DateTimeField(null=True, blank=True, default=None)

@@ -56,8 +56,8 @@ urlpatterns = patterns('',
 
     #######
     # site_config
-    url(r'^sites/(?P<site_id>\d+)/', include('urls')),
+    url(r'^sites/(?P<site_slug>[a-z0-9\-_]+)/', include('urls')),
 
 
-    url('^sites/(?P<site_id>\d+)/unsubscribe/?$', 'main.views.unsubscribe', name='private_unsubscribe'),
+    url('^sites/(?P<site_slug>[a-z0-9\-_]+)/unsubscribe/?$', 'main.views.unsubscribe', name='private_unsubscribe'),
 )
