@@ -111,12 +111,10 @@ def _create_new_event(module, status, down_at, back_at=None, details=""):
     event.save()
 
 
-@celery.task(ignore_result=True, soft_timeout=1)
+@celery.task(ignore_result=True)
 @staff_member_required
 @transaction.commit_manually
 def check_passive_url_task(request, module_key):
-
-
     module = Module.objects.get(id=module_key)
     events = ModuleEvent.objects.filter(module=module).filter(back_at=None)
     debug(module, ("begin",))
@@ -196,7 +194,7 @@ Events: %s''' % ("Exception", module.name, e,
     return HttpResponse("OK")
 
 
-@celery.task(ignore_result=True, soft_timeout=50)
+@celery.task(ignore_result=True)
 @staff_member_required
 @transaction.commit_manually
 def check_passive_port_task(request, module_key):
@@ -249,23 +247,26 @@ Events: %s''' % ("Exception", module.name, e,
     return HttpResponse("OK")
 
 def _get_remote_response(module):
-    print "[%s] calling %s"%(module.id, module.url)
-    curl = pycurl.Curl()
-    buff = cStringIO.StringIO()
-    hdr = cStringIO.StringIO()
+    try:
+        print "[%s] calling %s"%(module.id, module.url)
+        curl = pycurl.Curl()
+        buff = cStringIO.StringIO()
+        hdr = cStringIO.StringIO()
 
-    curl.setopt(pycurl.URL, module.url.encode('utf-8'))
-    curl.setopt(pycurl.WRITEFUNCTION, buff.write)
-    curl.setopt(pycurl.HEADERFUNCTION, hdr.write)
-    curl.setopt(pycurl.FAILONERROR, 1)
-    curl.setopt(pycurl.FOLLOWLOCATION, 1)
-    curl.setopt(pycurl.TIMEOUT, CURL_TIMEOUT_LIMIT)
+        curl.setopt(pycurl.URL, module.url.encode('utf-8'))
+        curl.setopt(pycurl.WRITEFUNCTION, buff.write)
+        curl.setopt(pycurl.HEADERFUNCTION, hdr.write)
+        curl.setopt(pycurl.FAILONERROR, 1)
+        curl.setopt(pycurl.FOLLOWLOCATION, 1)
+        curl.setopt(pycurl.TIMEOUT, CURL_TIMEOUT_LIMIT)
 
-    curl.perform()
+        curl.perform()
 
-    print "[%s] end calling %s"%(module.id, module.url)
+        print "[%s] end calling %s"%(module.id, module.url)
 
-    return dict({'http_code':curl.getinfo(pycurl.HTTP_CODE), 'http_headers': hdr.getvalue(), 'http_response': buff.getvalue()})
+        return dict({'http_code':curl.getinfo(pycurl.HTTP_CODE), 'http_headers': hdr.getvalue(), 'http_response': buff.getvalue()})
+    except Exception, e:
+        raise e
 
 def _check_status_code(module,remote_response):
     expected_status = module.expected_status or 200
