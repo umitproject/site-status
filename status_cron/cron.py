@@ -4,6 +4,8 @@ from celery import task
 from celery.task.schedules import crontab
 from celery.decorators import periodic_task
 from main.memcache import memcache
+from settings import CELERY_CACHE_TIMEOUT
+
 
 CHECK_HOST_KEY = 'check_passive_host_%s'
 CHECK_NOTIFICATION_KEY = 'check_notification_%s'
@@ -28,7 +30,7 @@ def check_passive_url_monitors():
             #this means that the check is already running
             logging.critical("Module id %s is already running"%module.id)
             continue
-        memcache.set(passive_key,module,60)
+        memcache.set(passive_key,module,CELERY_CACHE_TIMEOUT)
         check_passive_url_task.apply_async((request, module.id))
 
 
@@ -46,7 +48,7 @@ def check_passive_port_monitors():
         request = HttpRequest()
         request.META['HTTP_X_CELERY_CRON'] = 'true'
 
-        memcache.set(passive_key,module, 60)
+        memcache.set(passive_key,module, CELERY_CACHE_TIMEOUT)
         check_passive_port_task.apply_async((request, module.id))
     return True
 
@@ -68,7 +70,7 @@ def send_notifications():
 
         request = HttpRequest()
         request.META['HTTP_X_CELERY_CRON'] = 'true'
-        memcache.set(not_key,notification, 60)
+        memcache.set(not_key,notification, CELERY_CACHE_TIMEOUT)
         send_notification_task.apply_async((request, notification.id))
 
     return True

@@ -49,7 +49,7 @@ CHECK_NOTIFICATION_KEY = 'check_notification_%s'
 from djcelery import celery
 from celery.exceptions import SoftTimeLimitExceeded
 
-from settings import NMAP_ARGS
+from settings import NMAP_ARGS, CURL_TIMEOUT_LIMIT
 import os
 from dbextra.utils import ModuleListFieldHandler, MAX_LOG_ENTRIES
 
@@ -259,7 +259,7 @@ def _get_remote_response(module):
     curl.setopt(pycurl.HEADERFUNCTION, hdr.write)
     curl.setopt(pycurl.FAILONERROR, 1)
     curl.setopt(pycurl.FOLLOWLOCATION, 1)
-    curl.setopt(pycurl.TIMEOUT, 59)
+    curl.setopt(pycurl.TIMEOUT, CURL_TIMEOUT_LIMIT)
 
     curl.perform()
 
