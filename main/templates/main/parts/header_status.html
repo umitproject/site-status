@@ -3,27 +3,42 @@
 	<script type="text/javascript" src="https://www.google.com/jsapi"></script>
 	<script type="text/javascript">
 	  google.load("visualization", "1", {packages:["corechart"]});
-	  
+
+
+      function get_min_max_value(data) {
+          var i, min = 90, max=10;
+
+          for (i=0;i<data.length; i++) {
+              if (data[i][1] - 10 < min) {
+                  min = data[i][1] - 10;
+              }
+              if (data[i][1] + 10 > max ) {
+                  max = data[i][1] + 10;
+              }
+          }
+          if (max > 101) {
+              max = 101
+          }
+          return {min: min, max: max};
+      }
+
 	  {% if SHOW_INCIDENTS %}
 		  function drawIncidentsChart() {
-		    var data = new google.visualization.DataTable();
+		    var data = new google.visualization.DataTable(),
+                incidents_data = {%  if request.public %}{{ public_incidents_data|safe }}{% else %}{{ incidents_data|safe }}{% endif %};
 		    data.addColumn('string', '{% trans "Day" %}');
 		    data.addColumn('number', '{% trans "Downtime" %}');
-		    data.addRows(
-                    {%  if request.public %}
-                        {{ public_incidents_data|safe }}
-                    {% else %}
-                        {{ incidents_data|safe }}
-                    {% endif %}
-            );
-		
+		    data.addRows(incidents_data);
+
+            var margins = get_min_max_value(incidents_data);
 		    var chart = new google.visualization.AreaChart(document.getElementById('incidents_chart'));
 		    chart.draw(data, {width: 400, height: 150,
 		                      hAxis: {textPosition: 'none'},
 		                      vAxis: {textPosition: 'none',
 		                      		  gridlineColor:'none',
-		                      		  maxValue:101,
-		                      		  minValue:0},
+		                      		  maxValue:margins.max,
+		                      		  minValue: margins.min
+                              },
 		                      chartArea: {width: '90%',
 		                      			  height: '70%'},
 		                      colors: ['red'],
@@ -36,24 +51,21 @@
 	  
 	  {% if SHOW_UPTIME %}
 		  function drawUptimeChart() {
-		    var data = new google.visualization.DataTable();
+		    var data = new google.visualization.DataTable(),
+                uptime_data = {%  if request.public %}{{ public_uptime_data|safe }}{% else %}{{ uptime_data|safe }}{% endif %};
 		    data.addColumn('string', '{% trans "Day" %}');
 		    data.addColumn('number', '{% trans "Uptime" %}');
-		    data.addRows(
-                    {%  if request.public %}
-                        {{ public_uptime_data|safe }}
-                    {% else %}
-                        {{ uptime_data|safe }}
-                    {% endif %}
-            );
-		
+		    data.addRows(uptime_data);
+
+
+            var margins = get_min_max_value(uptime_data);
 		    var chart = new google.visualization.AreaChart(document.getElementById('uptime_chart'));
 		    chart.draw(data, {width: 400, height: 150,
 		                      hAxis: {textPosition: 'none'},
 		                      vAxis: {textPosition: 'none',
 		                      		  gridlineColor:'none',
-		                      		  maxValue:101,
-		                      		  minValue:0},
+		                      		  maxValue:margins.max,
+		                      		  minValue:margins.min},
 		                      chartArea: {width: '90%',
 		                      			  height: '70%'},
 		                      colors: ['blue'],
