@@ -17,7 +17,10 @@
               }
           }
           if (max > 101) {
-              max = 101
+              max = 101;
+          }
+          if (min < 0){
+              min = 0;
           }
           return {min: min, max: max};
       }
