@@ -55,6 +55,22 @@ from dbextra.utils import ModuleListFieldHandler, MAX_LOG_ENTRIES
 
 MONITOR_LOG_SEPARATOR = ' '
 
+
+
+class RegexDoesntMatch(Exception):
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return repr(self.value)
+
+
+class StatusCodeDoesntMatch(Exception):
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return repr(self.value)
+
+
 def debug(module, msg=""):
     debug_tokens = (str(datetime.datetime.now()), )
     if isinstance(msg, tuple):
@@ -176,6 +192,20 @@ Events: %s''' % ("pycurl_error", module.name, e,
         if not events:
             _create_new_event(module, "off-line", start, None, details)
 
+    except (RegexDoesntMatch, StatusCodeDoesntMatch) as e:
+        details = '''%s %s
+%s
+---
+%s
+---
+Events: %s''' % ("pycurl_error", module.name, e,
+                 traceback.extract_stack(), events)
+
+        debug(module, "matching_error: %s"%e)
+        logging.critical("Events: %s" % events)
+        if not events:
+            _create_new_event(module, "off-line", start, None, details)
+
     except Exception, e:
         details = '''%s %s
 %s
@@ -270,11 +300,14 @@ def _get_remote_response(module):
 
 def _check_status_code(module,remote_response):
     expected_status = module.expected_status or 200
-    return remote_response.get('http_code', 0) == expected_status
+    actual_status = remote_response.get('http_code', 0)
+    if actual_status != expected_status:
+        raise StatusCodeDoesntMatch("Expected %s status but found %s instead"%(expected_status, actual_status))
+    return True
 
 def _check_keyword(module,remote_response):
-    if module.search_keyword:
-        return bool(re.search(module.search_keyword, remote_response.get('http_response', '')))
+    if module.search_keyword and not re.search(module.search_keyword, remote_response.get('http_response', '')):
+        raise RegexDoesntMatch("%s doesn't match the response body"%module.search_keyword)
     return True
 
 @staff_member_required
