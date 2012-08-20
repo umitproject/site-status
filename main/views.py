@@ -60,7 +60,9 @@ def home(request, msg=None, site_id=None):
     all_maintenances = ScheduledMaintenance.objects.\
                                 filter(site_config=request.site_config,
                                        scheduled_to__lte=request.site_config.schedule_warning_up_to)
-    events = ModuleEvent.objects.filter(site_config=site_config, down_at__gte=(datetime.datetime.now()-datetime.timedelta(days=7)), module__public = request.public )
+    events = ModuleEvent.objects.filter(site_config=site_config, down_at__gte=(datetime.datetime.now()-datetime.timedelta(days=7)))
+    if request.public:
+        events.filter(monitor__public=True)
 
     scheduled_maintenances = []
 
