@@ -28,6 +28,12 @@
 </head>
 <body id="body">
     <div class="container full-height" id="main-container">
+    {% if request.OWNER_VIEWING_PUBLIC %}
+        <div class="alert">
+            <button type="button" class="close" data-dismiss="alert">×</button>
+            {% blocktrans %}<strong>Warning!</strong> You are viewing a public site as its owner. The public version might look different.{% endblocktrans %}
+        </div>
+    {% endif %}
         {% block google_analytics %}
             {% if GOOGLE_ANALYTICS_ID %}
                 <script type="text/javascript">

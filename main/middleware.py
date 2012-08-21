@@ -71,7 +71,9 @@ class SiteConfigMiddleware(object):
 
             #always show the user the private view
             if site_config and request.user.is_authenticated() and request.user == site_config.user:
-                public = False
+                if public:
+                    request.OWNER_VIEWING_PUBLIC = True
+                    public = False
 
             request.site_config = site_config
             request.public = public
