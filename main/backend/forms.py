@@ -74,7 +74,7 @@ class ModuleForm(forms.ModelForm):
         if kw.has_key('instance'):
             existing = True
         super(forms.ModelForm, self).__init__(*args, **kw)
-        self.fields.keyOrder = ['module_type','name','description', 'host', 'url', 'site_config', 'tags', 'expected_status', 'search_keyword', 'check_port', 'public']
+        self.fields.keyOrder = ['module_type','name','description', 'host', 'url', 'site_config', 'tags', 'expected_status', 'search_keyword', 'check_port', 'public', 'fail_on_error', 'follow_location']
 
         self.fields['site_config'].choices = [ (o.pk, str(o) ) for o in SiteConfig.objects.filter(user=user)]
 
@@ -84,7 +84,12 @@ class ModuleForm(forms.ModelForm):
                                         help_text="HTTP response status code.")
     search_keyword = forms.CharField(required=False, widget=forms.TextInput(attrs=dict({'class':'search_keyword'})),
                                         help_text="Keyword or regex to search for in the result page.")
-
+    fail_on_error = forms.BooleanField(default=True,
+                                        widget=forms.CheckboxInput(attrs=dict({'class':'fail_on_error'})),
+                                        help_text="Returns with failure if the status code is greater than 300.")
+    follow_location = forms.BooleanField(default=True,
+                                        widget=forms.CheckboxInput(attrs=dict({'class':'follow_location'})),
+                                        help_text="Follow redirects.")
     status = forms.CharField(widget=forms.TextInput(attrs=dict({'class':'disabled', 'readonly':'readonly', 'disabled':'disabled' })), required=False)
 
     class Meta:

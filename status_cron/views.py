@@ -286,8 +286,8 @@ def _get_remote_response(module):
         curl.setopt(pycurl.URL, module.url.encode('utf-8'))
         curl.setopt(pycurl.WRITEFUNCTION, buff.write)
         curl.setopt(pycurl.HEADERFUNCTION, hdr.write)
-        curl.setopt(pycurl.FAILONERROR, 1)
-        curl.setopt(pycurl.FOLLOWLOCATION, 1)
+        curl.setopt(pycurl.FAILONERROR, 1 if module.fail_on_error else 0)
+        curl.setopt(pycurl.FOLLOWLOCATION, 1 if module.follow_location else 0)
         curl.setopt(pycurl.TIMEOUT, CURL_TIMEOUT_LIMIT)
 
         curl.perform()

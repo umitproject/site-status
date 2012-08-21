@@ -1039,6 +1039,11 @@ class Module(models.Model):
     search_keyword = models.CharField(max_length=30, null=True, blank=True, default=None,
                                             help_text="Keyword or regex to search for in the result page.")
 
+    fail_on_error = models.BooleanField(default=True,
+                                        help_text="Returns with failure if the status code is greater than 300.")
+    follow_location = models.BooleanField(default=True,
+                                        help_text="Follow redirects.")
+
     #port checker
     check_port = models.IntegerField(null=True, blank=True, default=None, choices=PORT_CHECK_OPTIONS)
 

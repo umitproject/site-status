@@ -473,17 +473,23 @@
                     case 'url_check':
                         parent_form.find(".expected_status").closest('tr').removeClass('hidden');
                         parent_form.find(".search_keyword").closest('tr').removeClass('hidden');
+                        parent_form.find(".fail_on_error").closest('tr').removeClass('hidden');
+                        parent_form.find(".follow_location").closest('tr').removeClass('hidden');
                         parent_form.find(".check_port").closest('tr').addClass('hidden');
                         break;
                     case 'port_check':
                         parent_form.find(".expected_status").closest('tr').addClass('hidden');
                         parent_form.find(".search_keyword").closest('tr').addClass('hidden');
+                        parent_form.find(".fail_on_error").closest('tr').addClass('hidden');
+                        parent_form.find(".follow_location").closest('tr').addClass('hidden');
                         parent_form.find(".check_port").closest('tr').removeClass('hidden');
                     break;
                     default:
                         parent_form.find(".expected_status").closest('tr').addClass('hidden');
                         parent_form.find(".search_keyword").closest('tr').addClass('hidden');
                         parent_form.find(".check_port").closest('tr').addClass('hidden');
+                        parent_form.find(".fail_on_error").closest('tr').addClass('hidden');
+                        parent_form.find(".follow_location").closest('tr').addClass('hidden');
                 }
             }).change();
 
