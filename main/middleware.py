@@ -70,7 +70,7 @@ class SiteConfigMiddleware(object):
                     raise Http404
 
             #always show the user the private view
-            if request.user.is_authenticated() and request.user == site_config.user:
+            if site_config and request.user.is_authenticated() and request.user == site_config.user:
                 public = False
 
             request.site_config = site_config
