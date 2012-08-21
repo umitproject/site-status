@@ -27,6 +27,9 @@ class ProfileForm(forms.ModelForm):
         self.fields.keyOrder = ['first_name', 'last_name','birth_date', 'address', 'city', 'country',
                            'state', 'phone_number','password1', 'password2']
 
+        self.fields['birth_date'].widget.attrs['class'] = 'datepicker'
+
+
     def clean(self):
         cleaned_data = super(ProfileForm, self).clean()
         if 'password1' in cleaned_data and 'password2' in cleaned_data:
@@ -42,26 +45,28 @@ class SiteConfigForm(forms.ModelForm):
                    'custom_css','logo','preview_custom_css','preview_logo', 'public_internal_url', 'user_theme_selection')
 
 class ScheduledMaintenanceForm(forms.ModelForm):
-    def __init__(self, user, *args, **kw):
-        super(forms.ModelForm, self).__init__(*args, **kw)
-        self.fields.keyOrder = ['scheduled_to','time_estimate','message', 'total_downtime', 'created_at', 'updated_at']
-    scheduled_to = forms.DateTimeField(required=True,
+    scheduled_to = forms.DateTimeField(required=True, widget=forms.DateTimeInput(attrs=dict({'class':'datetimepicker'})),
                                         help_text="Date format is: YYYY-mm-dd HH:ii:ss")
     created_at = forms.DateTimeField(required=False)
     updated_at = forms.DateTimeField(required=False)
 
-    time_estimate = forms.IntegerField(help_text="Used units: minutes")
+    time_estimate = forms.IntegerField(help_text="in minutes")
     total_downtime = forms.FloatField(widget=forms.TextInput(attrs=dict({'class':'disabled', 'readonly':'readonly', 'disabled':'disabled' })), required=False)
 
     class Meta:
         model = ScheduledMaintenance
         exclude = ('module', 'site_config', 'status')
 
+    def __init__(self, user, *args, **kw):
+        super(forms.ModelForm, self).__init__(*args, **kw)
+        self.fields.keyOrder = ['scheduled_to','time_estimate','message', 'total_downtime', 'created_at', 'updated_at']
+
+
 class ScheduledMaintenanceTemplateForm(forms.ModelForm):
     def __init__(self, user, *args, **kw):
         super(forms.ModelForm, self).__init__(*args, **kw)
         self.fields.keyOrder = ['scheduled_to','time_estimate','message']
-    scheduled_to = forms.DateTimeField(required=True,
+    scheduled_to = forms.DateTimeField(required=True, widget=forms.DateTimeInput(attrs=dict({'class':'datetimepicker'})),
         help_text="Date format is: YYYY-mm-dd HH:ii:ss")
 
     class Meta:

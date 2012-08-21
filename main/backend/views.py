@@ -136,11 +136,8 @@ def add_site_config(request):
         else:
             response_obj['error'] = form.errors
             response_obj['status'] = 'error'
-            response_obj['item'] = render_to_string("backend/site_config_form.html", dict(site_config_form=form))
-            return HttpResponse(simplejson.dumps(response_obj), mimetype='application/json'
-            )
-        response_obj['item'] = render_to_string("backend/site_config_form.html",
-                                                            dict(site_config_form=SiteConfigForm(instance=site_config)))
+
+            return HttpResponse(simplejson.dumps(response_obj), mimetype='application/json')
         response_obj['name'] = site_config.site_name
         return HttpResponse(simplejson.dumps(response_obj), mimetype='application/json')
 
@@ -185,10 +182,7 @@ def add_module(request):
         else:
             response_obj['status'] = 'error'
             response_obj['error'] = form.errors
-            return HttpResponse(simplejson.dumps(response_obj), mimetype='application/json'
-            )
-        response_obj['item'] = render_to_string("backend/module_form.html",
-                                    dict(module_form=ModuleForm(request.user,instance=instance)))
+            return HttpResponse(simplejson.dumps(response_obj), mimetype='application/json')
         response_obj['name'] = module.name
         return HttpResponse(simplejson.dumps(response_obj), mimetype='application/json')
 
@@ -234,7 +228,6 @@ def add_site_domain(request):
             )
 
         response_obj['name'] = site_domain.status_url
-        response_obj['item'] = render_to_string("backend/site_domain_form.html", dict(site_domain_form=form))
         return HttpResponse(simplejson.dumps(response_obj), mimetype='application/json')
 
     return HttpResponse(simplejson.dumps(response_obj), mimetype='application/json')

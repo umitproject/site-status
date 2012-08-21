@@ -228,6 +228,7 @@ MEDIA_BUNDLES = (
     ('main.js',
      'js/jquery.js',
      'js/jquery-ui.js',
+     'js/jquery-ui-timepicker-addon.js',
      'js/main.js',
      'js/modernizr.js'
         ),

@@ -252,39 +252,64 @@
     </script>
     <script type="text/javascript">
 
+
+    function load_popovers(){
+        $(".helptext").prev("br").remove();
+
+        $(".helptext").each(function(index, elem){
+            var $this = $(elem);
+            $this.replaceWith($('<a>').attr('href','#')
+                    .attr('rel', 'popover')
+                    .attr('tabindex', -1)
+                    .attr('data-content', $this.text())
+                    .html("<i class=\"icon-question-sign\">")
+                    .popover()
+                    .click(function(event){
+                        event.preventDefault();
+                    })
+            );
+        });
+    }
+
+    function reload_tabs(){
+        if ("last_site_config_tab" in window) {
+            $('a[href="'+ last_site_config_tab +'"]').click();
+        }
+
+        if ("last_module_tab" in window) {
+            $('a[href="'+ last_module_tab +'"]').click();
+        }
+
+        if ("last_site_domain_tab" in window) {
+            $('a[href="'+ last_site_domain_tab +'"]').click();
+        }
+    }
+
+    function load_timepickers(){
+        $('.datepicker').datepicker({
+            dateFormat: 'yy-mm-dd',
+            changeYear: true
+        });
+        $('.datetimepicker').datetimepicker({
+            dateFormat: 'yy-mm-dd',
+            timeFormat: 'hh:mm:ss'
+        });
+    }
+
      var global_ajax_counter = 0;
      jQuery(document).ajaxComplete(function(){
          global_ajax_counter--;
          if (!global_ajax_counter) {
             $("#loading").hide();
+            reload_tabs();
+            load_popovers();
+            load_timepickers();
          }
      });
      jQuery(document).ajaxSend(function(){
          global_ajax_counter ++;
          $("#loading").show();
      });
-
-    $(function() {
-            $( ".datepicker" ).datepicker();
-        });
-
-        function load_popovers(){
-            $(".helptext").prev("br").remove();
-
-            $(".helptext").each(function(index, elem){
-                var $this = $(elem);
-                $this.replaceWith($('<a>').attr('href','#')
-                        .attr('rel', 'popover')
-                        .attr('tabindex', -1)
-                        .attr('data-content', $this.text())
-                        .html("<i class=\"icon-question-sign\">")
-                        .popover()
-                        .click(function(event){
-                            event.preventDefault();
-                        })
-                );
-            });
-        }
 
 
     $('.btn').live('click',function(evt){
@@ -319,7 +344,7 @@
                     if(response.hasOwnProperty('action') && response.hasOwnProperty('status') && response.status === 'ok') {
                             $("#site_configs_monitor").load("/backend/ #site_configs_monitor >*");
                             $("#status-site-domains").load("/backend/ #status-site-domains >*");
-                            $("#monitors").load("/backend/ #monitors >*", load_popovers);
+                            $("#monitors").load("/backend/ #monitors >*");
                     }
                 },
                 'site_domain': function (response) {
@@ -333,7 +358,7 @@
                         }
                         if(response.action === 'add' || response.action === 'toggle') {
                             var id = $this.closest('.tab-pane.active').attr('id');
-                            $this.closest('.site_config_details').load("/backend/ #"+id+" .site_config_details >*", load_popovers);
+                            $this.closest('.site_config_details').load("/backend/ #"+id+" .site_config_details >*");
 
                             $("#status-site-domains").load("/backend/ #status-site-domains >*");
                         }
@@ -342,14 +367,14 @@
                 'maintenance': function(response) {
                     if( response.hasOwnProperty('status') && response.status === 'ok') {
                         var id = $this.closest('.tab-pane.active').attr('id');
-                        $this.closest('.maintenances').load("/backend/ #"+id+" .maintenances >*", load_popovers);
+                        $this.closest('.maintenances').load("/backend/ #"+id+" .maintenances >*");
                     }
                 },
 
                 'reset_api': function(response) {
                     if( response.hasOwnProperty('status') && response.status === 'ok') {
                         var id = $this.closest('.tab-pane.active').attr('id');
-                        $this.closest('.site_config_info').load("/backend/ #"+id+" .site_config_info >*", load_popovers);
+                        $this.closest('.site_config_info').load("/backend/ #"+id+" .site_config_info >*");
                     }
                 },
                 'module': function(response) {
@@ -361,8 +386,8 @@
                             $("#modules").tab();
                             $("#module-"+response.id).remove();
                         }
-                        if(response.action === 'add') {
-                            $("#monitors").load("/backend/ #monitors >*", load_popovers);
+                        if(response.action === 'add' || response.action === 'update') {
+                            $("#monitors").load("/backend/ #monitors >*");
                         }
                         if(response.action === 'toggle'){
                             var id = $this.closest('.tab-pane.active').attr('id');
@@ -401,24 +426,25 @@
         });
 
         $(document).ready(function(){
-           // $("#navbar").scrollspy();
-           // $(".btn").button();
 
             $("#site-configs").tab();
             $('#site-configs a').click(function (e) {
                 e.preventDefault();
                 $(this).tab('show');
+                window['last_site_config_tab'] = $(this).attr("href");
             });
             $("#modules").tab();
             $('#modules a').click(function (e) {
                 e.preventDefault();
                 $(this).tab('show');
+                window['last_module_tab'] = $(this).attr("href");
             });
 
             $("#site-domains").tab();
             $('#site-domains a').click(function (e) {
                 e.preventDefault();
                 $(this).tab('show');
+                window['last_site_domain_tab'] = $(this).attr("href");
             });
 
             $(".module-delete").live("click", function(e){
@@ -510,6 +536,7 @@
             });
 
             load_popovers();
+            load_timepickers();
 
             $('<tr>').height(30)
                      .insertBefore($('#id_password1').closest('tr'));
