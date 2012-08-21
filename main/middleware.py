@@ -55,9 +55,9 @@ class SiteConfigMiddleware(object):
                 if not site_config and request.path.startswith('/sites'):
                     view = resolve(request.path)
                     site_config_slug = view.kwargs.get('site_slug')
-                    site_config = SiteConfig.objects.filter(slug=site_config_slug)
+                    site_config = get_object_or_404(SiteConfig, slug=site_config_slug)
                     if site_config:
-                        site_config = site_config[0]
+                        site_config = site_config
                         public = site_config.public_internal_url
 
             if not public and site_config and not request.path.startswith(reverse("auth_login")):
