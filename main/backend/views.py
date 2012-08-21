@@ -247,8 +247,12 @@ def toggle_site_config_url(request):
         url = request.POST.get('url',False)
         if url:
             if url.startswith("/sites/"):
-                site_config_id = re.findall(r'\d+', url)[0]
-                site_config = SiteConfig.get_from_id(site_config_id)
+                site_config_slug = re.findall(r'/sites/([a-z0-9\-_]+)(/|$)', url)
+                if site_config_slug:
+                    site_config = SiteConfig.objects.get(slug=site_config_slug[0][0])
+                else:
+                    return HttpResponse(simplejson.dumps(response_obj), mimetype='application/json')
+
                 if site_config:
                     site_config.public_internal_url = not site_config.public_internal_url
                     site_config.save()
