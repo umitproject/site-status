@@ -22,8 +22,7 @@ from main.models import SiteConfig, Module, UserProfile, StatusSiteDomain, STATU
 __author__ = 'apredoi'
 
 @login_required
-def backend(request):
-    context = RequestContext(request)
+def backend(request, **kwargs):
     u = request.user
     u_profile = UserProfile.objects.get_or_create(user = request.user)[0]
 
@@ -57,16 +56,10 @@ def backend(request):
     for site_domain in site_domains:
         site_domain_forms.append(StatusSiteDomainForm(u,instance=site_domain))
 
-    return render(request, 'backend/home.html', {'profile_form':profile_form,
-                                                 'site_config_forms': site_config_forms,
-                                                 'site_config_form_template': site_config_form_template,
-                                                 'module_forms' : module_forms,
-                                                 'module_form_template' : module_form_template,
-                                                 'site_domain_forms' : site_domain_forms,
-                                                 'site_domain_form_template' : site_domain_form_template,
-                                                 'maintenance_form_template' : maintenance_form_template,
-                                                 'maintenances' : maintenances
-                                                 })
+    context = locals()
+    context.update(kwargs)
+
+    return render(request, 'backend/home.html', context)
 
 
 """ API """
