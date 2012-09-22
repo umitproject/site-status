@@ -1232,6 +1232,9 @@ class UserProfile(models.Model):
     state = models.CharField(_('State'), max_length=50, null=True, blank=True)
     phone_number = models.CharField(_('Phone number'), max_length=15, null=True, blank=True)
 
+    def __unicode__(self):
+        return "%s (%s)" % (self.user.username, self.user.email)
+
 
 def create_user_profile(sender, instance, created, **kwargs):
     if created:
