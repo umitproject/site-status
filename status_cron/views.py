@@ -72,16 +72,7 @@ class StatusCodeDoesntMatch(Exception):
 
 
 def debug(module, msg=""):
-    debug_tokens = (str(datetime.datetime.now()), )
-    if isinstance(msg, tuple):
-        debug_tokens += msg
-    else:
-        debug_tokens += (msg, )
-    module.logs.append(MONITOR_LOG_SEPARATOR.join(debug_tokens))
-    #rotate
-    module.logs = module.logs[-MAX_LOG_ENTRIES:]
-    module.save()
-
+    module.append_log(msg)
 
 @celery.task(ignore_result=True)
 @staff_member_required

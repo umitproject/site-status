@@ -1047,6 +1047,15 @@ class Module(models.Model):
     #port checker
     check_port = models.IntegerField(null=True, blank=True, default=None, choices=PORT_CHECK_OPTIONS)
 
+    def append_log(self, msg):
+        log_tokens = (datetime.datetime.now().isoformat(), )
+        if isinstance(msg, tuple):
+            log_tokens += msg
+        else:
+            log_tokens += (msg, )
+        self.logs.append(MONITOR_LOG_SEPARATOR.join(log_tokens))
+        self.save()
+
     @property
     def is_url_checker(self):
         return self.module_type == 'url_check'

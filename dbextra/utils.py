@@ -16,7 +16,4 @@ class ModuleListFieldHandler(logging.Handler): # Inherit from logging.Handler
     def emit(self, record):
         # record.message is the log message
         if self.module:
-            self.module.logs.append(record.getMessage())
-            #rotate
-            self.module.logs = self.module.logs[-MAX_LOG_ENTRIES:]
-            self.module.save()
+            self.module.append_logs(record.getMessage())
