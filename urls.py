@@ -51,6 +51,10 @@ urlpatterns = patterns('',
     ######################
     # Notification System
     url(r'^notification/', include('status_notification.urls')),
+
+    ######################
+    # API
+    url(r'^api/', include('status_api.urls')),
     
     ########
     # ADMIN
