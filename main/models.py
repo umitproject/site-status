@@ -822,7 +822,7 @@ class AggregatedStatus(models.Model):
 
     @property
     def last_incident(self):
-        last_incident = ModuleEvent.objects.filter(site_config=self.site_config).order_by('-down_at')[:1]
+        last_incident = ModuleEvent.objects.exclude(status="").filter(site_config=self.site_config).order_by('-down_at')[:1]
         if last_incident:
             last_incident = last_incident[0]
         
@@ -831,7 +831,7 @@ class AggregatedStatus(models.Model):
 
     @property
     def last_public_incident(self):
-        last_incident = ModuleEvent.objects.filter(site_config=self.site_config, module__public = True).order_by('-down_at')[:1]
+        last_incident = ModuleEvent.objects.exclude(status="").filter(site_config=self.site_config, module__public = True).order_by('-down_at')[:1]
         if last_incident:
             last_incident = last_incident[0]
 
