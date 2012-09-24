@@ -52,10 +52,6 @@ urlpatterns = patterns('',
     # Notification System
     url(r'^notification/', include('status_notification.urls')),
 
-    ######################
-    # API
-    url(r'^api/', include('status_api.urls')),
-    
     ########
     # ADMIN
     url(r'^clean_cache/', 'main.views.clean_cache', name='clean_cache'),
