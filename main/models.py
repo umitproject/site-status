@@ -868,7 +868,7 @@ class DailyModuleStatus(models.Model):
         return percentage(self.total_downtime, self.total_uptime)
     
     def add_status(self, status):
-        if status is None:
+        if status is None or status == "":
             status ='unknown'
         
         self.status = status
