@@ -80,6 +80,7 @@ def report_status(request):
         else:
             ev.back_at = start
             ev.down_at = start
+            ev.status = status
         ev.save()
     
     return __build_response(response='OK',
