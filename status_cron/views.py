@@ -93,6 +93,7 @@ def send_notification_task(request, notification_id):
         sent = email.send()
 
         notification.sent_at = datetime.datetime.now()
+        notification.send = False
         notification.save()
     finally:
         transaction.commit()

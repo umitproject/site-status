@@ -372,6 +372,9 @@ class Notification(models.Model):
     downtime = models.DecimalField(max_digits=5, decimal_places=2,
                                    default=None, null=True)
     site_config = models.ForeignKey('main.SiteConfig', null=True)
+
+    def __unicode__(self):
+        return "%s - %s -%s" % ("Send" if self.send else "Not send", subject, self.current_status)
     
     @property
     def list_emails(self):
