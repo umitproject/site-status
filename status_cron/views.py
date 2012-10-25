@@ -76,7 +76,6 @@ def debug(module, msg=""):
 
 @celery.task(ignore_result=True)
 @staff_member_required
-@transaction.commit_manually
 def send_notification_task(request, notification_id):
     """This task will send out the notifications
     """
@@ -98,7 +97,6 @@ def send_notification_task(request, notification_id):
     except Exception, err:
         logging.critical("Error while trying to send notification [%s] - (%s)" % (notification, err))
 
-    transaction.commit()
     memcache.delete(CHECK_NOTIFICATION_KEY % notification.id)
 
     return HttpResponse("OK")
