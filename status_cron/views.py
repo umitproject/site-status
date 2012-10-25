@@ -95,9 +95,11 @@ def send_notification_task(request, notification_id):
         notification.sent_at = datetime.datetime.now()
         notification.send = False
         notification.save()
-    finally:
-        transaction.commit()
-        memcache.delete(CHECK_NOTIFICATION_KEY % notification.id)
+    except Exception, err:
+        logging.critical("Error while trying to send notification [%s] - (%s)" % (notification, err))
+
+    transaction.commit()
+    memcache.delete(CHECK_NOTIFICATION_KEY % notification.id)
 
     return HttpResponse("OK")
 
