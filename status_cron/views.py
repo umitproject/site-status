@@ -79,7 +79,12 @@ def debug(module, msg=""):
 def send_notification_task(request, notification_id):
     """This task will send out the notifications
     """
-    notification = Notification.objects.get(pk=notification_id)
+    notification = None
+    try:
+        notification = Notification.objects.get(pk=notification_id)
+    except Notification.DoesNotExist, err:
+        return HttpResponse('FAILED')
+    
     try:
         notification.build_email_data()
 
