@@ -136,17 +136,18 @@ def check_passive_url_task(request, module_key):
 
     try:
         remote_response = _get_remote_response(module)
+        logging.info("Response from module %s: %s" % (module.name, remote_response.get('http_code', 'unknown')))
         end = datetime.datetime.now()
 
         total_time = end - start
 
         debug(module, ("end_check", str(total_time.total_seconds()),))
         if total_time.seconds > 3:
-        # TODO: Turn this into a notification
-        #            logging.warning('Spent %s seconds checking %s' % (total_time.seconds, module.name))
+            # TODO: Turn this into a notification
+            logging.warning('Spent %s seconds checking %s' % (total_time.seconds, module.name))
             debug(module,'Spent %s seconds checking %s' % (total_time.seconds, module.name))
 
-        if _check_status_code(module,remote_response) and _check_keyword(module,remote_response):
+        if _check_status_code(module, remote_response) and _check_keyword(module, remote_response):
 
             # This case is for when a module's status is set by hand and no event is created.
             if module.status != 'on-line' and not events:
