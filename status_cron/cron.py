@@ -28,10 +28,12 @@ def check_passive_url_monitors():
         passive_key = CHECK_HOST_KEY % module.id
         if memcache.get(passive_key,False):
             #this means that the check is already running
-            logging.critical("Module id %s is already running"%module.id)
+            logging.critical("Module id %s is already running" % module.id)
             continue
         memcache.set(passive_key,module,CELERY_CACHE_TIMEOUT)
         check_passive_url_task.apply_async((request, module.id))
+    
+    return True
 
 
 @periodic_task(run_every=crontab(hour="*", minute="*/1", day_of_week="*"))

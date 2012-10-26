@@ -128,36 +128,42 @@ def _create_new_event(module, status, down_at, back_at=None, details=""):
 @staff_member_required
 @transaction.commit_manually
 def check_passive_url_task(request, module_key):
+    # Close Database Connection. Not to worry, Django will create a new one when needed.
+    # This is an attempt to prevent django from sharing this connection with all
+    # the tasks we're about to run.
+    db.close_connection()
+    
     module = Module.objects.get(id=module_key)
     events = ModuleEvent.objects.filter(module=module).filter(back_at=None)
-    debug(module, ("begin",))
+    debug(module, ("Starting new status check against %s" % module.url,))
 
     start = datetime.datetime.now()
 
     try:
         remote_response = _get_remote_response(module)
-        logging.info("Response from module %s: %s" % (module.name, remote_response.get('http_code', 'unknown')))
+        
+        logging.info("Response status code from module %s: %s" % (module.name, remote_response.get('http_code', 'unknown')))
         end = datetime.datetime.now()
 
         total_time = end - start
 
-        debug(module, ("end_check", str(total_time.total_seconds()),))
+        debug(module, ("Done with checking status.", str(total_time.total_seconds()),))
         if total_time.seconds > 3:
             # TODO: Turn this into a notification
-            logging.warning('Spent %s seconds checking %s' % (total_time.seconds, module.name))
-            debug(module,'Spent %s seconds checking %s' % (total_time.seconds, module.name))
+            logging.warning('Spent %s seconds checking %s. That\'s over the threshold limit of 3 seconds.' % (total_time.seconds, module.name))
+            debug(module, 'Spent %s seconds checking %s. That\'s over the threshold limit of 3 seconds.' % (total_time.seconds, module.name))
+
 
         if _check_status_code(module, remote_response) and _check_keyword(module, remote_response):
-
             # This case is for when a module's status is set by hand and no event is created.
             if module.status != 'on-line' and not events:
-                _create_new_event(module,"unknown", start, start)
+                _create_new_event(module, "unknown", start, start)
 
             now = datetime.datetime.now()
             for event in events:
                 event.back_at = now
                 event.save()
-                debug(module,"Site is back online %s" % module.name)
+                debug(module, "Site is back online %s" % module.name)
 
 
     except SoftTimeLimitExceeded, e:
@@ -169,7 +175,8 @@ def check_passive_url_task(request, module_key):
 Events: %s''' % ("urlfetch.HTTPError", module.name, e,
                  traceback.extract_stack(), events)
 
-        debug(module, "[%s] time_limit_exceeded"%module.id)
+        logging.error("[%s] time_limit_exceeded" % module.id)
+        debug(module, "[%s] time_limit_exceeded" % module.id)
         transaction.rollback() #cancel saving events if it exceeded timeout
 
         if not events:
@@ -185,7 +192,8 @@ Events: %s''' % ("urlfetch.HTTPError", module.name, e,
 Events: %s''' % ("pycurl_error", module.name, e,
                  traceback.extract_stack(), events)
 
-        debug(module, "url_error (%s) %s"%(e[0],e[1]))
+        logging.error("url_error (%s) %s" % (e[0],e[1]))
+        debug(module, "url_error (%s) %s" % (e[0],e[1]))
         logging.critical("Events: %s" % events)
         if not events:
             _create_new_event(module, "off-line", start, None, details)
@@ -199,7 +207,8 @@ Events: %s''' % ("pycurl_error", module.name, e,
 Events: %s''' % ("pycurl_error", module.name, e,
                  traceback.extract_stack(), events)
 
-        debug(module, "matching_error: %s"%e)
+        logging.error("matching_error: %s" % e)
+        debug(module, "matching_error: %s" % e)
         logging.critical("Events: %s" % events)
         if not events:
             _create_new_event(module, "off-line", start, None, details)
@@ -212,7 +221,9 @@ Events: %s''' % ("pycurl_error", module.name, e,
 ---
 Events: %s''' % ("Exception", module.name, e,
                  traceback.extract_stack(), events)
-        debug(module, "monitor_error%s"%details)
+        
+        logging.error("monitor_error%s" % details)
+        debug(module, "monitor_error%s" % details)
         if not events:
             _create_new_event(module, "unknown", start, None, details)
     finally:
@@ -276,7 +287,7 @@ Events: %s''' % ("Exception", module.name, e,
 
 def _get_remote_response(module):
     try:
-        print "[%s] calling %s"%(module.id, module.url)
+        logging.info("[%s] calling %s" % (module.name, module.url))
         curl = pycurl.Curl()
         buff = cStringIO.StringIO()
         hdr = cStringIO.StringIO()
@@ -290,22 +301,29 @@ def _get_remote_response(module):
 
         curl.perform()
 
-        print "[%s] end calling %s"%(module.id, module.url)
+        logging.info("[%s] end calling %s" % (module.id, module.url))
 
-        return dict({'http_code':curl.getinfo(pycurl.HTTP_CODE), 'http_headers': hdr.getvalue(), 'http_response': buff.getvalue()})
+        return dict({'http_code':curl.getinfo(pycurl.HTTP_CODE),
+                     'http_headers': hdr.getvalue(),
+                     'http_response': buff.getvalue()})
     except Exception, e:
+        logging.error("Failed to perform URL check against %s. Reason: %s" % (module.name, err))
         raise e
 
 def _check_status_code(module,remote_response):
     expected_status = module.expected_status or 200
     actual_status = remote_response.get('http_code', 0)
     if actual_status != expected_status:
-        raise StatusCodeDoesntMatch("Expected %s status but found %s instead"%(expected_status, actual_status))
+        logging.error("Expected %s status but found %s instead" % (expected_status, actual_status))
+        debug(module, ("Expected %s status but found %s instead" % (expected_status, actual_status),))
+        raise StatusCodeDoesntMatch("Expected %s status but found %s instead" % (expected_status, actual_status))
     return True
 
 def _check_keyword(module,remote_response):
     if module.search_keyword and not re.search(module.search_keyword, remote_response.get('http_response', '')):
-        raise RegexDoesntMatch("%s doesn't match the response body"%module.search_keyword)
+        logging.error("%s doesn't match the response body" % module.search_keyword)
+        debug(module, ("%s doesn't match the response body" % module.search_keyword,))
+        raise RegexDoesntMatch("%s doesn't match the response body" % module.search_keyword)
     return True
 
 @staff_member_required
