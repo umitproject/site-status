@@ -1036,8 +1036,8 @@ class Module(models.Model):
     site_config = models.ForeignKey('main.SiteConfig', null=True)
     logs = ListField()
     
-    username = models.CharField(max_length=40, default='', help_text="If url provided requires HTTP authentication through HTTP DIGEST, you must provide the username", blank=True)
-    password = models.CharField(max_length=40, default='', help_text="If url provided requires HTTP authentication through HTTP DIGEST, you must provide the password", blank=True)
+    username = models.CharField(max_length=40, default='', help_text="If url provided requires authentication at HTTP level, you must provide the username", blank=True)
+    password = models.CharField(max_length=40, default='', help_text="If url provided requires authentication at HTTP level, you must provide the password", blank=True)
 
     #url checker
     expected_status = models.IntegerField(default=200, null=True, blank=True,

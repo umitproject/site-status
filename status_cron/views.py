@@ -303,7 +303,8 @@ def _get_remote_response(module):
         curl.setopt(pycurl.SSL_VERIFYHOST, False)
 
         if module.username and module.password:
-            curl.setopt(pycurl.USERPWD, module.username + ":" + module.password)
+            curl.setopt(pycurl.HTTPAUTH, pycurl.HTTPAUTH_ANY)
+            curl.setopt(pycurl.USERPWD, "%s:%s" % (module.username, module.password))
 
         curl.perform()
 
