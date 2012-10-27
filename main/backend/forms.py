@@ -79,7 +79,7 @@ class ModuleForm(forms.ModelForm):
         if kw.has_key('instance'):
             existing = True
         super(forms.ModelForm, self).__init__(*args, **kw)
-        self.fields.keyOrder = ['module_type','name','description', 'host', 'url', 'site_config', 'tags', 'expected_status', 'search_keyword', 'check_port', 'public', 'fail_on_error', 'follow_location']
+        self.fields.keyOrder = ['module_type','name','description', 'host', 'url', 'username', 'password', 'site_config', 'tags', 'expected_status', 'search_keyword', 'check_port', 'public', 'fail_on_error', 'follow_location']
 
         self.fields['site_config'].choices = [ (o.pk, str(o) ) for o in SiteConfig.objects.filter(user=user)]
 
