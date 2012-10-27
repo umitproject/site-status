@@ -299,9 +299,10 @@ def _get_remote_response(module):
         curl.setopt(pycurl.FAILONERROR, 1 if module.fail_on_error else 0)
         curl.setopt(pycurl.FOLLOWLOCATION, 1 if module.follow_location else 0)
         curl.setopt(pycurl.TIMEOUT, CURL_TIMEOUT_LIMIT)
+        curl.setopt(pycurl.SSL_VERIFYPEER, False)
+        curl.setopt(pycurl.SSL_VERIFYHOST, False)
 
         if module.username and module.password:
-            curl.setopt(pycurl.HTTPAUTH, pycurl.HTTPAUTH_DIGEST)
             curl.setopt(pycurl.USERPWD, module.username + ":" + module.password)
 
         curl.perform()
