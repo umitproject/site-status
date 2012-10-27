@@ -174,7 +174,7 @@ def check_passive_url_task(request, module_key):
 %s
 ---
 Events: %s''' % ("urlfetch.HTTPError", module.name, e,
-                 traceback.extract_stack(), events)
+                 traceback.format_exc(), events)
 
         logging.error("[%s] time_limit_exceeded" % module.id)
         debug(module, "[%s] time_limit_exceeded" % module.id)
@@ -206,7 +206,7 @@ Events: %s''' % ("pycurl_error", module.name, e,
 %s
 ---
 Events: %s''' % ("pycurl_error", module.name, e,
-                 traceback.extract_stack(), events)
+                 traceback.format_exc(), events)
 
         logging.error("matching_error: %s" % e)
         debug(module, "matching_error: %s" % e)
@@ -221,7 +221,7 @@ Events: %s''' % ("pycurl_error", module.name, e,
 %s
 ---
 Events: %s''' % ("Exception", module.name, e,
-                 traceback.extract_stack(), events)
+                 traceback.format_exc(), events)
         
         logging.error("monitor_error%s" % details)
         debug(module, "monitor_error%s" % details)
