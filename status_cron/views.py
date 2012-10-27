@@ -32,6 +32,7 @@ from django.db import transaction
 
 from django.http import HttpResponse, Http404
 from django.conf import settings
+from django import db
 
 from nmap import PortScanner
 
@@ -142,7 +143,7 @@ def check_passive_url_task(request, module_key):
     try:
         remote_response = _get_remote_response(module)
         
-        logging.info("Response status code from module %s: %s" % (module.name, remote_response.get('http_code', 'unknown')))
+        logging.critical("Response status code from module %s: %s" % (module.name, remote_response.get('http_code', 'unknown')))
         end = datetime.datetime.now()
 
         total_time = end - start
@@ -150,7 +151,7 @@ def check_passive_url_task(request, module_key):
         debug(module, ("Done with checking status.", str(total_time.total_seconds()),))
         if total_time.seconds > 3:
             # TODO: Turn this into a notification
-            logging.warning('Spent %s seconds checking %s. That\'s over the threshold limit of 3 seconds.' % (total_time.seconds, module.name))
+            logging.critical('Spent %s seconds checking %s. That\'s over the threshold limit of 3 seconds.' % (total_time.seconds, module.name))
             debug(module, 'Spent %s seconds checking %s. That\'s over the threshold limit of 3 seconds.' % (total_time.seconds, module.name))
 
 
@@ -298,6 +299,10 @@ def _get_remote_response(module):
         curl.setopt(pycurl.FAILONERROR, 1 if module.fail_on_error else 0)
         curl.setopt(pycurl.FOLLOWLOCATION, 1 if module.follow_location else 0)
         curl.setopt(pycurl.TIMEOUT, CURL_TIMEOUT_LIMIT)
+
+        if module.username and module.password:
+            curl.setopt(pycurl.HTTPAUTH, pycurl.HTTPAUTH_DIGEST)
+            curl.setopt(pycurl.USERPWD, module.username + ":" + module.password)
 
         curl.perform()
 
