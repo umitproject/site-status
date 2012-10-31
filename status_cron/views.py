@@ -77,14 +77,24 @@ def debug(module, msg=""):
 
 @celery.task(ignore_result=True)
 @staff_member_required
+@transaction.commit_manually
 def send_notification_task(request, notification_id):
     """This task will send out the notifications
     """
     notification = None
     try:
-        notification = Notification.objects.get(pk=notification_id)
+        notification = Notification.objects.get(pk=notification_id, send=True)
+        
+        # Gotta set this notification to False and prevent it from being called more than once.
+        notification.send = False
+        notification.save()
+        transaction.commit()
+        
     except Notification.DoesNotExist, err:
-        return HttpResponse('FAILED')
+        # This could merely mean that this notification is being executed.
+        # Just drop this request.
+        transaction.commit()
+        return HttpResponse('OK')
     
     try:
         notification.build_email_data()
@@ -105,6 +115,7 @@ def send_notification_task(request, notification_id):
 
     memcache.delete(CHECK_NOTIFICATION_KEY % notification.id)
 
+    transaction.commit()
     return HttpResponse("OK")
 
 @staff_member_required
