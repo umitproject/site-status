@@ -399,8 +399,11 @@ class Notification(models.Model):
                        TARGET_NAME=target_name)
         
         self.subject = "%s is back!" % target_name
+        logging.info("Building email data for %s. Subject: %s" % (target_name, self.subject))
+        
         self.body = render_to_string('status_notification/notification_body.txt', context)
         self.html = render_to_string('status_notification/notification_body.html', context)
+        self.save()
     
     def save(self, *args, **kwargs):
         if not self.id:
