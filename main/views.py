@@ -50,7 +50,8 @@ def home(request, msg=None, site_slug=None):
     site_config = request.site_config
     if not site_config:
         raise Http404
-    modules = Module.objects.filter(site_config=site_config)
+
+    modules = Module.get_site_config_modules(site_config)
     show_days = Module.show_days(site_config)
     last_incident = request.aggregation.last_incident
     last_public_incident = request.aggregation.last_public_incident

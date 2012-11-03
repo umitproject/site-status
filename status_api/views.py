@@ -58,30 +58,7 @@ def report_status(request):
     if not __known_status(status):
         status = "unknown"
 
-    new = False
-    
-    module = request.module
-    module.updated_at = datetime.datetime.now()
-    module.save()
-
-    start = datetime.datetime.now()
-    event = ModuleEvent.objects.filter(module=module, back_at=None)
-
-    if not event:
-        ev = ModuleEvent()
-        ev.module = module
-        new = True
-        event = [ev,]
-
-    for ev in event:
-        if status != 'on-line':
-            ev.down_at = start
-            ev.status = status
-        else:
-            ev.back_at = start
-            ev.down_at = start
-            ev.status = status
-        ev.save()
+    Module.report_event(request.module, status)
     
     return __build_response(response='OK',
                             new=new)

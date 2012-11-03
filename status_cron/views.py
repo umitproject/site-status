@@ -18,6 +18,11 @@
 ## You should have received a copy of the GNU Affero General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ##
+
+import os
+import re
+import sys
+
 from logging.handlers import TimedRotatingFileHandler
 
 import pycurl
@@ -36,8 +41,6 @@ from django import db
 
 from nmap import PortScanner
 
-# Appengine TASKS
-import re
 from main.models import *
 from main.memcache import memcache
 from main.decorators import staff_member_required
@@ -51,10 +54,7 @@ from djcelery import celery
 from celery.exceptions import SoftTimeLimitExceeded
 
 from settings import NMAP_ARGS, CURL_TIMEOUT_LIMIT
-import os
 from dbextra.utils import ModuleListFieldHandler, MAX_LOG_ENTRIES
-
-MONITOR_LOG_SEPARATOR = ' '
 
 
 
@@ -140,15 +140,19 @@ def _create_new_event(module, status, down_at, back_at=None, details=""):
 @staff_member_required
 @transaction.commit_manually
 def check_passive_url_task(request, module_key):
+    logging.critical("CHECK PASSIVE URL TASK!")
     # Close Database Connection. Not to worry, Django will create a new one when needed.
     # This is an attempt to prevent django from sharing this connection with all
     # the tasks we're about to run.
     db.close_connection()
     
     module = Module.objects.get(id=module_key)
-    events = ModuleEvent.objects.filter(module=module).filter(back_at=None)
-    debug(module, ("Starting new status check against %s" % module.url,))
 
+    logging.critical("-"*80)
+    logging.warning("Check for events in the current module:")
+    events = ModuleEvent.current_events_for_module(module)
+    debug(module, ("Starting new status check against %s" % module.url,))
+    
     start = datetime.datetime.now()
 
     try:
@@ -238,10 +242,12 @@ Events: %s''' % ("Exception", module.name, e,
         debug(module, "monitor_error%s" % details)
         if not events:
             _create_new_event(module, "unknown", start, None, details)
+    
     finally:
         debug(module, "end task")
         transaction.commit()
         memcache.delete(CHECK_HOST_KEY % module.id)
+
     return HttpResponse("OK")
 
 
@@ -324,9 +330,9 @@ def _get_remote_response(module):
         return dict({'http_code':curl.getinfo(pycurl.HTTP_CODE),
                      'http_headers': hdr.getvalue(),
                      'http_response': buff.getvalue()})
-    except Exception, e:
+    except Exception, err:
         logging.error("Failed to perform URL check against %s. Reason: %s" % (module.name, err))
-        raise e
+        raise err
 
 def _check_status_code(module,remote_response):
     expected_status = module.expected_status or 200

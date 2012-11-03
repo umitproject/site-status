@@ -21,11 +21,12 @@
 
 import datetime
 import logging
-from decimal import *
 import re
 import uuid
-from types import StringTypes
 import itertools
+
+from decimal import *
+from types import StringTypes
 from django.core import validators
 from django.contrib.auth.models import User
 from django.core.validators import RegexValidator
@@ -85,11 +86,14 @@ PORT_CHECK_OPTIONS = (
     (143, _('IMAP: 143'))
 )
 
+MONITOR_LOG_SEPARATOR = ' '
+
 ################
 # MEMCACHE KEYS
 MODULE_TODAY_STATUS_KEY = 'module_today_status_%s'
 MODULE_DAY_STATUS_KEY = 'module_day_status_%s_%s__%s'
 SITE_CONFIG_KEY = 'site_config_%s'
+MODULE_EVENT_CURRENT = 'current_events_for_module_%s'
 
 
 ###################
@@ -924,13 +928,28 @@ class DailyModuleStatus(models.Model):
 
 class ModuleEvent(models.Model):
     down_at = models.DateTimeField(null=True, blank=True, default=None)
-    back_at = models.DateTimeField(null=True, blank=True, default=None)
+    back_at = models.DateTimeField(null=True, blank=True, default=None, db_index=True)
     details = models.TextField()
     status = models.CharField(max_length=30, choices=STATUS)
-    module = models.ForeignKey('main.Module')
+    module = models.ForeignKey('main.Module', db_index=True)
     site_config = models.ForeignKey('main.SiteConfig', null=True)
+
+    @classmethod
+    def current_events_for_module(cls, module):
+        cached = cache.get(MODULE_EVENT_CURRENT % module.id, False)
+        if cached:
+            logging.warning("Returning module events from cache")
+            return cached
+
+        queryset = cls.objects.filter(module=module, back_at=None)
+        cache.set(MODULE_EVENT_CURRENT % module.id, queryset)
+
+        return queryset
     
     def save(self, *args, **kwargs):
+        if self.module.id:
+            cache.delete(MODULE_EVENT_CURRENT % self.module.id)
+
         if self.site_config is None and self.module is not None:
             self.site_config = self.module.site_config
         
@@ -1055,6 +1074,51 @@ class Module(models.Model):
 
     #port checker
     check_port = models.IntegerField(null=True, blank=True, default=None, choices=PORT_CHECK_OPTIONS)
+
+
+    @classmethod
+    def get_site_config_modules(cls, site_config):
+        modules = cls.objects.filter(site_config=site_config)
+
+        # For active monitors, check if latest check is current. If past 2 min
+        # since last update, create event and mark its status as unknown.
+        # TODO: Check if unknown is the best status in this situation.
+        for module in modules:
+            if module.module_type == 'active' and \
+               module.updated_at < (datetime.datetime.now() - datetime.timedelta(seconds=120)):
+               # This means that the active monitor stopped sending
+               # updates. We need to change the module status.
+               cls.report_event(module, 'unknown')
+
+        return modules
+
+
+    @classmethod
+    def report_event(cls, module, status):
+        new = False
+    
+        module.updated_at = datetime.datetime.now()
+        module.save()
+
+        start = datetime.datetime.now()
+        event = ModuleEvent.current_events_for_module(module)
+
+        if not event and status != 'on-line':
+            ev = ModuleEvent()
+            ev.module = module
+            new = True
+            event = [ev,]
+
+        for ev in event:
+            if status != 'on-line':
+                ev.down_at = start
+                ev.status = status
+            else:
+                ev.back_at = start
+                ev.down_at = start
+                ev.status = status
+            ev.save()
+
 
     def append_log(self, msg):
         log_tokens = (datetime.datetime.now().isoformat(), )
