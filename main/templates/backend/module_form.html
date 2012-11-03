@@ -26,6 +26,9 @@
                     <td>Status:</td><td>{{ module_form.instance.status }}</td>
                 </tr>
                 <tr>
+                    <td>Module ID:</td><td>{{ module_form.instance.id }}</td>
+                </tr>
+                <tr>
                     <td>Total uptime:</td><td>{{ module_form.instance.percentage_uptime|floatformat:2 }}%</td>
                 </tr>
                 <tr>

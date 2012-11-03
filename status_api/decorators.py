@@ -27,9 +27,9 @@ from main.models import Module
 
 def authenticate_api_request(view):
     def new_view(request, *args, **kwargs):
-        api = request.POST.get('module_api', None)
-        secret = request.POST.get('module_secret', None)
-        module = request.POST.get('module_id', None)
+        api = request.REQUEST.get('module_api', None)
+        secret = request.REQUEST.get('module_secret', None)
+        module = request.REQUEST.get('module_id', None)
         
         if None in [api, secret, module]:
             return HttpResponse(json.dumps(dict(response='FAIL',

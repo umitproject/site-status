@@ -45,7 +45,7 @@ def __known_status(status):
 @csrf_exempt
 @authenticate_api_request
 def report_status(request):
-    status = request.POST.get('module_status', 'unknown')
+    status = request.REQUEST.get('module_status', 'unknown')
 
     module_id = cache.get(ACTIVE_MONITOR_CACHE_KEY%request.module.id, False)
 

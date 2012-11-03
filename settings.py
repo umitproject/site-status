@@ -19,9 +19,6 @@
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ##
 
-# Initialize App Engine and import the default settings (DB backend, etc.).
-# If you want to use a different backend you have to remove all occurences
-# of "djangoappengine" from this file.
 
 import logging
 import os
@@ -320,3 +317,18 @@ LOGGING = {
 NMAP_ARGS = "-Pn -T3 --max-retries=3"
 
 SUBSCRIBER_EDIT_EXPIRATION = 3600 #seconds
+
+###########################
+# SELF STATUS ACTIVE AGENT
+#
+# In order to use the self status active agent, you need
+# to configure the module in the remote site-status site
+# and provide the api key, secret and module id in the variables below.
+#
+INFORM_SELF_STATUS = True
+INFORM_SELF_STATUS_URL = 'http://localhost:9000'
+INFORM_SELF_STATUS_API_KEY = '29db4457-1552-4c41-9d48-e7e550aa72d2'
+INFORM_SELF_STATUS_API_SECRET = '4e046de0-dc48-4ecd-b84b-8ad9c52c43f1'
+INFORM_SELF_STATUS_MODULE_ID = '1'
+
+#############################

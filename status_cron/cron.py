@@ -1,4 +1,31 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+##
+## Authors: Adriano Marques <adriano@umitproject.org>
+##          Alin Predoi <predoialin@gmail.com>
+##
+## Copyright (C) 2012 S2S Network Consultoria e Tecnologia da Informacao LTDA
+##
+## This program is free software: you can redistribute it and/or modify
+## it under the terms of the GNU Affero General Public License as
+## published by the Free Software Foundation, either version 3 of the
+## License, or (at your option) any later version.
+##
+## This program is distributed in the hope that it will be useful,
+## but WITHOUT ANY WARRANTY; without even the implied warranty of
+## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+## GNU Affero General Public License for more details.
+##
+## You should have received a copy of the GNU Affero General Public License
+## along with this program.  If not, see <http://www.gnu.org/licenses/>.
+##
+
+
+import logging
+import urllib2
+
 from django.http import HttpRequest
+from django.conf import settings
 
 from celery import task
 from celery.task.schedules import crontab
@@ -10,11 +37,31 @@ from settings import CELERY_CACHE_TIMEOUT
 CHECK_HOST_KEY = 'check_passive_host_%s'
 CHECK_NOTIFICATION_KEY = 'check_notification_%s'
 
-__author__ = 'apredoi'
+__author__ = 'apredoi,adrianomarques'
 
 from status_cron.views import check_passive_url_task,check_passive_port_task,send_notification_task
 from main.models import Module, Notification
-import logging
+
+
+
+@periodic_task(run_every=crontab(hour="*", minute="*/1", day_of_week="*"))
+def inform_self_status():
+    """This adds the ability to celery to send its own status to site-status
+    as an active agent.
+    """
+    if settings.INFORM_SELF_STATUS:
+        api_url = "%(STATUS_URL)s/api/report_status?module_id=%(STATUS_MODULE_ID)s&module_api=%(STATUS_API_KEY)s&module_secret=%(STATUS_API_SECRET)s&module_status=%(AGENT_STATUS)s"
+        api_url %= dict(STATUS_URL=settings.INFORM_SELF_STATUS_URL,
+                        STATUS_MODULE_ID=settings.INFORM_SELF_STATUS_MODULE_ID,
+                        STATUS_API_KEY=settings.INFORM_SELF_STATUS_API_KEY,
+                        STATUS_API_SECRET=settings.INFORM_SELF_STATUS_API_SECRET,
+                        AGENT_STATUS="on-line")
+        logging.info("Making status call with url %s" % api_url)
+        agent_update = urllib2.urlopen(api_url)
+        logging.info("Response from server after reporting self status: %s" % agent_update.read())
+        logging.info("Done reporting self status.")
+    else:
+        logging.info("Inform self status is disabled.")
 
 
 @periodic_task(run_every=crontab(hour="*", minute="*/1", day_of_week="*"))
