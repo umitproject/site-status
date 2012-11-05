@@ -58,7 +58,7 @@ def report_status(request):
     if not __known_status(status):
         status = "unknown"
 
-    Module.report_event(request.module, status)
+    new = Module.report_event(request.module, status)
     
     return __build_response(response='OK',
                             new=new)

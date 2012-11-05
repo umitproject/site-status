@@ -72,7 +72,7 @@ TEST_REMOTE_HTTP_HOST = "http://localhost:8000"
 logging.info("Environment: '%s'" % ENVIRONMENT)
 
 # check for crons every
-CRON_POLLING_FREQUENCY = 10 #seconds
+CRON_POLLING_FREQUENCY = 60 #seconds
 
 INSTALLED_APPS = (
     'django.contrib.admin',
@@ -100,10 +100,11 @@ CELERY_IMPORTS = (
     'status_cron.views'
 )
 
-CELERYD_TASK_SOFT_TIME_LIMIT = 55 #seconds; prevents workers from overlapping
+CELERYD_TASK_SOFT_TIME_LIMIT = 58 #seconds; prevents workers from overlapping
 CELERYD_TASK_TIME_LIMIT = 60
 CELERY_CACHE_TIMEOUT = 59
-CURL_TIMEOUT_LIMIT = 20
+CURL_TIMEOUT_LIMIT = 15
+PASSIVE_URL_CHECK_BATCH = 4
 
 
 MIDDLEWARE_CLASSES = (

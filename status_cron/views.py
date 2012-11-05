@@ -139,114 +139,113 @@ def _create_new_event(module, status, down_at, back_at=None, details=""):
 @celery.task(ignore_result=True)
 @staff_member_required
 @transaction.commit_manually
-def check_passive_url_task(request, module_key):
+def check_passive_url_task(request, module_keys):
     logging.critical("CHECK PASSIVE URL TASK!")
     # Close Database Connection. Not to worry, Django will create a new one when needed.
     # This is an attempt to prevent django from sharing this connection with all
     # the tasks we're about to run.
     db.close_connection()
     
-    module = Module.objects.get(id=module_key)
+    for module_key in module_keys:
+        module = Module.objects.get(id=module_key)
 
-    logging.critical("-"*80)
-    logging.warning("Check for events in the current module:")
-    events = ModuleEvent.current_events_for_module(module)
-    debug(module, ("Starting new status check against %s" % module.url,))
-    
-    start = datetime.datetime.now()
-
-    try:
-        remote_response = _get_remote_response(module)
+        logging.critical("-"*80)
+        events = ModuleEvent.current_events_for_module(module)
+        debug(module, ("Starting new status check against %s" % module.url,))
         
-        logging.critical("Response status code from module %s: %s" % (module.name, remote_response.get('http_code', 'unknown')))
-        end = datetime.datetime.now()
+        start = datetime.datetime.now()
 
-        total_time = end - start
+        try:
+            remote_response = _get_remote_response(module)
+            
+            logging.critical("Response status code from module %s: %s" % (module.name, remote_response.get('http_code', 'unknown')))
+            end = datetime.datetime.now()
 
-        debug(module, ("Done with checking status.", str(total_time.total_seconds()),))
-        if total_time.seconds > 3:
-            # TODO: Turn this into a notification
-            logging.critical('Spent %s seconds checking %s. That\'s over the threshold limit of 3 seconds.' % (total_time.seconds, module.name))
-            debug(module, 'Spent %s seconds checking %s. That\'s over the threshold limit of 3 seconds.' % (total_time.seconds, module.name))
+            total_time = end - start
 
-
-        if _check_status_code(module, remote_response) and _check_keyword(module, remote_response):
-            # This case is for when a module's status is set by hand and no event is created.
-            if module.status != 'on-line' and not events:
-                _create_new_event(module, "unknown", start, start)
-
-            now = datetime.datetime.now()
-            for event in events:
-                event.back_at = now
-                event.save()
-                debug(module, "Site is back online %s" % module.name)
+            debug(module, ("Done with checking status.", str(total_time.total_seconds()),))
+            if total_time.seconds > 3:
+                # TODO: Turn this into a notification
+                logging.critical('Spent %s seconds checking %s. That\'s over the threshold limit of 3 seconds.' % (total_time.seconds, module.name))
+                debug(module, 'Spent %s seconds checking %s. That\'s over the threshold limit of 3 seconds.' % (total_time.seconds, module.name))
 
 
-    except SoftTimeLimitExceeded, e:
-        details = '''%s %s
+            if _check_status_code(module, remote_response) and _check_keyword(module, remote_response):
+                # This case is for when a module's status is set by hand and no event is created.
+                if module.status != 'on-line' and not events:
+                    _create_new_event(module, "unknown", start, start)
+
+                now = datetime.datetime.now()
+                for event in events:
+                    event.back_at = now
+                    event.save()
+                    debug(module, "Site is back online %s" % module.name)
+
+
+        except SoftTimeLimitExceeded, e:
+            details = '''%s %s
 %s
 ---
 %s
 ---
 Events: %s''' % ("urlfetch.HTTPError", module.name, e,
-                 traceback.format_exc(), events)
+                     traceback.format_exc(), events)
 
-        logging.error("[%s] time_limit_exceeded" % module.id)
-        debug(module, "[%s] time_limit_exceeded" % module.id)
-        transaction.rollback() #cancel saving events if it exceeded timeout
+            logging.error("[%s] time_limit_exceeded" % module.id)
+            debug(module, "[%s] time_limit_exceeded" % module.id)
+            transaction.rollback() #cancel saving events if it exceeded timeout
 
-        if not events:
-            _create_new_event(module, "off-line", start, None, details)
+            if not events:
+                _create_new_event(module, "off-line", start, None, details)
 
-
-    except pycurl.error, e:
-        details = '''%s %s
+        except pycurl.error, e:
+            details = '''%s %s
 %s
 ---
 %s
 ---
 Events: %s''' % ("pycurl_error", module.name, e,
-                 traceback.extract_stack(), events)
+                     traceback.extract_stack(), events)
 
-        logging.error("url_error (%s) %s" % (e[0],e[1]))
-        debug(module, "url_error (%s) %s" % (e[0],e[1]))
-        logging.critical("Events: %s" % events)
-        if not events:
-            _create_new_event(module, "off-line", start, None, details)
+            logging.error("url_error (%s) %s" % (e[0],e[1]))
+            debug(module, "url_error (%s) %s" % (e[0],e[1]))
+            logging.critical("Events: %s" % events)
+            if not events:
+                _create_new_event(module, "off-line", start, None, details)
 
-    except (RegexDoesntMatch, StatusCodeDoesntMatch) as e:
-        details = '''%s %s
+        except (RegexDoesntMatch, StatusCodeDoesntMatch) as e:
+            details = '''%s %s
 %s
 ---
 %s
 ---
 Events: %s''' % ("pycurl_error", module.name, e,
-                 traceback.format_exc(), events)
+                     traceback.format_exc(), events)
 
-        logging.error("matching_error: %s" % e)
-        debug(module, "matching_error: %s" % e)
-        logging.critical("Events: %s" % events)
-        if not events:
-            _create_new_event(module, "off-line", start, None, details)
+            logging.error("matching_error: %s" % e)
+            debug(module, "matching_error: %s" % e)
+            logging.critical("Events: %s" % events)
+            if not events:
+                _create_new_event(module, "off-line", start, None, details)
 
-    except Exception, e:
-        details = '''%s %s
+        except Exception, e:
+            details = '''%s %s
 %s
 ---
 %s
 ---
 Events: %s''' % ("Exception", module.name, e,
-                 traceback.format_exc(), events)
-        
-        logging.error("monitor_error%s" % details)
-        debug(module, "monitor_error%s" % details)
-        if not events:
-            _create_new_event(module, "unknown", start, None, details)
-    
-    finally:
-        debug(module, "end task")
-        transaction.commit()
-        memcache.delete(CHECK_HOST_KEY % module.id)
+                     traceback.format_exc(), events)
+            
+            logging.error("monitor_error%s" % details)
+            debug(module, "monitor_error%s" % details)
+            if not events:
+                _create_new_event(module, "unknown", start, None, details)
+
+        finally:
+            debug(module, "end task")
+            transaction.commit()
+            memcache.delete(CHECK_HOST_KEY % module.id)
 
     return HttpResponse("OK")
 

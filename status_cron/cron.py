@@ -66,20 +66,31 @@ def inform_self_status():
 
 @periodic_task(run_every=crontab(hour="*", minute="*/1", day_of_week="*"))
 def check_passive_url_monitors():
-    modules = Module.objects.filter(module_type='url_check')
-
     request = HttpRequest()
     request.META['HTTP_X_CELERY_CRON'] = 'true'
 
-    for module in modules:
+    modules = Module.objects.filter(module_type='url_check')
+    
+    sending_modules = []
+    for i in xrange(len(modules)):
+        module = modules[i]
+
         passive_key = CHECK_HOST_KEY % module.id
         if memcache.get(passive_key,False):
-            #this means that the check is already running
-            logging.critical("Module id %s is already running" % module.id)
+            #this means that the check is still running for this module
+            logging.critical("Module id %s is still running" % module.id)
             continue
-        memcache.set(passive_key,module,CELERY_CACHE_TIMEOUT)
-        check_passive_url_task.apply_async((request, module.id))
-    
+
+        memcache.set(passive_key, module, CELERY_CACHE_TIMEOUT)
+
+        sending_modules.append(module.id)
+        if (i != 0 or len(modules) == 1) and (((i % settings.PASSIVE_URL_CHECK_BATCH) == 0) or (i == (len(modules) - 1))):
+            # Don't run when it is the first iteration, unless only one module to monitor
+            # Run in batch sizes defined by the settings and run the remaning at the end of
+            # the loop even if batch size isn't met.
+            check_passive_url_task.apply_async((request, sending_modules))
+            sending_modules = []
+
     return True
 
 

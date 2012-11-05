@@ -1119,6 +1119,8 @@ class Module(models.Model):
                 ev.status = status
             ev.save()
 
+        return new
+
 
     def append_log(self, msg):
         log_tokens = (datetime.datetime.now().isoformat(), )
