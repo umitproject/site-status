@@ -51,11 +51,11 @@ def inform_self_status():
     """
     if settings.INFORM_SELF_STATUS:
         api_url = "%(STATUS_URL)s/api/report_status?module_id=%(STATUS_MODULE_ID)s&module_api=%(STATUS_API_KEY)s&module_secret=%(STATUS_API_SECRET)s&module_status=%(AGENT_STATUS)s"
-        api_url %= dict(STATUS_URL=settings.INFORM_SELF_STATUS_URL,
-                        STATUS_MODULE_ID=settings.INFORM_SELF_STATUS_MODULE_ID,
-                        STATUS_API_KEY=settings.INFORM_SELF_STATUS_API_KEY,
-                        STATUS_API_SECRET=settings.INFORM_SELF_STATUS_API_SECRET,
-                        AGENT_STATUS="on-line")
+        api_url = api_url % dict(STATUS_URL=settings.INFORM_SELF_STATUS_URL,
+                                 STATUS_MODULE_ID=settings.INFORM_SELF_STATUS_MODULE_ID,
+                                 STATUS_API_KEY=settings.INFORM_SELF_STATUS_API_KEY,
+                                 STATUS_API_SECRET=settings.INFORM_SELF_STATUS_API_SECRET,
+                                 AGENT_STATUS="on-line")
         logging.info("Making status call with url %s" % api_url)
         agent_update = urllib2.urlopen(api_url)
         logging.info("Response from server after reporting self status: %s" % agent_update.read())
