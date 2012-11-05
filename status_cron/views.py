@@ -154,7 +154,10 @@ def check_passive_url_task(request, module_keys):
             events = ModuleEvent.current_events_for_module(module)
             debug(module, ("Starting new status check against %s" % module.url,))
         except Exception, err:
-            logging.critical("Failed to get events for %s: Reason was: %s" % (module.url, err))
+            details = '''%s - %s
+%s''' % (module.name, err, traceback.format_exc())
+            logging.critical("Failed to get events for %s: Reason was: %s." % (module.url, err))
+            logging.critical(details)
             debug(module, ("Failed to get events for %s: Reason was: %s" % (module.url, err),))
             continue
             
