@@ -252,6 +252,7 @@ Events: %s''' % ("Exception", module.name, e,
             transaction.commit()
             memcache.delete(CHECK_HOST_KEY % module.id)
 
+    transaction.commit()
     return HttpResponse("OK")
 
 
