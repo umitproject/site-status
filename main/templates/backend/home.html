@@ -296,6 +296,12 @@
         });
     }
 
+
+    function wrapCheckboxes() {
+        $('input[type="checkbox"]').wrap("<div class='switch switch-small'/>");
+    }
+
+
      var global_ajax_counter = 0;
      jQuery(document).ajaxComplete(function(){
          global_ajax_counter--;
@@ -426,6 +432,9 @@
         });
 
         $(document).ready(function(){
+
+            wrapCheckboxes();
+            $(".switch").switch();
 
             $("#site-configs").tab();
             $('#site-configs a').click(function (e) {

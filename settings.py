@@ -210,7 +210,7 @@ if PRODUCTION:
     SITE_STATUS_DOMAIN = 'umit-site-status.appspot.com'
 else:
     MEDIA_URL = DEV_MEDIA_URL
-    SITE_STATUS_DOMAIN = 'apredoi-mac.eur.adobe.com:8000'
+    SITE_STATUS_DOMAIN = 'localhost:8000'
 
 
 GLOBAL_MEDIA_DIRS = (os.path.join(os.path.dirname(__file__), 'media'),)
@@ -228,7 +228,8 @@ MEDIA_BUNDLES = (
      'js/jquery-ui.js',
      'js/jquery-ui-timepicker-addon.js',
      'js/main.js',
-     'js/modernizr.js'
+     'js/modernizr.js',
+     'bootstrap/js/jquery.switch.js'
         ),
     ('bootstrap.js',
      'bootstrap/js/bootstrap.js',
@@ -240,7 +241,8 @@ MEDIA_BUNDLES = (
         ),
     ('bootstrap.css',
         'bootstrap/css/bootstrap-responsive.css',
-        'bootstrap/css/bootstrap.css',),
+        'bootstrap/css/bootstrap.css',
+        'bootstrap/css/bootstrap-switch.css',),
     ('jquery-ui.css',
         'css/jquery-ui.css'
         ,)
